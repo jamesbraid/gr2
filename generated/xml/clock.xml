@@ -1,0 +1,44 @@
+<?xml version="1.0" ?>
+<!-- generated from devices/clock/registers.toml by defs-gen - do not edit, change the source -->
+<!-- defs-gen 3 -->
+<!-- input sha256 467273ff471ddf2134ff68f52c6be88c8ce534408f7b0b63cc8677a1cd2e2738 -->
+<genxml unit="clock" prefix="GR2_CLK" title="Express board configuration ports and pixel clock control">
+  <doc>The first ports of the display back end form one byte-wide gate-array block that the Indigo boot PROM and kernel driver read to learn the board revision, backend revision, memory slots, Z buffer, colour depth and monitor code, and write to select and load the pixel clock. The read and write sides of a port share one address. Offsets are from the graphics window base (physical 0x1f000000 on the Indigo) and name the byte a big-endian CPU addresses: every port is one byte at the first byte of a 4-byte stride (the most significant lane of the word), and every shipped access is a byte load or store. Grades: established means read in full in the shipped driver or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver. Nothing was read on a board. Prose in devices/clock/README.md.</doc>
+  <struct name="PORT0" size="1" grade="established" register="yes" offset="0x6c000" access="rw" reset="unknown">
+    <doc>Read: board revision and, on revision 4 and up, the monitor code. Bits 3:0 read back inverted (board revision is the complement, zero means no board). On revision 4 and up bits 7:4, not inverted, are the monitor code. Write: pixel clock select, see the SEL constants. The read and write sides are different functions at one address. [binary] A qtest can discriminate: a byte read returns the board revision complemented in bits 3:0; a word read has the byte in the most significant lane (NetBSD masks the low bits instead, see questions/display.md).</doc>
+    <field name="monitor_code_rev4" start="4" size="4" type="uint" grade="established"/>
+    <field name="board_rev_n" start="0" size="4" type="uint" grade="established"/>
+  </struct>
+  <struct name="PORT1" size="1" grade="established" register="yes" offset="0x6c004" access="rw" reset="unknown">
+    <doc>Read below revision 4: bit 0 is monitor code bit 0; bits 3:2 both set mean no Z buffer. Read at revision 4 and up: bits 1:0 backend revision as read (both set fails the probe), bit 4 set means 24-bit colour (clear means 8), bit 5 set means Z buffer present. Write: pixel clock load control: 0 then 0x40 (0x41 interlaced) below revision 4; 0 then 1 (5 interlaced) at revision 4 and up. The roles of the written bits are inferred. [binary]</doc>
+    <field name="z_present_rev4" start="5" size="1" type="uint" grade="established"/>
+    <field name="depth24_rev4" start="4" size="1" type="uint" grade="established"/>
+    <field name="no_z_rev3" start="2" size="2" type="uint" grade="established"/>
+    <field name="low2" start="0" size="2" type="uint" grade="established"/>
+  </struct>
+  <struct name="PORT2" size="1" grade="established" register="yes" offset="0x6c008" access="r" reset="unknown">
+    <doc>Board revision below 4 only. Bits 3:2 read back inverted as the backend revision (zero fails the probe); bits 1:0 are monitor code bits 2:1. Not read at revision 4 and up. [binary]</doc>
+    <field name="backend_rev_n" start="2" size="2" type="uint" grade="established"/>
+    <field name="monitor_code_hi" start="0" size="2" type="uint" grade="established"/>
+  </struct>
+  <struct name="PORT3" size="1" grade="established" register="yes" offset="0x6c00c" access="r" reset="unknown">
+    <doc>Board revision below 4 only: frame-buffer memory slot presence; a slot is empty when both of its bits are set (slot A bits 1:0, slot B bits 3:2, slot C bits 5:4). Colour depth is 24 with all three populated, 16 with A and B only, otherwise 8. [binary] NetBSD multiplies the populated count by 8 instead [public].</doc>
+    <field name="slot_c_empty" start="4" size="2" type="uint" grade="established"/>
+    <field name="slot_b_empty" start="2" size="2" type="uint" grade="established"/>
+    <field name="slot_a_empty" start="0" size="2" type="uint" grade="established"/>
+  </struct>
+  <struct name="DATA" size="1" grade="established" register="yes" offset="0x6c020" access="w" reset="unknown">
+    <doc>Pixel clock serial or command port. Board revision below 4: 17 command bytes. Revision 4 and up: 56 single-bit writes (bit 0 is the data bit, bit 1 set on the last). The chip is not identified. [binary] A qtest can discriminate: count the writes between a port1 write of 0 and the next port1 write (17 or 56).</doc>
+    <field name="last" start="1" size="1" type="uint" grade="established"/>
+    <field name="bit" start="0" size="1" type="uint" grade="established"/>
+  </struct>
+  <constant name="BOARD_REV_SPLIT" value="0x4" grade="established"/>
+  <constant name="COMMAND_BYTES_REV3" value="0x11" grade="established"/>
+  <constant name="EXTRA_BYTE_REV3" value="0xa5" grade="established"/>
+  <constant name="LOAD_REV3" value="0x40" grade="inferred"/>
+  <constant name="SEL_60HZ" value="0x1" grade="inferred"/>
+  <constant name="SEL_72HZ" value="0x2" grade="inferred"/>
+  <constant name="SEL_OTHER" value="0x4" grade="inferred"/>
+  <constant name="SEL_REV4" value="0x7" grade="established"/>
+  <constant name="SERIAL_BYTES_REV4" value="0x7" grade="established"/>
+</genxml>

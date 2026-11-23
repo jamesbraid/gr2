@@ -1,0 +1,250 @@
+{
+ "generator": "defs-gen 3",
+ "input_sha256": "467273ff471ddf2134ff68f52c6be88c8ce534408f7b0b63cc8677a1cd2e2738",
+ "schema": "defs-flat/1",
+ "source": "devices/clock/registers.toml",
+ "profile": "public",
+ "rows": [
+  {
+   "unit": "clock",
+   "kind": "register",
+   "name": "port0",
+   "offset": 442368,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port0.monitor_code_rev4",
+   "hi": 7,
+   "lo": 4,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port0.board_rev_n",
+   "hi": 3,
+   "lo": 0,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "register",
+   "name": "port1",
+   "offset": 442372,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port1.z_present_rev4",
+   "hi": 5,
+   "lo": 5,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port1.depth24_rev4",
+   "hi": 4,
+   "lo": 4,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port1.no_z_rev3",
+   "hi": 3,
+   "lo": 2,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port1.low2",
+   "hi": 1,
+   "lo": 0,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "register",
+   "name": "port2",
+   "offset": 442376,
+   "access": "r",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port2.backend_rev_n",
+   "hi": 3,
+   "lo": 2,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port2.monitor_code_hi",
+   "hi": 1,
+   "lo": 0,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "register",
+   "name": "port3",
+   "offset": 442380,
+   "access": "r",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port3.slot_c_empty",
+   "hi": 5,
+   "lo": 4,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port3.slot_b_empty",
+   "hi": 3,
+   "lo": 2,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "port3.slot_a_empty",
+   "hi": 1,
+   "lo": 0,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "register",
+   "name": "data",
+   "offset": 442400,
+   "access": "w",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "data.last",
+   "hi": 1,
+   "lo": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "field",
+   "name": "data.bit",
+   "hi": 0,
+   "lo": 0,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "constant",
+   "name": "BOARD_REV_SPLIT",
+   "value": 4,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "constant",
+   "name": "COMMAND_BYTES_REV3",
+   "value": 17,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "constant",
+   "name": "EXTRA_BYTE_REV3",
+   "value": 165,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "constant",
+   "name": "LOAD_REV3",
+   "value": 64,
+   "count": 1,
+   "grade": "inferred"
+  },
+  {
+   "unit": "clock",
+   "kind": "constant",
+   "name": "SEL_60HZ",
+   "value": 1,
+   "count": 1,
+   "grade": "inferred"
+  },
+  {
+   "unit": "clock",
+   "kind": "constant",
+   "name": "SEL_72HZ",
+   "value": 2,
+   "count": 1,
+   "grade": "inferred"
+  },
+  {
+   "unit": "clock",
+   "kind": "constant",
+   "name": "SEL_OTHER",
+   "value": 4,
+   "count": 1,
+   "grade": "inferred"
+  },
+  {
+   "unit": "clock",
+   "kind": "constant",
+   "name": "SEL_REV4",
+   "value": 7,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "clock",
+   "kind": "constant",
+   "name": "SERIAL_BYTES_REV4",
+   "value": 7,
+   "count": 1,
+   "grade": "established"
+  }
+ ]
+}

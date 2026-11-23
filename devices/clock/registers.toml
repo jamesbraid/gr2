@@ -1,0 +1,88 @@
+unit = "clock"
+prefix = "GR2_CLK"
+title = "Express board configuration ports and pixel clock control"
+doc = "The first ports of the display back end form one byte-wide gate-array block that the Indigo boot PROM and kernel driver read to learn the board revision, backend revision, memory slots, Z buffer, colour depth and monitor code, and write to select and load the pixel clock. The read and write sides of a port share one address. Offsets are from the graphics window base (physical 0x1f000000 on the Indigo) and name the byte a big-endian CPU addresses: every port is one byte at the first byte of a 4-byte stride (the most significant lane of the word), and every shipped access is a byte load or store. Grades: established means read in full in the shipped driver or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver. Nothing was read on a board. Prose in devices/clock/README.md."
+from = "Indigo driver archive gr2.a: gr2_init.o Gr2Probe, Gr2StartClock; gr2.o Gr2SetMonitor, Gr2AdjGenlock; PROM 070-8116-004 (4.0.5D) and 070-8116-005 (4.0.5G)"
+public_from = ["NetBSD sgimips grtworeg.h and grtwo.c"]
+name_source = "ours"
+
+[constants]
+BOARD_REV_SPLIT = { value = 4, grade = "established", doc = "Board revisions below 4 and 4 and above are decoded and clocked differently. [binary] Gr2Probe and Gr2StartClock both compare the board revision (inverted low nibble of port0) with 4." }
+SERIAL_BYTES_REV4 = { value = 7, grade = "established", doc = "Board revision 4 and up: a clock load is 7 bytes sent least significant bit first as 56 single-bit writes to data; the final bit also carries bit 1. [binary] Gr2StartClock and Gr2SetMonitor; the 4.0.5G PROM holds the two 7-byte tables, the 4.0.5D PROM does not." }
+COMMAND_BYTES_REV3 = { value = 17, grade = "established", doc = "Board revision below 4: a clock load is 17 command bytes written one at a time to data. [binary] Gr2StartClock; the same table is in the 4.0.5D PROM." }
+SEL_60HZ = { value = 1, grade = "inferred", doc = "Written to port0 before the clock load on board revisions below 4, for every monitor code except 1 and 6. Role (oscillator or mode select) inferred: the 60 Hz and 72 Hz timing files carry the same 17 command bytes but this selector differs. [binary] Gr2StartClock." }
+SEL_72HZ = { value = 2, grade = "inferred", doc = "Selector written to port0 for monitor code 1 on board revisions below 4; the 72 Hz timing file carries 2. [binary] Gr2StartClock." }
+SEL_OTHER = { value = 4, grade = "inferred", doc = "Selector carried by the 30 Hz, 50 Hz, ccir, NTSC, PAL, presenter, rs343a and iris3k timing files (the 48 Hz and st492 files carry 1, 60 Hz 1, 72 Hz 2). The 4.0.5D PROM also writes 4 when the backend revision byte is 1. Role inferred." }
+SEL_REV4 = { value = 7, grade = "established", doc = "Written to port0 before a 56-bit clock load on board revisions 4 and up. [binary] Gr2StartClock and Gr2SetMonitor." }
+LOAD_REV3 = { value = 0x40, grade = "inferred", doc = "Written to port1 after the 17 command bytes on board revisions below 4 (0x41 when the timing file is interlaced). Role inferred. [binary] Gr2StartClock, Gr2SetMonitor." }
+EXTRA_BYTE_REV3 = { value = 0xa5, grade = "established", doc = "Gr2SetMonitor and Gr2AdjGenlock write 0xa5 to data after loading new timing on board revisions below 4; the byte also sits at index 11 of the 17-byte table. Role unknown. [binary]" }
+
+[registers.port0]
+offset = 0x6c000
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o Gr2Probe 0x16c (byte load, bits 3:0 inverted, high nibble at revision 4 and up), Gr2StartClock 0x454; PROM 4.0.5D probe 0xbfc0e720 (same byte load)"
+doc = "Read: board revision and, on revision 4 and up, the monitor code. Bits 3:0 read back inverted (board revision is the complement, zero means no board). On revision 4 and up bits 7:4, not inverted, are the monitor code. Write: pixel clock select, see the SEL constants. The read and write sides are different functions at one address. [binary] A qtest can discriminate: a byte read returns the board revision complemented in bits 3:0; a word read has the byte in the most significant lane (NetBSD masks the low bits instead, see questions/display.md)."
+
+[registers.port0.fields]
+board_rev_n = { bits = [3, 0], grade = "established" }
+monitor_code_rev4 = { bits = [7, 4], grade = "established" }
+
+[registers.port1]
+offset = 0x6c004
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o Gr2Probe 0x16c (reads), Gr2StartClock 0x454 and gr2.o Gr2SetMonitor 0x2860 (writes)"
+doc = "Read below revision 4: bit 0 is monitor code bit 0; bits 3:2 both set mean no Z buffer. Read at revision 4 and up: bits 1:0 backend revision as read (both set fails the probe), bit 4 set means 24-bit colour (clear means 8), bit 5 set means Z buffer present. Write: pixel clock load control: 0 then 0x40 (0x41 interlaced) below revision 4; 0 then 1 (5 interlaced) at revision 4 and up. The roles of the written bits are inferred. [binary]"
+
+[registers.port1.fields]
+low2 = { bits = [1, 0], grade = "established" }
+no_z_rev3 = { bits = [3, 2], grade = "established" }
+depth24_rev4 = { bits = [4, 4], grade = "established" }
+z_present_rev4 = { bits = [5, 5], grade = "established" }
+
+[registers.port2]
+offset = 0x6c008
+access = "r"
+width = 8
+ro = 0xff
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o Gr2Probe 0x16c"
+doc = "Board revision below 4 only. Bits 3:2 read back inverted as the backend revision (zero fails the probe); bits 1:0 are monitor code bits 2:1. Not read at revision 4 and up. [binary]"
+
+[registers.port2.fields]
+monitor_code_hi = { bits = [1, 0], grade = "established" }
+backend_rev_n = { bits = [3, 2], grade = "established" }
+
+[registers.port3]
+offset = 0x6c00c
+access = "r"
+width = 8
+ro = 0xff
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o Gr2Probe 0x16c"
+doc = "Board revision below 4 only: frame-buffer memory slot presence; a slot is empty when both of its bits are set (slot A bits 1:0, slot B bits 3:2, slot C bits 5:4). Colour depth is 24 with all three populated, 16 with A and B only, otherwise 8. [binary] NetBSD multiplies the populated count by 8 instead [public]."
+
+[registers.port3.fields]
+slot_a_empty = { bits = [1, 0], grade = "established" }
+slot_b_empty = { bits = [3, 2], grade = "established" }
+slot_c_empty = { bits = [5, 4], grade = "established" }
+
+[registers.data]
+offset = 0x6c020
+access = "w"
+width = 8
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o Gr2StartClock 0x454; gr2.o Gr2SetMonitor 0x2860 and Gr2AdjGenlock 0x3050"
+doc = "Pixel clock serial or command port. Board revision below 4: 17 command bytes. Revision 4 and up: 56 single-bit writes (bit 0 is the data bit, bit 1 set on the last). The chip is not identified. [binary] A qtest can discriminate: count the writes between a port1 write of 0 and the next port1 write (17 or 56)."
+
+[registers.data.fields]
+bit = { bits = [0, 0], grade = "established" }
+last = { bits = [1, 1], grade = "established" }
