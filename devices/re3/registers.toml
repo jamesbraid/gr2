@@ -1,0 +1,28 @@
+unit = "re3"
+prefix = "RE3"
+title = "RE3 raster engine: host-visible register banks"
+doc = """Host window of the RE3 raster engine in the Express graphics slot. Only the three banks that a public driver comment names are listed; their contents are unknown. Provenance tags in item text: [public] published document or public driver, [binary] shipped binary, [vendor-derived] upstream headers (none used). See the unit README."""
+from = "NetBSD sgimips public driver memory map comment"
+public_from = ["NetBSD sgimips public driver", "Elan Graphics Technical Report"]
+name_source = "ours"
+
+[registers.bank_27bit]
+offset = 0x6c200
+access = "rw"
+width = 32
+grade = "unknown"
+doc = """First word of the bank [public] a public driver's memory map calls the 27-bit registers. Extent, register names and reset values unknown. No shipped program read (PROM, kernel driver, GL core, X driver, diagnostic program) accesses this bank [binary, negative search, inferred]. qtest: none can be written until a source gives the layout; the first test is that an access does not fault."""
+
+[registers.bank_24bit]
+offset = 0x6c280
+access = "rw"
+width = 32
+grade = "unknown"
+doc = """First word of the bank [public] a public driver's memory map calls the 24-bit registers. Extent, register names and reset values unknown; no shipped program read accesses it [binary, negative search, inferred]. qtest: as for the 27-bit bank."""
+
+[registers.bank_32bit]
+offset = 0x6c600
+access = "rw"
+width = 32
+grade = "unknown"
+doc = """First word of the bank [public] a public driver's memory map calls the 32-bit registers. Extent, register names and reset values unknown; no shipped program read accesses it [binary, negative search, inferred]. qtest: as for the 27-bit bank."""

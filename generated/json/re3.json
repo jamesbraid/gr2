@@ -1,0 +1,51 @@
+{
+ "generator": "defs-gen 3",
+ "input_sha256": "e559fb7a2c82246cdc738e1fe92d4bcc43e2ea7556f489b4fc11622933bb8317",
+ "schema": "defs-flat/1",
+ "source": "devices/re3/registers.toml",
+ "profile": "public",
+ "rows": [
+  {
+   "unit": "re3",
+   "kind": "register",
+   "name": "bank_27bit",
+   "offset": 442880,
+   "access": "rw",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "unknown",
+   "from": "NetBSD sgimips public driver memory map comment"
+  },
+  {
+   "unit": "re3",
+   "kind": "register",
+   "name": "bank_24bit",
+   "offset": 443008,
+   "access": "rw",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "unknown",
+   "from": "NetBSD sgimips public driver memory map comment"
+  },
+  {
+   "unit": "re3",
+   "kind": "register",
+   "name": "bank_32bit",
+   "offset": 443904,
+   "access": "rw",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "unknown",
+   "from": "NetBSD sgimips public driver memory map comment"
+  }
+ ]
+}
