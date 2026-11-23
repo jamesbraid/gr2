@@ -1,0 +1,112 @@
+unit = "vc1_express"
+prefix = "VC1X"
+title = "VC1 video timing, cursor and display-ID controller on the Express board"
+doc = "The same LSI Logic part as the Indigo Entry board's VC1 (see the newport repository's VC1 page for shared facts) reached through a different port set: seven word-strided ports in the graphics window instead of the REX1 function selector. It runs video timing programs from an external SRAM, generates the hardware cursor, and produces a per-pixel display ID from run-length tables in the same SRAM. Offsets are from the graphics window base (physical 0x1f000000 on the Indigo); each port is the first byte of a 4-byte stride, the command and SRAM ports are half-words. Grades: established means read in full in the shipped Indigo driver archive or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver, [vendor-derived] a fact resting on the upstream headers only. Nothing was read on a board. Prose in devices/vc1-express/README.md."
+from = "Indigo driver archive gr2.a: gr2_init.o Gr2LoadVC1SRAM, _Gr2RegisterInit, initGr2Cursor, Gr2ProbeVC1; gr2.o Gr2SetMonitor, _Gr2CreateDummyDID; gr2_retrace.o Gr2RetraceHandler, Gr2PositionCursor, Gr2FillVc1Shadow; PROM 070-8116-004 (4.0.5D)"
+public_from = ["NetBSD sgimips grtworeg.h and grtwo.c", "Elan Graphics Technical Report"]
+name_source = "public"
+name_cite = "NetBSD sys/arch/sgimips/gio/grtworeg.h (VC1_COMMAND, _XMAPMODE, _SRAM, _TESTREG, _ADDRLO, _ADDRHI, _SYSCTL and the SRAM map names)"
+
+[constants]
+SRAM_LINE_LIST = { value = 0x0000, grade = "established", doc = "SRAM byte address of the line-program list (standard). [binary] loaded here by _Gr2RegisterInit and Gr2SetMonitor; the name is [public] NetBSD VIDTIM_LST_BASE." }
+SRAM_CURSOR_LINE_LIST = { value = 0x0400, grade = "established", doc = "Second line-program list used with the cursor workaround frame table. [binary] loaded here; NetBSD VIDTIM_CURSLST_BASE." }
+SRAM_FRAME_TABLE = { value = 0x0800, grade = "established", doc = "Frame table (standard). [binary] loaded here; NetBSD VIDTIM_FRMT_BASE." }
+SRAM_CURSOR_FRAME_TABLE = { value = 0x0900, grade = "established", doc = "Frame table for the cursor workaround. [binary] loaded here; NetBSD VIDTIM_CURSFRMT_BASE." }
+SRAM_INTERLACED = { value = 0x09f0, grade = "established", doc = "Half-word: zero when progressive, 16 when the timing file is interlaced. [binary] _Gr2RegisterInit writes 0, Gr2SetMonitor writes 16 for interlaced files; the name is NetBSD's." }
+SRAM_SCREENWIDTH = { value = 0x09f2, grade = "established", doc = "Half-word: screen width in pixels, written right after the interlace half-word. [binary]" }
+SRAM_CURSOR_GLYPH = { value = 0x0a00, grade = "established", doc = "Kernel cursor glyph, 128 half-words (256 bytes). The PROM places its glyph at 512 instead and points the cursor pointer register there. [binary] initGr2Cursor; NetBSD CURSOR0_BASE." }
+SRAM_DID_FRAME_TABLE = { value = 0x0b00, grade = "established", doc = "Display-ID frame table: one half-word per screen line, each the SRAM address of that line's display-ID line table. [binary] _Gr2RegisterInit." }
+SRAM_DID_LINE_DEFAULT = { value = 0x1400, grade = "established", doc = "Default display-ID line table used for every line at init, and the lowest byte address the kernel's dummy-ID builder accepts. [binary]" }
+REG_VID_EP = { value = 0x00, grade = "established", doc = "Internal register 0: pointer to the active frame table, 0x800 or 0x900. [binary] _Gr2RegisterInit, Gr2SetMonitor, retrace handler." }
+REG_VID_ENABLE = { value = 0x14, grade = "inferred", doc = "Internal register 0x14: written 0 at init and 8192 by Gr2SetMonitor for a loaded timing file. Role inferred from its name in [vendor-derived] notes." }
+REG_CURSOR_EP = { value = 0x20, grade = "established", doc = "Internal register 0x20: SRAM address of the cursor glyph. [binary] initGr2Cursor, PROM." }
+REG_CURSOR_X = { value = 0x22, grade = "established", doc = "Internal register 0x22: cursor x coordinate, followed by 0x24 for y, written as two consecutive half-words. [binary] retrace handler, Gr2PositionCursor." }
+REG_CURSOR_Y = { value = 0x24, grade = "established", doc = "Internal register 0x24: cursor y coordinate. [binary]" }
+REG_CURSOR_MODE = { value = 0x26, grade = "inferred", doc = "Internal register 0x26: zeroed at init (a third and fourth half-word zero written after 0x20 point at 0x22 to 0x26). Role inferred." }
+REG_DID_EP = { value = 0x40, grade = "established", doc = "Internal register 0x40: SRAM address of the display-ID frame table. [binary]" }
+REG_DID_END = { value = 0x42, grade = "established", doc = "Internal register 0x42: address of the end of the display-ID frame table, 2 * lines past its start. [binary]" }
+REG_DID_DIV = { value = 0x44, grade = "established", doc = "Internal register 0x44: horizontal grouping, (width-1)/5 in the high byte and (width-1)%5 in the low byte for a 1280-wide screen (the constant 65284). [binary] Gr2SetMonitor, _Gr2RegisterInit." }
+REG_BLACKOUT = { value = 0x60, grade = "inferred", doc = "Internal register 0x60: written 0 at init (colour index 0 on blackout); role inferred." }
+REG_REVISION = { value = 0x05, grade = "established", doc = "Internal register 5: address written before reading the revision through testreg. [binary] Gr2ProbeVC1." }
+SYSCTL_VC1_DID = { value = 0x0c, grade = "established", doc = "Final value the kernel writes to sysctl at init (VC1 and display-ID enable in NetBSD's names). The PROM finishes with 0x3c (adds cursor logic and cursor display). [binary]" }
+SYSCTL_CURSOR_DISPLAY = { value = 0x20, grade = "established", doc = "Bit toggled by the retrace handler to show or hide the cursor at vertical retrace. [binary]" }
+SYSCTL_GENSYNC = { value = 0x40, grade = "inferred", doc = "Bit 6: Gr2GetMonitor reports it as the genlock state and Gr2AdjGenlock sets it while reprogramming the clock; Gr2SetMonitor clears it afterwards. NetBSD names it GENSYNC." }
+SYSCTL_LOAD = { value = 0x03, grade = "established", doc = "Written to sysctl while Gr2SetMonitor loads timing tables, with the previous value restored (bits 1:0 cleared) afterwards. Roles inferred. [binary]" }
+CURSOR_X_THRESHOLD = { value = 32, grade = "established", doc = "Cursor x minus hotspot below this selects the standard frame table and adds the board's x adjustment; at or above it selects the cursor-workaround frame table. [binary] constant in the retrace and cursor code." }
+
+[registers.command]
+offset = 0x6c040
+access = "rw"
+width = 16
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o _Gr2RegisterInit, initGr2Cursor; gr2.o Gr2SetMonitor; gr2_retrace.o (half-word stores)"
+doc = "Internal register data port. Set the address pair to an internal register number, then write half-words; the address advances by two after each (cursor x then y are written back to back from address 0x22). Reads of this port never occur in shipped code (revision comes through testreg). [binary] A qtest can discriminate: address 0x22, write two half-words, check the address pair reads back advanced by 4 (inferred)."
+
+[registers.xmapmode]
+offset = 0x6c044
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "unknown"
+from = "NetBSD names it VC1_XMAPMODE; no shipped code in the driver or PROM touches it"
+doc = "Window to a display-mode table inside the VC1 (the Entry board's equivalent holds the mode words). Express keeps display modes in the XMAP5 chips instead. Unaccessed. Unknown."
+
+[registers.sram]
+offset = 0x6c048
+access = "rw"
+width = 16
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o Gr2LoadVC1SRAM 0x614; gr2.o Gr2SetMonitor, _Gr2CreateDummyDID (half-word read)"
+doc = "External SRAM data port. The SRAM is addressed by byte; each half-word transfer advances the address pair by two. Written from timing images and display-ID tables; read back by the dummy-ID builder and Gr2SetMonitor. [binary]"
+
+[registers.testreg]
+offset = 0x6c04c
+access = "r"
+width = 8
+ro = 0xff
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o Gr2ProbeVC1 0x148; PROM 0xbfc0ed2c"
+doc = "Revision read: after addrhi = 0 and addrlo = 5, the low three bits are stored as the VC1 revision. The value a real part returns is not recorded. [binary]"
+
+[registers.testreg.fields]
+revision = { bits = [2, 0], grade = "established" }
+
+[registers.addrlo]
+offset = 0x6c050
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o Gr2LoadVC1SRAM, gr2_retrace.o Gr2FillVc1Shadow (byte read)"
+doc = "Low byte of the 16-bit address pair used by command and sram. Readable: the retrace shadow reads it back to save and restore the pair around interrupt-time use. [binary]"
+
+[registers.addrhi]
+offset = 0x6c054
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "established"
+from = "as addrlo"
+doc = "High byte of the address pair. Readable. [binary]"
+
+[registers.sysctl]
+offset = 0x6c058
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o _Gr2RegisterInit, gr2.o Gr2SetMonitor, Gr2GetMonitor, gr2_retrace.o (read-modify-write at retrace)"
+doc = "System control byte; readable (read-modify-write by the retrace handler and Gr2SetMonitor). Bit roles are NetBSD names [public] except as noted: 0 interrupt, 1 timing generator, 2 VC1 core, 3 display IDs, 4 cursor logic, 5 cursor display (established: toggled at retrace), 6 genlock (inferred), 7 video. Values seen: 1 at start, 3 during table loads, 0x0c final in the kernel, 0x3c final in the PROM. Which bit enables the retrace interrupt is unknown: the kernel's final 0x0c has bit 0 clear and the interrupt still arrives. [binary]"
+
+[registers.sysctl.fields]
+interrupt = { bits = [0, 0], grade = "unknown" }
+timing = { bits = [1, 1], grade = "unknown" }
+core = { bits = [2, 2], grade = "inferred" }
+did = { bits = [3, 3], grade = "inferred" }
+cursor = { bits = [4, 4], grade = "inferred" }
+cursor_display = { bits = [5, 5], grade = "established" }
+genlock = { bits = [6, 6], grade = "inferred" }
+video = { bits = [7, 7], grade = "unknown" }

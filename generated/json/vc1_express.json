@@ -1,0 +1,372 @@
+{
+ "generator": "defs-gen 3",
+ "input_sha256": "56853136494c97d8c0e212e1ec4cc0d1b7a37ab83da870125cad050320332e82",
+ "schema": "defs-flat/1",
+ "source": "devices/vc1-express/registers.toml",
+ "profile": "public",
+ "rows": [
+  {
+   "unit": "vc1_express",
+   "kind": "register",
+   "name": "command",
+   "offset": 442432,
+   "access": "rw",
+   "width": 16,
+   "count": 1,
+   "stride": 2,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "register",
+   "name": "xmapmode",
+   "offset": 442436,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "unknown"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "register",
+   "name": "sram",
+   "offset": 442440,
+   "access": "rw",
+   "width": 16,
+   "count": 1,
+   "stride": 2,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "register",
+   "name": "testreg",
+   "offset": 442444,
+   "access": "r",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "field",
+   "name": "testreg.revision",
+   "hi": 2,
+   "lo": 0,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "register",
+   "name": "addrlo",
+   "offset": 442448,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "register",
+   "name": "addrhi",
+   "offset": 442452,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "register",
+   "name": "sysctl",
+   "offset": 442456,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "field",
+   "name": "sysctl.video",
+   "hi": 7,
+   "lo": 7,
+   "grade": "unknown"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "field",
+   "name": "sysctl.genlock",
+   "hi": 6,
+   "lo": 6,
+   "grade": "inferred"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "field",
+   "name": "sysctl.cursor_display",
+   "hi": 5,
+   "lo": 5,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "field",
+   "name": "sysctl.cursor",
+   "hi": 4,
+   "lo": 4,
+   "grade": "inferred"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "field",
+   "name": "sysctl.did",
+   "hi": 3,
+   "lo": 3,
+   "grade": "inferred"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "field",
+   "name": "sysctl.core",
+   "hi": 2,
+   "lo": 2,
+   "grade": "inferred"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "field",
+   "name": "sysctl.timing",
+   "hi": 1,
+   "lo": 1,
+   "grade": "unknown"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "field",
+   "name": "sysctl.interrupt",
+   "hi": 0,
+   "lo": 0,
+   "grade": "unknown"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "CURSOR_X_THRESHOLD",
+   "value": 32,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_BLACKOUT",
+   "value": 96,
+   "count": 1,
+   "grade": "inferred"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_CURSOR_EP",
+   "value": 32,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_CURSOR_MODE",
+   "value": 38,
+   "count": 1,
+   "grade": "inferred"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_CURSOR_X",
+   "value": 34,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_CURSOR_Y",
+   "value": 36,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_DID_DIV",
+   "value": 68,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_DID_END",
+   "value": 66,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_DID_EP",
+   "value": 64,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_REVISION",
+   "value": 5,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_VID_ENABLE",
+   "value": 20,
+   "count": 1,
+   "grade": "inferred"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "REG_VID_EP",
+   "value": 0,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SRAM_CURSOR_FRAME_TABLE",
+   "value": 2304,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SRAM_CURSOR_GLYPH",
+   "value": 2560,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SRAM_CURSOR_LINE_LIST",
+   "value": 1024,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SRAM_DID_FRAME_TABLE",
+   "value": 2816,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SRAM_DID_LINE_DEFAULT",
+   "value": 5120,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SRAM_FRAME_TABLE",
+   "value": 2048,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SRAM_INTERLACED",
+   "value": 2544,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SRAM_LINE_LIST",
+   "value": 0,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SRAM_SCREENWIDTH",
+   "value": 2546,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SYSCTL_CURSOR_DISPLAY",
+   "value": 32,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SYSCTL_GENSYNC",
+   "value": 64,
+   "count": 1,
+   "grade": "inferred"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SYSCTL_LOAD",
+   "value": 3,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "vc1_express",
+   "kind": "constant",
+   "name": "SYSCTL_VC1_DID",
+   "value": 12,
+   "count": 1,
+   "grade": "established"
+  }
+ ]
+}
