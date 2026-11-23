@@ -134,7 +134,7 @@ names with their `__glExp` prefix dropped; `im:` and `le:` are the immediate-mod
 
 | Offset | Slot | GL functions | Operand words | GE routine |
 |---|---|---|---|---|
-| `+0x42000` | 0 | SwapToPipe4 | 0 | 30 |
+| `+0x42000` | 0 | SwapToPipe4 (see Review: the base address, not a stored token) | 0 | 30 |
 | `+0x4200c` | 3 | SetPixWritemask | 0 | 1607 |
 | `+0x42010` | 4 | MakeCurrent | 1 | 1628 |
 | `+0x42018` | 6 | Flush, MakeCurrent | 1 | 2797 |
@@ -270,7 +270,8 @@ names with their `__glExp` prefix dropped; `im:` and `le:` are the immediate-mod
 | `+0x5a608` | 386 | im:Color4ub, im:Color4ubv, im:Color4b ... | 4 | HQ2 |
 | `+0x5c280` | 160 | Clear | 0 | 25145 |
 | `+0x5e280` | 160 | CZClear | 1 | 25145 |
-| `+0x5e3f8` | 254 | im:Indexi, im:Indexs, im:Indexub ... | 1 | 1351 || `+0x420a4` | 41 | TextureSpan, TextureStippledSpan | n/a | 31234 |
+| `+0x5e3f8` | 254 | im:Indexi, im:Indexs, im:Indexub ... | 1 | 1351 |
+| `+0x420a4` | 41 | TextureSpan, TextureStippledSpan | n/a | 31234 |
 | `+0x42394` | 229 | FreeLightLUT | n/a | 15859 |
 | `+0x42404` | 257 | FreeLightLUT | n/a | 16398 |
 | `+0x42438` | 270 | FreeLightLUT | n/a | 16145 |
@@ -305,7 +306,20 @@ are unknown). Operand layouts are not catalogued here.
   and HQ2 instruction sets, which are unknown.
 - **IRIX X.** Everything above plus the X server's FIFO tokens (about 30, unnamed), VC1 cursor and window-ID handling, XMAP5 modes, and
   pixel DMA through the MC. The tokens' operand layouts are partly readable from `gr2.so` and not yet catalogued.
-- **GL.** The 140 tokens above with their operand layouts for lighting, matrices, primitives and pixel transfer, plus the **GE7 and
+- **GL.** The 131 token addresses above with their operand layouts for lighting, matrices, primitives and pixel transfer, plus the **GE7 and
   RE3 behaviour behind them**: the results the engines produce for transform, clip, lighting, setup and rasterisation. Without a
   decoded instruction set the only route is a behavioural reimplementation of each routine, validated against the GL
   specification; the instruction set and the RE3 parameter format remain the open work (see the two question files).
+
+## Review (2026-11-23)
+
+Independent check against `hq2.bin`, `ge7.bin`, the 4.0.5D PROM, `gr2_tpucode.o` and the n32 `libGLcore.so` (SHA-256 `b6731da1...` confirmed; the survey's binaries list carried a different hash for it and is corrected). Details for the GE7 side are in [devices/ge7](../../devices/ge7/README.md#review-2026-11-23).
+
+- CONFIRMED: slot = bits 10:2; console tokens at 401 to 409 with 403 absent in both images and 409 absent in `hq2.bin`; the six console GE starts; `hq2.bin` attribute reading of slot 99 (empty, resolved through the table) as stated; PROM flow control (`0xbfb801c3` bit 0 polled before the token store); RECTI2D and RECTCOPY operand order and the `1024 - y - height` flip; 4864/width budget; entries 3073 and 3074 written by `0xbfc0f590` as (255,0,0) and (255,255,255); data ports `+0x40000` (PROM) and `+0x4077c` (kernel image); HQ2 loader copies 16 words from `0xfc` to `+0x6a000` and writes records to `+0x60000 + 4 * address`; INIT at `+0x40644`.
+- CONFIRMED: every row of the table reproduces its slot and GE routine from `hq2.bin` (script, 131 rows). Twelve function names confirmed in the GL core.
+- WRONG (fixed): one markdown row had been fused with the last four rows of the n32-only list (`| 1351 || ...`); split.
+- WRONG (fixed): the count "140 tokens" is 131 addresses in the table; text corrected.
+- WRONG (flagged, not removable by this review): the row `+0x42000` (slot 0, "SwapToPipe4", GE 30). The function stores through a register holding `0x42000` only at displacements `+0x1c4` and `+0x77c`, never at displacement 0, and a constant-tracking scan of the whole n32 GL core finds no store to `+0x42000` at all. The row is the base of the `0x42000` window, so it is not an observed token; the same is probably true of `+0x4ec00` (no store found; a tracking miss in the o32-style path is possible). Both are now unverified, and "30 = buffer swap" is a name guess.
+- GRADE (gap, not changed): the same scan finds stores to `+0x40000` (`SlowRenderBitmap`), `+0x420f4` to `+0x42114` (the nine slots 61 to 69, written by `PassMatrix`, evidently the nine elements of a 3 by 3 matrix) and `+0x42218`, none of them in the table. Slots 63 and 64 have no `hq2.bin` word, 65, 66, 68 and 69 have a word that starts no GE routine, 61, 62, 67 start 860, 812, 1565, and `+0x42218` (slot 134) starts 16291. The table is therefore not complete, and "the 131 token addresses above" should not be read as all of them.
+- GRADE: "operand words" counts are inferred, as stated; not rechecked.
+- UNVERIFIED: the X server offsets list and the o32 build (neither object is held); PROM 4.0.5G INIT value by board revision; DRAWCHAR operand semantics beyond the order; the INT2 status-bit mapping (chips repository).

@@ -104,3 +104,10 @@ the NetBSD bank addresses as a driver comment, the RE3-count branch in the diagn
 (inferred, negative search). **Inferred**: the engine count reading, the register widths, how state reaches the engine. **Unknown**:
 the register layout, reset state, the interface between the geometry engines and the raster engine, the framebuffer bank packing.
 The open questions and the routes tried are in [questions/re3.md](../../questions/re3.md).
+
+## Review (2026-11-23)
+
+- CONFIRMED: RE3 count branch in `ide.IP20`: `print_hinv` (`0x8852f434`) stores 2 to the global at `0x860` when board revision is 4 or more and the value at `0x890` is 8, else 1; `0x890` is also written by `Gr2ProbeGEs` (`0x8852ef84`), which supports the engine-count reading (still inferred, as stated).
+- CONFIRMED: negative search over `+0x6c200` to `+0x6c7ff` in the six kernel objects, PROM 4.0.5D and `ide.IP20` (independent displacement and immediate scan; the hits were string and table pointers). PROM 4.0.5G, the o32 GL core and the X server driver were not rescanned; the page's "all" list is therefore broader than what was re-verified. `ide.IP20` does access `+0x6c1c0` to `+0x6c1fc` as the page says.
+- CONFIRMED: NetBSD bank comments and addresses, read from the public header. No [vendor-derived] source is cited.
+- No change to grades. The registers.toml correctly leaves all three banks unknown.
