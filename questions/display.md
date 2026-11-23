@@ -1,0 +1,29 @@
+# Open questions: display back end
+
+## 1. Byte lane of the board configuration ports
+
+`Gr2Probe` and the PROM probe use byte loads at the first byte of each word (the most significant lane). NetBSD reads a word and masks low
+bits. Both work only if the gate array drives all lanes alike. Routes tried: the shipped driver, PROM 4.0.5D, NetBSD. Next: the GIO
+timing in the PROM's graphics diagnostic; physical read only with the owner's approval.
+
+## 2. Z buffer detect polarity below revision 4
+
+The binary treats the Z buffer as absent only when `port1` bits 3:2 are both set; NetBSD requires both clear for present. Next:
+`ide.IP20` graphics configuration display, PROM 4.0.5G.
+
+## 3. Pixel clock chip and protocol
+
+Below revision 4 the part and the meaning of the 17 bytes and the `port0` selector (1, 2, 4) are unknown. At revision 4 and up the 56-bit word is only
+inferred to be the ICS1562 of the Indy XZ video board. Routes tried: Library searches for ICS1562 (no hits), the VB3 schematic (names the part),
+all `StartClock` and `SetMonitor` code. Next: the ICS1562 data sheet, schematic of the Indigo GR2 back end, board photographs.
+
+## 4. Genlock
+
+`Gr2AdjGenlock` and the `adjntsc.bin` and `adjpal.bin` files are not decoded: it reprograms the clock, loads SRAM and sets `sysctl` bit 6.
+Next: read the function in full with the files.
+
+## 5. What revision 4 and up means
+
+The driver treats board revisions 4 and above with a different probe and a serial clock. Whether that is the later Express back end
+that the Indy XZ and Indigo2 boards share is unknown (topology is not transferable). Next: PROM 4.0.5G display path (the 4.0.5D
+PROM has no revision 4 clock table), Indigo2 objects.
