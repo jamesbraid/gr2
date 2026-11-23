@@ -1,0 +1,36 @@
+<?xml version="1.0" ?>
+<!-- generated from devices/ge7/registers.toml by defs-gen - do not edit, change the source -->
+<!-- defs-gen 3 -->
+<!-- input sha256 4b24a0dac5a13b9f43b822999a4bd0e8cfedcb3e360d3db1c332e9bdb57d3ece -->
+<genxml unit="ge7" prefix="GE7" title="GE7 geometry engines: host window and microcode load registers">
+  <doc>Host-visible window of the GE7 geometry engines in the Express graphics slot. Provenance tags in item text: [public] published document or public driver, [binary] shipped IRIX or PROM binary (a software expectation), [vendor-derived] upstream headers (none used here). Routine names, addresses and cross-references are in the unit README.</doc>
+  <struct name="SHARED_RAM" size="4" grade="established" register="yes" offset="0x0" access="rw" count="32767" stride="4" reset="unknown">
+    <doc>Shared data RAM below the ready flag. [binary] The microcode loader copies the constants block into its first words and reads them back; its error text calls it shared RAM. [public] NetBSD's memory map names it shared data RAM. qtest: a word written reads back.</doc>
+  </struct>
+  <struct name="UCODE_READY" size="4" grade="established" register="yes" offset="0x1fffc" access="rw" reset="unknown">
+    <doc>Last word of the shared RAM, used as a flag. [binary] The driver stores 1 after the built-in console microcode loads and 0 when a load fails; the consumer is unread, so the meaning "microcode ready" is inferred. qtest: reads back what was written.</doc>
+  </struct>
+  <struct name="SLOT0_RAM" size="4" grade="inferred" register="yes" offset="0x68000" access="rw" count="248" stride="4" reset="unknown">
+    <doc>Engine 0 storage below the microcode window. [binary] The engine probe takes slot 0 as present and tests only slots 1 to 7, so ordinary storage here is inferred from the other slots. qtest: the first and the last tested offsets read back a written word.</doc>
+  </struct>
+  <struct name="UCODE_D0" size="4" grade="established" register="yes" offset="0x683e0" access="rw" reset="unknown">
+    <doc>Microword column 0, lowest. [binary] The loader writes record bytes 20 to 23 here and reads them back unmasked. One window serving every populated engine (broadcast) is inferred. qtest: a full 32-bit value reads back.</doc>
+  </struct>
+  <struct name="UCODE_D1" size="4" grade="established" register="yes" offset="0x683e4" access="rw" reset="unknown">
+    <doc>Microword column 1. [binary] The loader writes record bytes 16 to 19 here and reads them back unmasked. qtest: a full 32-bit value reads back.</doc>
+  </struct>
+  <struct name="UCODE_D2" size="4" grade="established" register="yes" offset="0x683e8" access="rw" reset="unknown">
+    <doc>Microword column 2. [binary] The loader writes record bytes 12 to 15 here and reads them back unmasked. qtest: a full 32-bit value reads back.</doc>
+  </struct>
+  <struct name="UCODE_D3" size="4" grade="established" register="yes" offset="0x683ec" access="rw" reset="unknown">
+    <doc>Microword column 3. [binary] The loader writes record bytes 8 to 11 here; the verify masks both sides to seven bits, so only seven bits are stored. qtest: writing all ones reads back with the low seven bits set.</doc>
+    <field name="stored" start="0" size="7" type="uint" grade="established"/>
+  </struct>
+  <struct name="REVISION" size="4" grade="established" register="yes" offset="0x683f4" access="rw" reset="unknown">
+    <doc>GE7 revision. [binary] The kernel driver and the PROM probe write zero, read the word back and keep bits 7:5 of the low byte. [public] NetBSD reads another offset in slot 0 and keeps bits 7:4; no shipped binary read touches that offset, so this register is taken as the revision. That the three bits are a revision number is inferred. qtest: after a write of zero, bits 7:5 read as the configured revision.</doc>
+    <field name="rev" start="5" size="3" type="uint" grade="inferred"/>
+  </struct>
+  <struct name="SLOT_RAM" size="4" grade="established" register="yes" offset="0x68400" access="rw" count="1792" stride="4" reset="unknown">
+    <doc>Engine slots 1 to 7, 1 KiB each. [binary] The engine probe writes five words per slot at slot offsets 0x0, 0x7c, 0xfc, 0x17c and 0x1fc and reads them back; each slot that returns all five sets the count to its index plus one. An absent slot's reply (bus error or data), storage beyond the last probed offset, and whether the load window and revision register repeat in these slots are unknown. qtest: slot n returns the five written words for n below the engine count and not above.</doc>
+  </struct>
+</genxml>

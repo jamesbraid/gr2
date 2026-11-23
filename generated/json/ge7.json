@@ -1,0 +1,142 @@
+{
+ "generator": "defs-gen 3",
+ "input_sha256": "4b24a0dac5a13b9f43b822999a4bd0e8cfedcb3e360d3db1c332e9bdb57d3ece",
+ "schema": "defs-flat/1",
+ "source": "devices/ge7/registers.toml",
+ "profile": "public",
+ "rows": [
+  {
+   "unit": "ge7",
+   "kind": "register",
+   "name": "shared_ram",
+   "offset": 0,
+   "access": "rw",
+   "width": 32,
+   "count": 32767,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "ge7",
+   "kind": "register",
+   "name": "ucode_ready",
+   "offset": 131068,
+   "access": "rw",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "ge7",
+   "kind": "register",
+   "name": "slot0_ram",
+   "offset": 425984,
+   "access": "rw",
+   "width": 32,
+   "count": 248,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "inferred"
+  },
+  {
+   "unit": "ge7",
+   "kind": "register",
+   "name": "ucode_d0",
+   "offset": 426976,
+   "access": "rw",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "ge7",
+   "kind": "register",
+   "name": "ucode_d1",
+   "offset": 426980,
+   "access": "rw",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "ge7",
+   "kind": "register",
+   "name": "ucode_d2",
+   "offset": 426984,
+   "access": "rw",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "ge7",
+   "kind": "register",
+   "name": "ucode_d3",
+   "offset": 426988,
+   "access": "rw",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "ge7",
+   "kind": "field",
+   "name": "ucode_d3.stored",
+   "hi": 6,
+   "lo": 0,
+   "grade": "established"
+  },
+  {
+   "unit": "ge7",
+   "kind": "register",
+   "name": "revision",
+   "offset": 426996,
+   "access": "rw",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "ge7",
+   "kind": "field",
+   "name": "revision.rev",
+   "hi": 7,
+   "lo": 5,
+   "grade": "inferred"
+  },
+  {
+   "unit": "ge7",
+   "kind": "register",
+   "name": "slot_ram",
+   "offset": 427008,
+   "access": "rw",
+   "width": 32,
+   "count": 1792,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  }
+ ]
+}
