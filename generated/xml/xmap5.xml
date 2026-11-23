@@ -1,0 +1,52 @@
+<?xml version="1.0" ?>
+<!-- generated from devices/xmap5/registers.toml by defs-gen - do not edit, change the source -->
+<!-- defs-gen 3 -->
+<!-- input sha256 16b6070bb233d1af1da4ef209d70365aa464954f82eda820d7ca338b5819fb36 -->
+<genxml unit="xmap5" prefix="XMAP5" title="XMAP5 multimode colour mapper (five per Express board)">
+  <doc>Per-pixel window-mode and colour-index mapper between the VC1 and the DACs. Five identical chips each handle one pixel in five; software addresses chip 0 to 4 through five 32-byte windows and all five at once through a broadcast window one step after chip 4 (addresses in the README), with the same eight-register layout in each window. Offsets here are within one window. Each register is one byte (the mode port is a word) on a 4-byte stride; a big-endian CPU addresses the first byte of the stride, so the data sits in the most significant lane. Grades: established means read in full in the shipped Indigo driver archive or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver, [vendor-derived] a fact that rests on the upstream headers and never supports an established grade. Nothing was read on a board. Prose in devices/xmap5/README.md.</doc>
+  <struct name="MISC" size="1" grade="inferred" register="yes" offset="0x0" access="w" reset="unknown">
+    <doc>Miscellaneous register file, written through one port after the address pair is set to 0. Init writes 0, 0, 0, 14, 0 in order, so the port auto-increments over five internal registers (inferred from five writes to one address). Meaning of each is [vendor-derived] only: blackout red, green, blue; a four-bit overlay and popup page value; a cursor index. Reads never occur in shipped code.</doc>
+  </struct>
+  <struct name="MODE" size="4" grade="established" register="yes" offset="0x4" access="w" reset="unknown">
+    <doc>Mode table port. The target entry is chosen by addrlo (byte address 4 * display ID, addrhi 0) before each write; init writes entry 0 and the retrace and display-mode paths write one entry per call. Whether the address advances by 4 after a write is not shown (the driver sets it before every write). A qtest can discriminate: write 0x82000000 at address 0 through the broadcast window and read nothing back (no read path); write through the broadcast window and check all five chips were updated.</doc>
+  </struct>
+  <struct name="CLUT" size="1" grade="established" register="yes" offset="0x8" access="w" reset="unknown">
+    <doc>Colour table data port. Entry n is selected by addrhi = (n &gt;&gt; 8) &amp; 0x1f and addrlo = n &amp; 0xff; three byte writes (red, green, blue) store one entry and the address then advances to the next entry (the init clear writes 7936 entries from address 256 without resetting the address). [binary] Writes while the status busy bit is set are avoided by the callers. A qtest can discriminate: set address 4096, write three bytes, set address 4096 again, write three more and check entry 4097 was not touched.</doc>
+  </struct>
+  <struct name="CRC" size="1" grade="unknown" register="yes" offset="0xc" access="rw" reset="unknown">
+    <doc>Named CRC by NetBSD. Never accessed by the Indigo driver or PROM. Unknown.</doc>
+  </struct>
+  <struct name="ADDRLO" size="1" grade="established" register="yes" offset="0x10" access="rw" reset="unknown">
+    <doc>Low address byte for the mode, colour table and misc ports. Readable: the retrace handler reads chip 0's pair and writes it back through the broadcast pair. A write through the broadcast window sets all five chips. [binary]</doc>
+  </struct>
+  <struct name="ADDRHI" size="1" grade="established" register="yes" offset="0x14" access="rw" reset="unknown">
+    <doc>High address byte (five bits used for the colour table). Same rules as addrlo. [binary]</doc>
+  </struct>
+  <struct name="BYTECOUNT" size="1" grade="unknown" register="yes" offset="0x18" access="rw" reset="unknown">
+    <doc>Named byte count by NetBSD. Never accessed by shipped drivers. Unknown.</doc>
+  </struct>
+  <struct name="FIFOSTATUS" size="1" grade="established" register="yes" offset="0x1c" access="r" reset="unknown">
+    <doc>Status of the write FIFO in front of the chip (name from NetBSD [public]). Bit 0 set means busy: callers poll until it clears before mode, colour table and DAC writes (Gr2BlankScreen, Gr2SetGammaRamp, the retrace swap; 10 ms bound in the first). Bit 1 set means room for a burst: _Gr2XMAPInit3 waits up to 10 ms for it to be set before each 256-entry block. An idle FIFO therefore reads bit 1 set and bit 0 clear. [binary] Bit 2 (overflow) is [vendor-derived] only. A qtest can discriminate: read after reset has bit 0 clear and bit 1 set; during a burst of colour writes bit 0 may be observed set.</doc>
+    <field name="overflow" start="2" size="1" type="uint" grade="unknown"/>
+    <field name="room" start="1" size="1" type="uint" grade="established"/>
+    <field name="busy" start="0" size="1" type="uint" grade="established"/>
+  </struct>
+  <struct name="MODE_WORD" size="4" grade="inferred">
+    <doc>Mode table word, one per display ID, written through the mode port at byte address 4 * ID. Bit meaning is inferred: [binary] two points tie it to shipped code (the boot word 0x82000000 selects page 16 which is where the text port's colours live; the shipped X server builds words as page &lt;&lt; 27 | 0x800 | base, forces 0xf00000 when bit 8 is clear, and toggles bit 24 for the second buffer, read from an upstream decompilation not re-checked here); the remaining fields rest on [vendor-derived] notes.</doc>
+    <field name="pix_page" start="27" size="5" type="uint" grade="inferred"/>
+    <field name="pix_mode" start="24" size="3" type="uint" grade="inferred"/>
+    <field name="overlay_enable" start="20" size="4" type="uint" grade="inferred"/>
+    <field name="alt_video" start="18" size="2" type="uint" grade="unknown"/>
+    <field name="pd_mode" start="16" size="2" type="uint" grade="inferred"/>
+    <field name="popup_flags" start="14" size="2" type="uint" grade="unknown"/>
+    <field name="aux_page" start="9" size="5" type="uint" grade="inferred"/>
+    <field name="underlay_enable" start="8" size="1" type="uint" grade="inferred"/>
+    <field name="popup_mode" start="0" size="8" type="uint" grade="unknown"/>
+  </struct>
+  <constant name="BOOT_MODE_WORD_DID0" value="0x82000000" grade="established"/>
+  <constant name="CHIP_COUNT" value="0x5" grade="established"/>
+  <constant name="CLUT_ENTRIES" value="0x2000" grade="established"/>
+  <constant name="MODE_ENTRIES" value="0x20" grade="established"/>
+  <constant name="TEXTPORT_CLUT_BASE" value="0x1000" grade="established"/>
+  <constant name="WINDOW_SIZE" value="0x20" grade="inferred"/>
+</genxml>

@@ -1,0 +1,264 @@
+{
+ "generator": "defs-gen 3",
+ "input_sha256": "16b6070bb233d1af1da4ef209d70365aa464954f82eda820d7ca338b5819fb36",
+ "schema": "defs-flat/1",
+ "source": "devices/xmap5/registers.toml",
+ "profile": "public",
+ "rows": [
+  {
+   "unit": "xmap5",
+   "kind": "register",
+   "name": "misc",
+   "offset": 0,
+   "access": "w",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "inferred"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "register",
+   "name": "mode",
+   "offset": 4,
+   "access": "w",
+   "width": 32,
+   "count": 1,
+   "stride": 4,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "register",
+   "name": "clut",
+   "offset": 8,
+   "access": "w",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "register",
+   "name": "crc",
+   "offset": 12,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "unknown"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "register",
+   "name": "addrlo",
+   "offset": 16,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "register",
+   "name": "addrhi",
+   "offset": 20,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "register",
+   "name": "bytecount",
+   "offset": 24,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "unknown"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "register",
+   "name": "fifostatus",
+   "offset": 28,
+   "access": "r",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "fifostatus.overflow",
+   "hi": 2,
+   "lo": 2,
+   "grade": "unknown"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "fifostatus.room",
+   "hi": 1,
+   "lo": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "fifostatus.busy",
+   "hi": 0,
+   "lo": 0,
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "word",
+   "name": "MODE_WORD",
+   "width": 32,
+   "grade": "inferred"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "MODE_WORD.pix_page",
+   "hi": 31,
+   "lo": 27,
+   "grade": "inferred"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "MODE_WORD.pix_mode",
+   "hi": 26,
+   "lo": 24,
+   "grade": "inferred"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "MODE_WORD.overlay_enable",
+   "hi": 23,
+   "lo": 20,
+   "grade": "inferred"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "MODE_WORD.alt_video",
+   "hi": 19,
+   "lo": 18,
+   "grade": "unknown"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "MODE_WORD.pd_mode",
+   "hi": 17,
+   "lo": 16,
+   "grade": "inferred"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "MODE_WORD.popup_flags",
+   "hi": 15,
+   "lo": 14,
+   "grade": "unknown"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "MODE_WORD.aux_page",
+   "hi": 13,
+   "lo": 9,
+   "grade": "inferred"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "MODE_WORD.underlay_enable",
+   "hi": 8,
+   "lo": 8,
+   "grade": "inferred"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "field",
+   "name": "MODE_WORD.popup_mode",
+   "hi": 7,
+   "lo": 0,
+   "grade": "unknown"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "constant",
+   "name": "BOOT_MODE_WORD_DID0",
+   "value": 2181038080,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "constant",
+   "name": "CHIP_COUNT",
+   "value": 5,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "constant",
+   "name": "CLUT_ENTRIES",
+   "value": 8192,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "constant",
+   "name": "MODE_ENTRIES",
+   "value": 32,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "constant",
+   "name": "TEXTPORT_CLUT_BASE",
+   "value": 4096,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "xmap5",
+   "kind": "constant",
+   "name": "WINDOW_SIZE",
+   "value": 32,
+   "count": 1,
+   "grade": "inferred"
+  }
+ ]
+}

@@ -1,0 +1,109 @@
+unit = "xmap5"
+prefix = "XMAP5"
+title = "XMAP5 multimode colour mapper (five per Express board)"
+doc = "Per-pixel window-mode and colour-index mapper between the VC1 and the DACs. Five identical chips each handle one pixel in five; software addresses chip 0 to 4 through five 32-byte windows and all five at once through a broadcast window one step after chip 4 (addresses in the README), with the same eight-register layout in each window. Offsets here are within one window. Each register is one byte (the mode port is a word) on a 4-byte stride; a big-endian CPU addresses the first byte of the stride, so the data sits in the most significant lane. Grades: established means read in full in the shipped Indigo driver archive or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver, [vendor-derived] a fact that rests on the upstream headers and never supports an established grade. Nothing was read on a board. Prose in devices/xmap5/README.md."
+from = "Indigo driver archive gr2.a: gr2_init.o _Gr2XMAPInit1 to 3, gr2_retrace.o Gr2RetraceHandler and Gr2SetDisplayMode, gr2_tport.o Gr2TpMapcolor; PROM 070-8116-004 (4.0.5D)"
+public_from = ["NetBSD sgimips grtworeg.h and grtwo.c", "Elan Graphics Technical Report"]
+name_source = "public"
+name_cite = "NetBSD sys/arch/sgimips/gio/grtworeg.h (XMAP5_MISC, _MODE, _CLUT, _CRC, _ADDRLO, _ADRHI, _BYTECOUNT, _FIFOSTATUS)"
+
+[constants]
+CHIP_COUNT = { value = 5, grade = "established", doc = "Five XMAP5 chips per board. [public] Elan Graphics Technical Report 4.4.2 and the NetBSD memory map comment; [binary] the driver addresses only chip 0 and the broadcast window." }
+WINDOW_SIZE = { value = 0x20, grade = "inferred", doc = "Bytes per chip window; chip n sits n windows after chip 0 and the broadcast window one step after chip 4. [public] The NetBSD memory map comment gives one span for the five chips. [binary] consistent: the retrace handler saves chip 0's address from its window and restores it through the broadcast window at the same register offsets, and chip 0's status is read at window offset 0x1c." }
+CLUT_ENTRIES = { value = 8192, grade = "established", doc = "Colour table entries: 13 address bits, high byte masked with 0x1f. [binary] _Gr2XMAPInit3 clears entries 256 to 8191; Gr2TpMapcolor masks the index to the same five high bits. [public] NetBSD masks the same way. 24 bits per entry written as three bytes." }
+MODE_ENTRIES = { value = 32, grade = "established", doc = "Mode table entries, one per display ID. [binary] the retrace handler walks 32 entries and addresses entry n at byte address 4 * n. [public] Elan TR 4.4.1: up to 32 window styles." }
+TEXTPORT_CLUT_BASE = { value = 4096, grade = "established", doc = "CLUT index of the text port's eight colours: 4096 plus the colour number. [binary] Gr2TpMapcolor adds 4096; _Gr2XMAPInit2 loads eight defaults at address 4096, which _Gr2XMAPInit3 then clears (the text port reloads through Gr2TpMapcolor)." }
+BOOT_MODE_WORD_DID0 = { value = 0x82000000, grade = "established", doc = "Mode word written for display ID 0 at init. [binary] _Gr2XMAPInit1 and the PROM. Read with the page field at bits 31:27 it selects CLUT page 16, matching the text port base (inferred reading, see MODE_WORD)." }
+
+[words.MODE_WORD]
+width = 32
+grade = "inferred"
+doc = "Mode table word, one per display ID, written through the mode port at byte address 4 * ID. Bit meaning is inferred: [binary] two points tie it to shipped code (the boot word 0x82000000 selects page 16 which is where the text port's colours live; the shipped X server builds words as page << 27 | 0x800 | base, forces 0xf00000 when bit 8 is clear, and toggles bit 24 for the second buffer, read from an upstream decompilation not re-checked here); the remaining fields rest on [vendor-derived] notes."
+[words.MODE_WORD.fields]
+pix_page = { bits = [31, 27], grade = "inferred", doc = "CLUT page (256 entries each) for colour-index pixels; page 16 is the text port." }
+pix_mode = { bits = [26, 24], grade = "inferred", doc = "Pixel format: 0 and 1 four-bit bank 0 and 1, 2 and 3 eight-bit, 4 and 5 twelve-bit, 6 sixteen, 7 twenty-four; odd values select bank 1 (double buffer). [vendor-derived] except that bit 24 toggles with the buffer ([binary], X server)." }
+overlay_enable = { bits = [23, 20], grade = "inferred", doc = "Overlay plane enables; the X server sets all four (0xf00000) when underlay is off." }
+alt_video = { bits = [19, 18], grade = "unknown", doc = "Alternate video (live video) mode. [vendor-derived] only." }
+pd_mode = { bits = [17, 16], grade = "inferred", doc = "Pixel display mode: colour index, direct RGB, multimode, blackout. [vendor-derived] only." }
+popup_flags = { bits = [15, 14], grade = "unknown", doc = "[vendor-derived] only." }
+aux_page = { bits = [13, 9], grade = "inferred", doc = "Page of the 16-entry auxiliary colour block for overlay and popup planes; the X server always sets 4 (value 0x800)." }
+underlay_enable = { bits = [8, 8], grade = "inferred", doc = "Underlay enable; clear makes the X server force the four overlay enables on." }
+popup_mode = { bits = [7, 0], grade = "unknown", doc = "Popup mode and page. [vendor-derived] only." }
+
+[registers.misc]
+offset = 0x00
+access = "w"
+width = 8
+reset = "unknown"
+grade = "inferred"
+from = "gr2_init.o _Gr2XMAPInit1 (five writes after address 0); PROM 4.0.5D 0xbfc0eafc"
+doc = "Miscellaneous register file, written through one port after the address pair is set to 0. Init writes 0, 0, 0, 14, 0 in order, so the port auto-increments over five internal registers (inferred from five writes to one address). Meaning of each is [vendor-derived] only: blackout red, green, blue; a four-bit overlay and popup page value; a cursor index. Reads never occur in shipped code."
+
+[registers.mode]
+offset = 0x04
+access = "w"
+width = 32
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o _Gr2XMAPInit1 (word store of 0x82000000); gr2_retrace.o Gr2RetraceHandler and Gr2SetDisplayMode (word store after address = 4 * ID)"
+doc = "Mode table port. The target entry is chosen by addrlo (byte address 4 * display ID, addrhi 0) before each write; init writes entry 0 and the retrace and display-mode paths write one entry per call. Whether the address advances by 4 after a write is not shown (the driver sets it before every write). A qtest can discriminate: write 0x82000000 at address 0 through the broadcast window and read nothing back (no read path); write through the broadcast window and check all five chips were updated."
+
+[registers.clut]
+offset = 0x08
+access = "w"
+width = 8
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o _Gr2XMAPInit2 and 3, gr2_tport.o Gr2TpMapcolor; PROM 0xbfc2cce8"
+doc = "Colour table data port. Entry n is selected by addrhi = (n >> 8) & 0x1f and addrlo = n & 0xff; three byte writes (red, green, blue) store one entry and the address then advances to the next entry (the init clear writes 7936 entries from address 256 without resetting the address). [binary] Writes while the status busy bit is set are avoided by the callers. A qtest can discriminate: set address 4096, write three bytes, set address 4096 again, write three more and check entry 4097 was not touched."
+
+[registers.crc]
+offset = 0x0c
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "unknown"
+from = "no shipped code in the driver or PROM touches it; [public] NetBSD names it XMAP5_CRC"
+doc = "Named CRC by NetBSD. Never accessed by the Indigo driver or PROM. Unknown."
+
+[registers.addrlo]
+offset = 0x10
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o _Gr2XMAPInit1 to 3, gr2_retrace.o Gr2RetraceHandler (save from chip 0, restore to the broadcast window); NetBSD places the broadcast copy at 0x6c190, which is chip 4's window, so this layout disagrees"
+doc = "Low address byte for the mode, colour table and misc ports. Readable: the retrace handler reads chip 0's pair and writes it back through the broadcast pair. A write through the broadcast window sets all five chips. [binary]"
+
+[registers.addrhi]
+offset = 0x14
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "established"
+from = "as addrlo"
+doc = "High address byte (five bits used for the colour table). Same rules as addrlo. [binary]"
+
+[registers.bytecount]
+offset = 0x18
+access = "rw"
+width = 8
+reset = "unknown"
+grade = "unknown"
+from = "no shipped code touches it; NetBSD names it XMAP5_BYTECOUNT [public]"
+doc = "Named byte count by NetBSD. Never accessed by shipped drivers. Unknown."
+
+[registers.fifostatus]
+offset = 0x1c
+access = "r"
+width = 8
+ro = 0xff
+reset = "unknown"
+grade = "established"
+from = "gr2_init.o _Gr2XMAPInit3 and Gr2BlankScreen, gr2_retrace.o Gr2RetraceHandler and Gr2SetGammaRamp; only chip 0's copy is ever read"
+doc = "Status of the write FIFO in front of the chip (name from NetBSD [public]). Bit 0 set means busy: callers poll until it clears before mode, colour table and DAC writes (Gr2BlankScreen, Gr2SetGammaRamp, the retrace swap; 10 ms bound in the first). Bit 1 set means room for a burst: _Gr2XMAPInit3 waits up to 10 ms for it to be set before each 256-entry block. An idle FIFO therefore reads bit 1 set and bit 0 clear. [binary] Bit 2 (overflow) is [vendor-derived] only. A qtest can discriminate: read after reset has bit 0 clear and bit 1 set; during a burst of colour writes bit 0 may be observed set."
+
+[registers.fifostatus.fields]
+busy = { bits = [0, 0], grade = "established" }
+room = { bits = [1, 1], grade = "established" }
+overflow = { bits = [2, 2], grade = "unknown" }
