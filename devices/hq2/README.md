@@ -36,7 +36,7 @@ reset-state source has been read, so none is listed per row.
 | `+0x6a058` | `FIFO_EMPTY_TIMEOUT` | write `255` | established value; NetBSD's name |
 | `+0x6a05c` | `FIFO_FULL` | write `40` at init; the FIFO interrupt handler writes the same 40 back when re-arming (`Gr2FIFOPollLowater` `0x158`, handler `0x2a0`) | established value; the field is a fill threshold, inferred from the compares against the status field |
 | `+0x6a060` | `FIFO_EMPTY` | write `1` | established value; NetBSD's name |
-| `+0x6a064` | `GE7_LOAD_UCODE` | write: fifth word of each GE7 microcode record; read back masked with `0x003dffff` | established (`Gr2DownloadGE7`) |
+| `+0x6a064` | `GE7_LOAD_UCODE` | write: fifth word of each GE7 microcode record; read back masked with `0x03dfffff` | established (`Gr2DownloadGE7`) |
 | `+0x6a06c` | `HQ_GEPC` | read once in `_Gr2ProbeChipRev`; the upper 16 bits are kept as a revision byte | established that it is read and shifted; "revision" inferred |
 | `+0x6a070` | `GEPC` | write: GE microstore address (counts up to 0xffff when clearing the store; set to each record's address when loading); written 0 by `Gr2TpSetup` | established |
 | `+0x6a074` | `INTR` | not touched by the IP20 driver | unknown |
@@ -53,8 +53,9 @@ the IP20 driver objects read so far, **unknown**.
 - Slot `n` (0 to 7) is at `+0x68000 + 0x400 * n` (established from the stride and from `_Gr2ProbeGEs`).
 - Probe (`gr2_init.o` `0x50`): slot 0 is taken as present. For each of slots 1 to 7 in turn, the five words `0x1f1f1f1f`,
   `0x2e2e2e2e`, `0x3d3d3d3d`, `0x4c4c4c4c`, `0x5b5b5b5b` are written at slot offsets `+0x0`, `+0x7c`, `+0xfc`, `+0x17c`, `+0x1fc` and
-  read back; the count is the first slot that fails to return all five (the loop stops there), so a slot count is 1 plus
-  the run of responding slots. Established (whole routine read). A qtest can discriminate: a GE slot returns what was written
+  read back. A failing slot does not end the loop: all of slots 1 to 7 are tried, and the count byte is rewritten to the
+  slot's index plus one whenever a slot returns all five. The result is the highest responding slot plus one, which is
+  1 plus the run of responding slots only when the responding slots are contiguous. Established (whole routine read). A qtest can discriminate: a GE slot returns what was written
   at those five offsets and an absent slot does not; whether an absent slot answers with a bus error or with other data is
   **unknown** (the PROM and kernel use plain loads here, with no fault catcher).
 - Microcode load window `+0x683e0`, `+0x683e4`, `+0x683e8`, `+0x683ec` (slot 0, offsets `0x3e0`..`0x3ec`) together with
