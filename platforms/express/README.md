@@ -144,3 +144,23 @@ Order matters: the host window is closed first, then the microcode that sits beh
 
 Boards to reconcile once 1 and 2 are done: revision below 4 versus 4 and up probe branches (two board generations, both
 handled by the IP20 driver), and what the extra bytes of the probe record mean for Elan, XZ and XS.
+
+## Review (2026-11-23)
+
+Independent review of this survey against the shipped objects (`gr2.a` sha256 `c768b3a4...`, every member hash matches
+[references/binaries.md](../../references/binaries.md), re-disassembled with relocations), PROM 4.0.5D, NetBSD `grtwo.c` and
+`grtworeg.h`, and the Elan TR. PROM 4.0.5G was not re-read.
+
+| Claim | Result |
+|---|---|
+| `Gr2Probe`: `badaddr` then `+0x6a07c == 0xdeadbeef`; board revision `~byte(+0x6c000) & 0xf`, zero fails | CONFIRMED (`gr2_init.o` `0x16c`; PROM 4.0.5D `0xbfc0e6f0` and `0xbfc0e720` do the same with plain loads and `lbu`). The rest of the probe record table also matches the code, including the 1024 by 768 case for monitor code 6. |
+| MC reset: clear bit 10 of `0xbfa00004`, 10 microseconds, set | CONFIRMED against the MC page (`grr`, active low, resets to clear). The PROM does the same (`0xbfc03674`, `0xbfc0f5ec`) with a delay argument of 5; the unit of the PROM's delay routine was not checked, so "the same" holds for the sequence, not the 10 microsecond figure. UNVERIFIED for the PROM duration. |
+| `_Gr2ProbeGEs` | WRONG as written, fixed above. Slots 1 to 7 are all tried and the count is the highest responding slot plus one; a failing slot does not stop the loop. Slot stride, slot 0 assumed, the five offsets and the five values are CONFIRMED. The driver's four-way flag branch handles 1, 2, 4, 8 and sets nothing for other counts. |
+| HQ2 init values | CONFIRMED (`_Gr2HQ2RegInit` `0xb70`): NUMGE at `+0x6a044` (count, or count with bit 4 for 8), `+0x6a054` 100, `+0x6a058` 255, `+0x6a05c` 40, `+0x6a060` 1, `+0x6a080` 16. |
+| HQ2 loader | CONFIRMED: magic `0x965e`, 16 words from image offset `0xfc` to `+0x6a000`, records of an address half-word and a word at record offset 4 to `+0x60000 + 4 * address`, terminator `0xffff`, read-back verify. |
+| GE7 loader | CONFIRMED except the `+0x6a064` read-back mask, which is `0x03dfffff`, not `0x003dffff` (WRONG, fixed). Magic `0x966e`, 512 constants to `+0x0`, microstore clear of 64K entries, the register mapping and the `+0x683ec` 7-bit mask match. Flag word `+0x1fffc`: written 0 on a failed download and 1 by `Gr2TpSetup` on success, CONFIRMED. |
+| Interrupt wiring | CONFIRMED: `setgiovector` with line 0 and `Gr2FIFOInterrupt`, line 2 and `gr2_retr_intr`, both slot 2; agrees with the chips interrupt page. The FIFO handler clears bit 0 of `0xbfb801c7` on entry and restores it on exit. |
+| Grades: Elan four GE7 | CONFIRMED, established (published): the TR names four geometry engines in the configuration list of section 1 and in sections 2.2, 4.1 and 4.2. The file is HTML without page numbers, so the section number is the citation. |
+| Grades: XS one, XZ two | GRADE stays inferred. The only source is the parts listing (`GR2-1 ... with 1 GE-7 (XS,XS24)`, `GR2-2 ... with 2 GE-7's (XZ)`), a secondary list of part descriptions, not a manual or a binary. |
+| The four filed disagreements | See [questions](../../questions/README.md): the XMAP5 window is settled and removed; the `+0x6a040` entry is reduced (disjoint bit fields, not a conflict); the byte-lane entry gained the PROM route (the PROM agrees with the kernel); the GE7 revision entry stays open. |
+| Scaffold | `retools` is pinned at `b1e357ba`, the same as newport; retools main is now `b75bedf2` (noted, not bumped). The workflow is identical to newport's; gr4's differs only in leading comments. `retools/tools/defs/ci-check` prints "no decode headers" and passes; `docs-index --check` and `check-links` pass. `AGENTS.md` has no internal hosts or paths (the only matches are the branch name), and techomancer's original text is intact apart from trailing blank lines. |

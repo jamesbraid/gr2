@@ -69,3 +69,17 @@ the IP20 driver objects read so far, **unknown**.
 HQ2 reset values: no source read yet. Candidates: the PROM's graphics diagnostic routine (`0xbfc0e6f0` onward in 4.0.5D), the
 Indigo diagnostic program `ide.IP20`, and the microcode images themselves (the attribute jump table and the first sequencer
 words show what the HQ2 expects at start). Reading plan is in the survey.
+
+## Review (2026-11-23)
+
+Re-read against `gr2_init.o`, `gr2.o` and `gr2_tpucode.o` (hashes match [references/binaries.md](../../references/binaries.md)) and
+PROM 4.0.5D. Results by area are in the [survey's review](../../platforms/express/README.md#review-2026-11-23); the points for
+this page:
+
+- Register init values (`+0x6a044`, `+0x6a054`..`+0x6a060`, `+0x6a080`), the `+0x6a000` jump table, `+0x6a070` and `+0x683e0`..`+0x683ec`
+  accesses, and the probe word: CONFIRMED.
+- GE7 probe: the count is the highest responding slot plus one, not the first failing slot (WRONG, fixed above).
+- `+0x6a064` read-back mask: `0x03dfffff` (WRONG, fixed above).
+- `+0x6a040`: IRIX also tests bits 1 and 0; no IRIX read looks at bits 31:24, so NetBSD's version byte is unconfirmed (see question 1).
+  The `+0x6a06c` upper-half revision remains inferred.
+- A qtest that sets up slots 1 and 3 but not 2 would discriminate the probe-count rule (the count would be 4).
