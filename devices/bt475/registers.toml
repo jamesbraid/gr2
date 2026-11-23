@@ -1,0 +1,18 @@
+unit = "bt475"
+prefix = "BT475"
+title = "Brooktree Bt475 and Bt477 RAMDAC: datasheet port map only, no Express use found"
+doc = "The Bt475 and Bt477 triple RAMDACs are described in the published datasheet held in the repository but no shipped Indigo or Express binary reads or writes one, and none of the Express schematics held names one. This page records only the datasheet's control-input truth table so that a later finding can be graded against it; it is not a statement that any Express board carries the part. Grades: established means stated by the published datasheet as a fact about the part; whether the part is on an Express board is unknown. Prose in devices/bt475/README.md."
+from = "Brooktree Bt475/Bt477 datasheet (docs/Brooktree_Bt475_477.pdf), Table 1"
+public_from = ["Brooktree Bt475/Bt477 datasheet"]
+name_source = "public"
+name_cite = "Brooktree Bt475/Bt477 datasheet"
+
+[constants]
+SEL_ADDR_WRITE = { value = 0, grade = "established", doc = "RS2 RS1 RS0 = 000: address register, RAM write mode. [public] datasheet Table 1." }
+SEL_PALETTE = { value = 1, grade = "established", doc = "001: colour palette RAM data. [public]" }
+SEL_READ_MASK = { value = 2, grade = "established", doc = "010: pixel read mask register. [public]" }
+SEL_ADDR_READ = { value = 3, grade = "established", doc = "011: address register, RAM read mode. [public]" }
+SEL_OVERLAY_WRITE = { value = 4, grade = "established", doc = "100: address register, overlay write mode. [public]" }
+SEL_OVERLAY_DATA = { value = 5, grade = "established", doc = "101: overlay colour data. [public]" }
+SEL_COMMAND = { value = 6, grade = "established", doc = "110: command register. [public]" }
+SEL_OVERLAY_READ = { value = 7, grade = "established", doc = "111: address register, overlay read mode. [public]" }

@@ -1,0 +1,81 @@
+{
+ "generator": "defs-gen 3",
+ "input_sha256": "e092e289cdf7071aaa43ac066a8157c9ebaf1861cc18de50147bf970a5c6e882",
+ "schema": "defs-flat/1",
+ "source": "devices/bt475/registers.toml",
+ "profile": "public",
+ "rows": [
+  {
+   "unit": "bt475",
+   "kind": "constant",
+   "name": "SEL_ADDR_READ",
+   "value": 3,
+   "count": 1,
+   "grade": "established",
+   "from": "Brooktree Bt475/Bt477 datasheet (docs/Brooktree_Bt475_477.pdf), Table 1"
+  },
+  {
+   "unit": "bt475",
+   "kind": "constant",
+   "name": "SEL_ADDR_WRITE",
+   "value": 0,
+   "count": 1,
+   "grade": "established",
+   "from": "Brooktree Bt475/Bt477 datasheet (docs/Brooktree_Bt475_477.pdf), Table 1"
+  },
+  {
+   "unit": "bt475",
+   "kind": "constant",
+   "name": "SEL_COMMAND",
+   "value": 6,
+   "count": 1,
+   "grade": "established",
+   "from": "Brooktree Bt475/Bt477 datasheet (docs/Brooktree_Bt475_477.pdf), Table 1"
+  },
+  {
+   "unit": "bt475",
+   "kind": "constant",
+   "name": "SEL_OVERLAY_DATA",
+   "value": 5,
+   "count": 1,
+   "grade": "established",
+   "from": "Brooktree Bt475/Bt477 datasheet (docs/Brooktree_Bt475_477.pdf), Table 1"
+  },
+  {
+   "unit": "bt475",
+   "kind": "constant",
+   "name": "SEL_OVERLAY_READ",
+   "value": 7,
+   "count": 1,
+   "grade": "established",
+   "from": "Brooktree Bt475/Bt477 datasheet (docs/Brooktree_Bt475_477.pdf), Table 1"
+  },
+  {
+   "unit": "bt475",
+   "kind": "constant",
+   "name": "SEL_OVERLAY_WRITE",
+   "value": 4,
+   "count": 1,
+   "grade": "established",
+   "from": "Brooktree Bt475/Bt477 datasheet (docs/Brooktree_Bt475_477.pdf), Table 1"
+  },
+  {
+   "unit": "bt475",
+   "kind": "constant",
+   "name": "SEL_PALETTE",
+   "value": 1,
+   "count": 1,
+   "grade": "established",
+   "from": "Brooktree Bt475/Bt477 datasheet (docs/Brooktree_Bt475_477.pdf), Table 1"
+  },
+  {
+   "unit": "bt475",
+   "kind": "constant",
+   "name": "SEL_READ_MASK",
+   "value": 2,
+   "count": 1,
+   "grade": "established",
+   "from": "Brooktree Bt475/Bt477 datasheet (docs/Brooktree_Bt475_477.pdf), Table 1"
+  }
+ ]
+}
