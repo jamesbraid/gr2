@@ -1,0 +1,6 @@
+[project]
+name = "gr2"
+
+[checks]
+address_bits = 20
+max_reg_offset = 0xfffff

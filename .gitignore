@@ -17,3 +17,7 @@ __pycache__/
 
 # Proprietary IRIX binaries (see IRIX_FILES.md)
 root/
+
+# Local and tool output
+.cache/
+.re-leak-terms
