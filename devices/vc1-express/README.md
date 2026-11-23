@@ -120,7 +120,7 @@ or interlaced file) then width at `0x9f2`; rebuild the display-ID tables; restor
 Frame table entries, established as bytes and as a shape: a header byte (4 for the 1280 files), then 3-byte records
 (line count, 16-bit line-program address in the first list), ending with `ff ff`. The 60 Hz table decodes as 41 lines at `0x5c`, 3 at `0x0`,
 2 at `0x2f`, 1 at `0x5c`, 34 at `0xbe`, 1 at `0xf1`, eight records of 126 lines at `0xf1`, 15 at `0x185`; the program addresses fall on
-line-program boundaries. **Unestablished**: the line-count total (1105 for 60 Hz, 1101 for 72 Hz) does not match a conventional
+line-program boundaries. **Unestablished**: the line-count total (1105 for 60 Hz; 72 Hz sums to 1101 up to the 15-line record and 1103 with its two trailing one-line records) does not match a conventional
 1066 or 1072 line total, so whether the field is a count, a count minus one or a repeat is unknown, and the line-program word
 encoding (the images are 237 and 200 half-words) is **unknown**. [vendor-derived] `VC1.h` proposes a word layout (duration, sync bits,
 end-of-line flag); no binary evidence confirms it. A QEMU model can skip timing programs: pick width and height from the loaded

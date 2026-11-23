@@ -54,8 +54,8 @@ and `Gr2TpMapcolor` sites), so for a model the broadcast address pair is `+0x6c1
 0 to 7 by setting chip 4's pointer alone and then broadcasting three CLUT bytes per colour; chips 0 to 3 then store at whatever pointer they
 already held. It only works if the PROM left every chip at address 0 (inferred). Do not model `+0x6c190` as a broadcast alias.
 
-A write through the broadcast window updates all five chips (the mode, CLUT, misc and address ports). Established as the intent
-(the driver never writes a single chip). Reads from the broadcast window are never used; chip 0's window is the only one read.
+A write through the broadcast window updates all five chips (the mode, CLUT, misc and address ports). **Inferred** from the window's
+name and the driver's use (the driver never writes a single chip; no binary or public text states the fan-out). Reads from the broadcast window are never used; chip 0's window is the only one read.
 
 ## The address pair and the three data ports
 
@@ -117,7 +117,7 @@ from three kinds of evidence, none of which alone fixes a field:
 
 - [binary] The text port's colours sit at CLUT index 4096 + n, and `0x82000000` has `0b10000` in bits 31:27: 16 pages of 256 entries
   reach 4096. So bits 31:27 select the CLUT page for colour-index pixels (inferred).
-- [binary, from an upstream decompilation of the shipped X server `gr2.so`; not re-checked against the object here] the server builds
+- [unverified: from an upstream decompilation of the shipped X server `gr2.so`, not re-checked against the object; do not cite as [binary]] the server builds
   `page << 27 | 0x800 | base`, ORs `0xf00000` when bit 8 of the word is clear, and toggles `0x01000000` for the second buffer of a
   double-buffered window. So bit 24 selects buffer 0 or 1, bits 23:20 are overlay enables, bit 8 is an underlay enable, `0x800` is
   an auxiliary-colour page of 4 (bits 13:9). Inferred.
@@ -147,3 +147,16 @@ register that reads `0x02`. Broadcast writes fan out to all five chips. For scan
 (b) CLUT three-byte write increments the pointer; (c) status reads `0x02` idle.
 
 Open items: [questions/xmap5.md](../../questions/xmap5.md).
+
+## Review (2026-11-23)
+
+Independent re-read of `gr2_init.o`, `gr2_retrace.o`, `gr2_tport.o` and PROM 4.0.5D (disassembly), plus the public NetBSD `grtworeg.h`.
+
+- CONFIRMED: every XMAP access in the six kernel objects uses `+0x6c110`, `+0x6c114`, `+0x6c11c` (chip 0) or `+0x6c1a0` to `+0x6c1b4` (broadcast); no other offset in `+0x6c100` to `+0x6c1bf` is touched. The broadcast address pair is `+0x6c1b0` and `+0x6c1b4` everywhere; NetBSD's `+0x6c190` and `+0x6c194` are window offsets `+0x10` and `+0x14` of chip 4 (arithmetic checked), so the page's resolution holds.
+- CONFIRMED: `_Gr2XMAPInit1` store sequence (addrlo/addrhi 0, mode word `0x82000000` at `+0x6c1a4`, five misc bytes `0 0 0 14 0` at `+0x6c1a0`); `_Gr2XMAPInit2` (addrhi 16, eight three-byte entries); `_Gr2XMAPInit3` (addrhi 1, status bit 1 wait, 31 blocks of exactly 256 entries, so 7936 entries and no address write between blocks, 10000 microsecond bound).
+- CONFIRMED: mode entry address is `ID << 2` with addrhi 0 (`Gr2SetDisplayMode` `gr2_retrace.o` `0x480`, retrace swap loop); text-port colour `4096 + n` with `addrhi = (index & 0x1f00) >> 8` (`Gr2TpMapcolor`, `gr2_tport.o` `0x8`); status bit 0 polls (`0x130`, `0x458`, `Gr2BlankScreen`, `Gr2SetGammaRamp`) and bit 1 (`_Gr2XMAPInit3`); the PROM's console colours go to indices 3073 and 3074 (`0xbfc0f590`).
+- CONFIRMED: "CLUT 8192 entries of 24 bits": inferred from the 13-bit pointer and the init clear to index 8191; the pointer advancing after the third byte is established from the 31 unaddressed blocks.
+- GRADE (fixed in this review): "broadcast writes update all five chips" was marked established; no binary or public text states the fan-out, so it is inferred. Reworded.
+- GRADE (fixed): the X server decompilation bullet was tagged [binary] while saying it was not re-checked and came from the upstream decompilation. Retagged unverified; the fields it names stay inferred and must not be cited as [binary].
+- UNVERIFIED: the mode-word field meanings other than the boot word (as the page says), the auxiliary colour block at `0x1c00` (vendor-derived only), the PROM 20000 microsecond retrace wait, PROM 4.0.5G.
+- The registers.toml grades match the page; `misc` is correctly inferred and tagged vendor-derived; `fifostatus` established rests on binary reads, with only bit 2 vendor-derived.
