@@ -1,0 +1,196 @@
+{
+ "generator": "defs-gen 3",
+ "input_sha256": "e70d1735c70ebfb40a10bdbfae82173a37248264f8277909d1c208d56f73f0dc",
+ "schema": "defs-flat/1",
+ "source": "devices/bt457/registers.toml",
+ "profile": "public",
+ "rows": [
+  {
+   "unit": "bt457",
+   "kind": "register",
+   "name": "addr",
+   "offset": 0,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "register",
+   "name": "palette",
+   "offset": 4,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "register",
+   "name": "ctrl",
+   "offset": 8,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "register",
+   "name": "overlay",
+   "offset": 12,
+   "access": "rw",
+   "width": 8,
+   "count": 1,
+   "stride": 1,
+   "space": null,
+   "reset": "unknown",
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "word",
+   "name": "COMMAND",
+   "width": 8,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "field",
+   "name": "COMMAND.mux_select",
+   "hi": 7,
+   "lo": 7,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "field",
+   "name": "COMMAND.ram_enable",
+   "hi": 6,
+   "lo": 6,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "field",
+   "name": "COMMAND.blink_rate",
+   "hi": 5,
+   "lo": 4,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "field",
+   "name": "COMMAND.overlay1_blink",
+   "hi": 3,
+   "lo": 3,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "field",
+   "name": "COMMAND.overlay0_blink",
+   "hi": 2,
+   "lo": 2,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "field",
+   "name": "COMMAND.overlay1_display",
+   "hi": 1,
+   "lo": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "field",
+   "name": "COMMAND.overlay0_display",
+   "hi": 0,
+   "lo": 0,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "constant",
+   "name": "ADDR_BLINK_MASK",
+   "value": 5,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "constant",
+   "name": "ADDR_COMMAND",
+   "value": 6,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "constant",
+   "name": "ADDR_READ_MASK",
+   "value": 4,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "constant",
+   "name": "ADDR_TEST",
+   "value": 7,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "constant",
+   "name": "INIT_COMMAND",
+   "value": 193,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "constant",
+   "name": "INIT_READ_MASK",
+   "value": 0,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "constant",
+   "name": "OVERLAY_ENTRIES",
+   "value": 4,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "constant",
+   "name": "PALETTE_ENTRIES",
+   "value": 256,
+   "count": 1,
+   "grade": "established"
+  },
+  {
+   "unit": "bt457",
+   "kind": "constant",
+   "name": "UNBLANK_READ_MASK",
+   "value": 255,
+   "count": 1,
+   "grade": "established"
+  }
+ ]
+}

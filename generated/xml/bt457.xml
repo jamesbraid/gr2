@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<!-- generated from devices/bt457/registers.toml by defs-gen - do not edit, change the source -->
+<!-- defs-gen 3 -->
+<!-- input sha256 e70d1735c70ebfb40a10bdbfae82173a37248264f8277909d1c208d56f73f0dc -->
+<genxml unit="bt457" prefix="BT457" title="Brooktree Bt457 RAMDAC as wired on the Express board (three chips, one per colour)">
+  <doc>Three single-colour 5:1 multiplexed RAMDACs behind the five XMAP5 chips: red, green and blue, each with its own four-port window. Offsets are within one chip's window; the red, green and blue windows are 0x20 bytes apart (addresses in the README). Each port is one byte at the first byte of a 4-byte stride, so a big-endian CPU addresses the most significant lane. The port numbers follow the datasheet's C1 and C0 inputs: the stride bit 2 is C0 and bit 3 is C1. Grades: established means stated by the published Bt457/Bt458 datasheet or read in full in the shipped Indigo driver or PROM; inferred means a reasoned reading; unknown means nothing settles it. [public] marks the datasheet, [binary] a shipped binary. The datasheet says the command, read-mask, blink-mask and test registers are not initialised at power-up; this page gives no reset values. Nothing was read on a board. Prose in devices/bt457/README.md.</doc>
+  <struct name="ADDR" size="1" grade="established" register="yes" offset="0x0" access="rw" reset="unknown">
+    <doc>Address register. Written before every register or palette access; after a palette or overlay access it advances (palette wraps to 0 after 255, overlay goes to 4 after overlay 3, control registers do not advance it). [public] [binary] A qtest can discriminate: write 255 to addr, write two bytes to palette, check the address wrapped to 0 then 1.</doc>
+  </struct>
+  <struct name="PALETTE" size="1" grade="established" register="yes" offset="0x4" access="rw" reset="unknown">
+    <doc>Colour palette RAM data. The three chips are addressed separately, so the board uses the datasheet's normal mode: one byte write stores one colour component of the addressed entry and the address advances. [public] [binary]</doc>
+  </struct>
+  <struct name="CTRL" size="1" grade="established" register="yes" offset="0x8" access="rw" reset="unknown">
+    <doc>Control register data: the register picked by addr (read mask, blink mask, command, test) is read or written here and addr does not advance. [public] [binary] Gr2BlankScreen writes the read mask this way, ctrl 0 to blank and 255 to unblank, after addr 4, in all three chips.</doc>
+  </struct>
+  <struct name="OVERLAY" size="1" grade="established" register="yes" offset="0xc" access="rw" reset="unknown">
+    <doc>Overlay colour data, entries 0 to 3 selected by addr. Init writes four bytes 0 to 3 after setting addr to 0. [public] [binary]</doc>
+  </struct>
+  <struct name="COMMAND" size="1" grade="established">
+    <doc>Command register fields, from the datasheet. The board writes 0xc1.</doc>
+    <field name="mux_select" start="7" size="1" type="uint" grade="established"/>
+    <field name="ram_enable" start="6" size="1" type="uint" grade="established"/>
+    <field name="blink_rate" start="4" size="2" type="uint" grade="established"/>
+    <field name="overlay1_blink" start="3" size="1" type="uint" grade="established"/>
+    <field name="overlay0_blink" start="2" size="1" type="uint" grade="established"/>
+    <field name="overlay1_display" start="1" size="1" type="uint" grade="established"/>
+    <field name="overlay0_display" start="0" size="1" type="uint" grade="established"/>
+  </struct>
+  <constant name="ADDR_BLINK_MASK" value="0x5" grade="established"/>
+  <constant name="ADDR_COMMAND" value="0x6" grade="established"/>
+  <constant name="ADDR_READ_MASK" value="0x4" grade="established"/>
+  <constant name="ADDR_TEST" value="0x7" grade="established"/>
+  <constant name="INIT_COMMAND" value="0xc1" grade="established"/>
+  <constant name="INIT_READ_MASK" value="0x0" grade="established"/>
+  <constant name="OVERLAY_ENTRIES" value="0x4" grade="established"/>
+  <constant name="PALETTE_ENTRIES" value="0x100" grade="established"/>
+  <constant name="UNBLANK_READ_MASK" value="0xff" grade="established"/>
+</genxml>
