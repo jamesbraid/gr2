@@ -86,7 +86,7 @@ depth and stencil) is a token to a geometry-engine routine, which holds it and s
 the range 0 to 0xff and, by count, fit the host window above, but how an address maps to a bank at `+0x6c200`, `+0x6c280` or `+0x6c600`
 is **unknown**. The console microcode in the 4.0.5D PROM writes: `0x00` and `0x08` at the start of every drawing primitive, `0x20` to
 `0x25`, `0x5e`, `0x5f` (written just before each routine's final stall), `0x67`, `0x6f`, and (INIT only) `0x46` to `0x49`, `0x4c` to
-`0x4f`, `0x52` to `0x55`, `0x60` to `0x6e`, `0x72` to `0x74`, `0x7b` to `0x7e`. The diagnostic program's GeFifoTest adds `0x40` to `0x42`
+`0x4f`, `0x52` to `0x55`, `0x60` to `0x6e`, `0x70` to `0x74`, `0x7b` to `0x7e`. The diagnostic program's GeFifoTest adds `0x40` to `0x42`
 for a ten-pixel span. Per-routine order is in [microcode.md](../../platforms/express/microcode.md#the-re3-output-path). Grade: the
 address set is observed in the images (read in full for the routines listed there); the meaning of every address is unknown, and the INIT values are
 constants (`0x40` in three groups of four; `0xa0`; `0xb1` to `0xbd`) whose purpose is unknown.

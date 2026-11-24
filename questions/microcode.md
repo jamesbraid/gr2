@@ -48,7 +48,7 @@ Partly answered (microcode.md, "HQ2 words beyond the console set"): `0x80` words
 type-7 branch tests (`0x0060` is the poll mask); the ops `0x01` to `0x07` with a branch-shaped operand are conditional branches whose
 bits 15:13 select one of eight conditions; bits 9:5 of `0x40`/`0x60` are the slot and bits 4:0 a small number that is not part of it. Open: which
 `0x80` bit is which, which condition each selector and op number tests, the meaning of bits 4:0 and 15:10 of the read words, the `0x20`
-operands other than `0x2000` and `0x0000` (`0x6464` and 18 more), and the effects of `0x10`, `0x22`, `0x81`, `0x90` to `0xd0` (they appear only
+operands other than `0x2000` and `0x0000` (`0x6464` and 16 more), and the effects of `0x10`, `0x22`, `0x81`, `0x90` to `0xd0` (they appear only
 in the diagnostic HQ2 image's self-test sequences and in `hq2.bin` as about 400 words). Routes tried: the ShramTest, GeFifoTest and FloatOps
 walks, operand-field statistics, the sixteen-word selector sweep. Next: the HQ2 register map (devices/hq2) to name status bits 5 and 6, and the
 GL tokens that use the rarer ops (vertex-attribute path in pipeline.md).
