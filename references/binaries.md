@@ -16,7 +16,7 @@ Copied by the reader from their own IRIX 6.5 base media (June 1998 set) into the
 | `usr/gfx/ucode/GR2/vof/60hz.u` | `db48eeccd7e72ceeefe6ab43b72b92ba67c3369ef552d96e805571a0242e67a9` | One of the 2176-byte video timing files (also `30hz`, `48hz`, `50hz`, `72hz`, `ccir50`, `ccir60`, `iris3k`, `ntsc`, `pal`, `presenter`, `presenter1280`). Not read. |
 | `ide.IP20` (the Diagnostics 5.2 program; MIPS-III ECOFF, not stripped) | `744fdebc31843998a3e7d1452873eb8eaf0560c17b8f051da79564ba28fedf14` | The Indigo diagnostic program. Carries four microcode images (a GE7 and an HQ2 diagnostic image, and a GE7 and an HQ2 console pair) and the host side of the known-answer tests (`gr2_FloatOpsTest`, `gr2_GeSeqTest`, `pix_dma` and the other tests named in the microcode page). Its symbols give the test names. Hashed 2026-11-24 from the reader's ignored `root/ide.IP20`; the install path on the media is not recorded. |
 | `usr/gfx/arch/IP12GR2/libGLcore.so` | `db8d0331ff6c657ab3e1dc60279741ff4ab00a6c11235c5d0df494ae26e13487` | GL core, o32 build, for GR2 on the R3000/R4000 Indigo. Not read. |
-| `usr/gfx/arch/IP12GR232/libGLcore.so` | `b6731da1b4422e1ea1e8fbe841af2e05989d4c3022d9c8b8143a53187f67de9a` | GL core, n32 build; the FIFO token addresses in the pipeline page are read from it. |
+| `usr/gfx/arch/IP12GR232/libGLcore.so` | `b6731da1b4422e1ea1e8fbe841af2e05989d4c3022d9c8b8143a53187f67de9a` | GL core, n32 build; the FIFO token addresses in the pipeline page are read from it, and (round 8) `__glExpPassCullFace`, `__glExpPassFrontFace` and `__glExpGetRasterPosData`. |
 | `usr/gfx/arch/IP12GR2*/libGL.so`, `libgl.so` | see media inventory | GL and IrisGL clients. Not read. |
 
 Extracted `gr2.a` members (SHA-256):
