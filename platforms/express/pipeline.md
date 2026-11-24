@@ -286,6 +286,8 @@ from the function names for the reading of `+0x42044` as dither. **Pixels:** rea
 reads the framebuffer through a host window. [binary] `ReadColor` (colour index build). The poll reads `+0x6c040`, which NetBSD names the VC1
 command port: unresolved, see [questions/re3.md](../../questions/re3.md).
 
+The Indy and Indigo2 Express GL core stores the same offsets in the same order: [ip22-slot-comparison.md](ip22-slot-comparison.md).
+
 ## What the X server pushes
 
 The X driver (`gr2.so`) forms its FIFO addresses as `base + 0x40000 + immediate`. Offsets seen in its drawing, window, glyph, image
