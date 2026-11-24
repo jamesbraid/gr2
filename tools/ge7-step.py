@@ -10,8 +10,10 @@
   ge7-step.py run IMG START [--slot N=V,..] [--steps N] [--bus V]
                                                            data-flow run of one engine: RAM0 input slots, the image's constants block,
                                                            branches resolved from the decoded flags; prints RE writes and shared stores
-  ge7-step.py selftest IDE [PROM [GE7 [HQ2 [PROM4.0.5G]]]]              regression: the diagnostic known answers, and with the 4.0.5D PROM the console tokens,
-                                                           with the full ge7.bin the statistics over all words, with the full hq2.bin the routine starts
+  ge7-step.py selftest IDE [PROM [GE7 [HQ2 [PROM4.0.5G [GE7-5.3 [HQ2-5.3 [IDE-IP12 [IDE-5.3 [GR2_TPUCODE.O]]]]]]]]
+                                                           regression: the diagnostic known answers, and with the 4.0.5D PROM the console tokens,
+                                                           with the full ge7.bin the statistics over all words, with the full hq2.bin the routine starts,
+                                                           with the IRIX 5.3 images, the 5.3 R3000 Indigo's and R4000 Indigo's ide and the kernel's console object the second-build checks
 
 Sequencer model (platforms/express/microcode.md): C0[15:0] target or shared-RAM address, C0[21:16] control, C0[25:22] condition.
 `step` and `paths` treat a word with condition 1-8 and a target as a conditional jump (taken only if listed in --take) and do not
@@ -19,7 +21,7 @@ model data. Condition 10 with no target stops (the stall). Every other word, wha
 address (a 0x31 or 0x32 word carries an address, not a target). `run` models the data path (class Engine below) and resolves the
 branches from the decoded flags. Prints field values and data results only, never a listing.
 """
-import importlib.util, itertools, math, struct, sys
+import difflib, importlib.util, itertools, math, struct, sys
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location('ucd', Path(__file__).with_name('ucode-decode.py'))
@@ -193,7 +195,7 @@ class Engine:
 
 def ints(s): return {int(x, 0) for x in s.split(',') if x}
 
-def selftest(ide, prom=None, full=None, hq=None, promg=None):
+def selftest(ide, prom=None, full=None, hq=None, promg=None, full53=None, hq53=None, ide12=None, ide53=None, tpucode=None):
     D = ide.read_bytes()
     gb = [i for _, i in find_images(D) if U['H'](i, 0) == 0x966e]
     diagb = max(gb, key=len)
@@ -562,12 +564,94 @@ def selftest(ide, prom=None, full=None, hq=None, promg=None):
                 ok2 &= ([v for _, _, v in e.stores] == [255] and r[0x20] == bias(0) and r[0x21] == bias(255) | 1 and r[0x24] == bias(y - 1) & M32 and r[0x25] == bias(y) and r[0x67] == 0)
         check('PROM 4.0.5G: its two console images equal the 4.0.5D ones; its pix_dma rows (0, y) to (255, y) at y = 0 and 1023 give the count 255 and the same edge registers on the console routine at 245 (y0 - 1 = -1 wraps in the bias)',
               same and ok2)
+    # ---- ninth pass: the IRIX 5.3 images (a second build of both full images) and the 5.3 R3000 Indigo's ide (an older diagnostic image) ----
+    def runs(xs):
+        r = []
+        for x in sorted(xs):
+            if r and x == r[-1][1] + 1: r[-1][1] = x
+            else: r.append([x, x])
+        return [tuple(v) for v in r]
+    def ge_starts(path):                              # HQ2 slot (0..511) -> the GE7 start its word chain reaches (jump words followed, 80 words at most)
+        Mq = {a: w[0] for a, _, w, _ in U['records'](path.read_bytes())[2]}
+        out = {}
+        for s0 in range(512):
+            a, seen = s0, set()
+            while a in Mq and a not in seen and len(seen) < 80:
+                seen.add(a); w = Mq[a]
+                if w >> 16 == 0xd8: out[s0] = w & 0xffff; break
+                a = (w & 0x1fff) if w >> 13 == 3 and not w >> 16 else a + 1
+        return out
+    if full and full53:
+        F5 = load(full53.read_bytes())
+        sameaddr = [a for a in F if a in F5 and F[a] == F5[a]]
+        diffaddr = [a for a in F if a in F5 and F[a] != F5[a]]
+        only65, only53 = [a for a in F if a not in F5], [a for a in F5 if a not in F]
+        check('IRIX 5.3 ge7.bin vs the 6.5 one: %d of %d words equal at the same address, %d differ, %d only in 6.5, %d only in 5.3 (a second build, 608390 against 611432 bytes)'
+              % (len(sameaddr), len(F5), len(diffaddr), len(only65), len(only53)),
+              (len(F), len(F5), len(sameaddr), len(diffaddr), len(only65), len(only53)) == (23429, 23312, 23043, 269, 117, 0))
+        check('5.3 ge7.bin: the differences are in 12 runs of changed words %s and 3 runs of words only in 6.5 %s; every word below 1363 is identical'
+              % (runs(diffaddr), runs(only65)),
+              runs(diffaddr) == [(1363, 1401), (1785, 1785), (1787, 1792), (1857, 1857), (2577, 2577), (2766, 2766), (24072, 24186), (24351, 24351), (24355, 24355), (24360, 24360), (24362, 24362), (24366, 24466)]
+              and runs(only65) == [(1402, 1403), (24187, 24265), (24467, 24502)] and min(diffaddr + only65) == 1363)
+        c53 = {c: [dec(w)['cond'] for w in F5.values()].count(c) for c in range(1, 9)}
+        z53 = {c: sum(1 for w in F5.values() if dec(w)['cond'] == c and not field(w, 51, 8)) for c in range(1, 9)}
+        t53 = [dec(w)['tgt'] for w in F5.values() if 1 <= dec(w)['cond'] <= 8]
+        check('5.3 ge7.bin: the structural claims hold on the second build: BRCOND is non-zero on every cond 3, 4, 7, 8 word (%d, %d, %d, %d), zero on %d of %d of the others, and all %d conditional targets are records'
+              % (c53[3], c53[4], c53[7], c53[8], sum(z53[c] for c in (1, 2, 5, 6)), sum(c53[c] for c in (1, 2, 5, 6)), len(t53)),
+              all(z53[c] == 0 for c in (3, 4, 7, 8)) and (sum(z53[c] for c in (1, 2, 5, 6)), sum(c53[c] for c in (1, 2, 5, 6))) == (605, 658) and all(t in F5 for t in t53))
+        c11 = [w for w in F5.values() if dec(w)['cond'] == 11]
+        w34 = [dec(w)['tgt'] for w in F5.values() if dec(w)['ctl'] == 0x34]
+        u5 = [w for w in F5.values() if dec(w)['ctl'] == 0x3f and dec(w)['tgt'] and not dec(w)['imm']]
+        check('5.3 ge7.bin: %d of %d cond 11 words write RE3 0x5f; the %d control 0x3f words ALUA does not read all have MPYA = 4; the %d control 0x34 fields are the same one-hot codes'
+              % (sum(dec(w)['re'] == 0x5f for w in c11), len(c11), len(u5), len(w34)),
+              (len(c11), sum(dec(w)['re'] == 0x5f for w in c11)) == (14, 13) and len(u5) == 547 and all(field(w, 59, 3) == 4 for w in u5)
+              and sorted(set(w34)) == [2, 4, 8, 16] and len(w34) == 81)
+        # Conds 4 and 8 and the negative-case lines (0x63, 0x6b, 0x68, 0x69) need a routine whose outcome the host checks: the second build adds no new site.
+        sites = lambda M: {ln: sum(1 for w in M.values() if 1 <= dec(w)['cond'] <= 8 and field(w, 51, 8) == ln) for ln in (0x63, 0x68, 0x69, 0x6b)}
+        c48 = lambda M: sorted({(dec(w)['cond'], field(w, 51, 8)) for w in M.values() if dec(w)['cond'] in (4, 8)})
+        check('0x63, 0x68, 0x69, 0x6b branch sites in both builds: %s and %s, with the same set of (cond, line) pairs for conds 4 and 8: the second build adds no site, so no second answer for them'
+              % ({hex(k): v for k, v in sites(F).items()}, {hex(k): v for k, v in sites(F5).items()}), sites(F) == sites(F5) == {0x63: 33, 0x68: 2, 0x69: 83, 0x6b: 72} and c48(F) == c48(F5))
+        mp = lambda M: sum(1 for w in M.values() if field(w, 59, 3) in (4, 6, 7) and field(w, 43, 2))
+        check('MPYA = 4, 6, 7 with an FMPYOP: %d words in 6.5 and %d in 5.3' % (mp(F), mp(F5)), (mp(F), mp(F5)) == (4787, 4735))
+    if hq and hq53:
+        A, B = ge_starts(hq), ge_starts(hq53)
+        check('5.3 hq2.bin: %d HQ2 slots reach a GE7 start (%d in 6.5); %d start at the same address; the changed ones are slots %s; slots 396 to 398 reach GE7 24072 in 6.5 only'
+              % (len(B), len(A), sum(A.get(s0) == v for s0, v in B.items()), sorted(s0 for s0 in B if s0 in A and A[s0] != B[s0])),
+              (len(A), len(B)) == (367, 364) and sum(A.get(s0) == v for s0, v in B.items()) == 355
+              and sorted(s0 for s0 in B if s0 in A and A[s0] != B[s0]) == [111, 112, 113, 114, 115, 206, 208, 261, 263]
+              and sorted(set(A) - set(B)) == [396, 397, 398] and {A[396], A[397], A[398]} == {24072})
+    if ide12:
+        g12 = max((i for _, i in find_images(ide12.read_bytes()) if U['H'](i, 0) == 0x966e), key=len)
+        d12, C12 = load(g12), constants(g12)
+        ka, kb = sorted(diag), sorted(d12)
+        nrm = lambda w: (w[0] & ~0xffff,) + tuple(w[1:])
+        ops = [o for o in difflib.SequenceMatcher(None, [nrm(diag[a]) for a in ka], [nrm(d12[a]) for a in kb], autojunk=False).get_opcodes() if o[0] != 'equal']
+        check('5.3 R3000 Indigo ide: its diagnostic GE7 image has %d records against %d and equals the IP20 one but for %d changed runs starting at %s (branch targets masked)'
+              % (len(d12), len(diag), len(ops), [ka[o[1]] for o in ops]),
+              (len(d12), len(diag), len(ops)) == (2187, 2203, 9) and [ka[o[1]] for o in ops] == [19, 34, 36, 1018, 1161, 1173, 1199, 1204, 1205])
+        def tok12(st, v):
+            e = Engine(d12, C12, {0: v}, bus=v); e.run(st, 60); return {a: x for _, a, x in e.re}
+        r52, r52z, r53, r53z = tok12(1153, 1), tok12(1153, 0), tok12(1185, 2), tok12(1185, 0)
+        check('Z-plane tokens on the older diagnostic image (its slot 52 routine at 1153 and slot 53 routine at 1185 are other words, 38 against 46 in all): the same RE3 writes as on the IP20 image, 0x60, 0x61, 0x65, 0x66 for 1 and 0 and 0x6b = 2 then 0',
+              (r52[0x60], r52[0x61], r52[0x65], r52[0x66]) == (0, 0xffffffff, 0x40, 0) and (r52z[0x60], r52z[0x61], r52z[0x65]) == (0xffffffff, 0, 0) and (r53[0x6b], r53z[0x6b]) == (2, 0))
+    if ide53:
+        imgs = lambda b: sorted(i for _, i in find_images(b))
+        check('5.3 R4000 Indigo ide: its four diagnostic and console microcode images (%d records in all) are the 5.2 ide.IP20 ones, byte for byte'
+              % sum(len(U['records'](i)[2]) for i in imgs(ide53.read_bytes())), len(imgs(D)) == 4 and imgs(ide53.read_bytes()) == imgs(D))
+    if ide12 and tpucode:
+        kern = sorted(i for _, i in find_images(tpucode.read_bytes()))
+        old = [i for _, i in find_images(ide12.read_bytes())]
+        check('kernel gr2_tpucode.o (5.3 IP20): its console pair (%s records) is also the console pair of the 5.3 R3000 ide, and neither is the PROM or the R4000 ide pair'
+              % [len(U['records'](i)[2]) for i in kern],
+              len(kern) == 2 and all(i in old for i in kern) and not any(i in [x for _, x in find_images(D)] for i in kern)
+              and (not prom or not any(i in [x for _, x in find_images(prom.read_bytes())] for i in kern)))
     return ok
 
 def main():
+
     cmd, a = sys.argv[1], sys.argv[2:]
     if cmd == 'selftest':
-        sys.exit(0 if selftest(*[Path(x) for x in a[:5]]) else 1)
+        sys.exit(0 if selftest(*[Path(x) for x in a[:10]]) else 1)
     M = load(open(a[0], 'rb').read())
     opt = lambda k, dflt='': a[a.index(k) + 1] if k in a else dflt
     if cmd == 'run':
