@@ -2,7 +2,7 @@
 
 What a host program can observe and must provide at the graphics slot of an Indigo (IP20, with IP12 noted) so that the shipped PROMs, the IRIX kernel driver, the X server and the GL core run on a model of the board: status bits, flow control, completion flags, context switching, pixel DMA, probe answers per board variant, interrupts and reset. Written for the Indigo QEMU model and for the planned iris GR2 crate. The chip pages are [devices/hq2](../../devices/hq2/README.md) (command engine, register map in `registers.toml`), [devices/ge7](../../devices/ge7/README.md), [devices/re3](../../devices/re3/README.md), [devices/clock](../../devices/clock/README.md) (board configuration ports), [devices/vc1-express](../../devices/vc1-express/README.md), [devices/xmap5](../../devices/xmap5/README.md) and the DACs; the board survey is [README.md](README.md), the token catalogue [pipeline.md](pipeline.md) and the display back end [display.md](display.md). The host side of the buses is in the chips repository: `devices/mc` (graphics DMA engine, reset bit), `devices/int2` and `platforms/ip20/interrupts.md`, `platforms/ip20/gio.md` (slot window, probe).
 
-Provenance tags on every fact: `[public]` published document or public driver (the Elan Graphics Technical Report, NetBSD `grtwo.c`, Usenet postings in the Library), `[binary]` a shipped binary (a software expectation; the routine or message is named), `[vendor-derived]` upstream headers (not used on this page). Grades as in [AGENTS.md](../../AGENTS.md): established (read in full), inferred (reasoned), unknown. Binaries read: `gr2.a` members (`gr2.o`, `gr2_dma.o`, `gr2_init.o`, `gr2_tpucode.o`), the IRIX kernel's graphics-DMA module (`vdma.o`, for the MC calls), PROMs 4.0.5D and 4.0.5G, the diagnostic program `ide.IP20`, the X server driver `gr2.so`, `libGLcore.so` (n32 and o32). Nothing was read on a board.
+Provenance tags on every fact: `[public]` published document or public driver (the Elan Graphics Technical Report, NetBSD `grtwo.c`, Usenet postings in the Library), `[binary]` a shipped binary (a software expectation; the routine or message is named), `[vendor-derived]` upstream headers (not used on this page). Grades as in [AGENTS.md](../../AGENTS.md): established (read in full), inferred (reasoned), unknown. Binaries read: the 5.3 `IP20boot/gr2.a` members for section 10 ([binaries.md](../../references/binaries.md#irix-53-install-disc-round-9)), `gr2.a` members (`gr2.o`, `gr2_dma.o`, `gr2_init.o`, `gr2_tpucode.o`), the IRIX kernel's graphics-DMA module (`vdma.o`, for the MC calls), PROMs 4.0.5D and 4.0.5G, the diagnostic program `ide.IP20`, the X server driver `gr2.so`, `libGLcore.so` (n32 and o32). Nothing was read on a board.
 
 ## 1. HQ2 status word, flow control and finish flags
 
@@ -187,14 +187,16 @@ Not checked. The software mirror's extracted IRIX 6.5 base tree (archive.org "IR
 
 ## 8. Microcode image checksums
 
-Held: the IRIX 6.5 base set only. SHA-256 [binary], from the Library's acquisition manifest and re-computed on the reader's copy:
+Held: the IRIX 6.5 base set and the IRIX 5.3 disc (round 9). SHA-256 [binary], from the Library's acquisition manifest and re-computed on the readers' copies:
 
-| Image | Size (bytes) | SHA-256 |
-|---|---|---|
-| `usr/gfx/ucode/hq2.bin` | 58682 | `0c1fbe18d1b451ee32fb81afa4dd85aa86beeee2c5f7fc8b2e33e79e4375fc94` |
-| `usr/gfx/ucode/ge7.bin` | 611432 | `085d9e923476750673146a517df5847636e7165fb8e7cb4723f7eef07b114729` |
+| Release | Image | Size (bytes) | SHA-256 |
+|---|---|---|---|
+| 6.5 | `usr/gfx/ucode/hq2.bin` | 58682 | `0c1fbe18d1b451ee32fb81afa4dd85aa86beeee2c5f7fc8b2e33e79e4375fc94` |
+| 6.5 | `usr/gfx/ucode/ge7.bin` | 611432 | `085d9e923476750673146a517df5847636e7165fb8e7cb4723f7eef07b114729` |
+| 5.3 | `usr/gfx/ucode/hq2.bin` | 57392 | `94ec5ba56589a66657469ce8f72b2717576196b2210a54160f106c9d5c3fd851` |
+| 5.3 | `usr/gfx/ucode/ge7.bin` | 608390 | `a9703e817e5de24054b07b44d97afa5d3bc4ee44af97433244a7e6a98be4fc15` |
 
-The same two hashes are on a second copy (the mirror's `6.5-base` tree above), whose `IP20boot/gr2.a` hashes differently (`f05d4700...a8a`) from the one this page read, so the two sets agree on the microcode and not on the driver archive. The 5.x, 6.2 and other 6.5 media images were not found: the software mirror's extracted trees and the Library cache hold no other `hq2.bin` or `ge7.bin`, and the unextracted distribution archives were not unpacked. Unknown for those releases; whether the images differ between releases is the question in [questions/ge7.md](../../questions/ge7.md) 3.
+The 6.5 hashes are on a second copy (the mirror's `6.5-base` tree), whose `IP20boot/gr2.a` hashes differently (`f05d4700...a8a`) from the one this page read, so the two sets agree on the microcode and not on the driver archive. The two releases' images are different builds: 5.3 equals 6.5 word for word below GE7 1363 and differs in a handful of routines above it ([microcode.md](microcode.md#the-irix-53-images)); a model that runs the full images should take the pair of one release, not mix them. The 6.2 and other 6.5 media images were not found; unknown for those releases.
 
 ## 9. Model checklist (Elan first)
 
@@ -205,6 +207,61 @@ The same two hashes are on a second copy (the mirror's `6.5-base` tree above), w
 5. DMA: GIO slave at `gedma`, board commands for pixel transfer, completion flag 2 (and flag 1 for the PROM and diagnostic path).
 6. Retrace on GIO line 2, INT2 port byte pulse clears; `status` bit 0 of INT2 status byte `0xbfb801d3`.
 7. Graphics reset: clear all state above.
+
+## 10. Boot sequence: what the kernel writes, in order
+
+The R4000 Indigo kernel's start-up and microcode-load sequence, read from the IRIX 5.3 `IP20boot/gr2.a` (`gr2.o`, `gr2_init.o`, `gr2_tport.o`, `gr2_tpucode.o`; o32 objects) [binary]; each function named below was read in full. The 6.5 objects were compared at `_Gr2HQ2RegInit` (same six stores, same values), `Gr2Start` (same stores) and `gr2_earlyinit` (same order; 6.5 additionally refuses the reuse path when the ready word is 2, which the 5.3 code reaches the same way, because its test is `== 1`). Everything else below that is common to the two is established for 5.3 and **inferred** for 6.5. Offsets are from the graphics window (`0x1f000000`); "register" names are those of [devices/hq2](../../devices/hq2/README.md). The kernel never writes an RE3 or a GE7 register directly: the only GE7 accesses are the probe, the microstore loader and the two program-counter ports; RE3 is written by the microcode alone (the `INIT` token's routine, [devices/re3](../../devices/re3/README.md)). Established [binary] for the absence in these objects.
+
+### A. Per board, at kernel start-up (`gr2_earlyinit`, `gr2.o`)
+
+1. Clear the 60-byte board record; `Gr2Probe` ([section 4](#4-probe-answers-per-indigo-variant)). A failed probe skips the board, and so does a failed `Gr2Init` or `Gr2TpSetup` below.
+2. **Reuse test.** If the shared-RAM word `ucode_ready` (`+0x1fffc`) reads 1 *and* this is the first time `gr2_earlyinit` has run since boot, none of steps 3 and 4 runs: the kernel keeps what the board holds, copies the low byte of the shared word `+0x1ffe0` into record byte `0x32`, and only rewrites the cursor image (`initGr2Cursor`, 256 zero bytes at VC1 SRAM `0xa00`, then VC1 registers `0x20` = `0xa00` and three zero half-words). Otherwise steps 3 and 4 run. Established. Who leaves 1 in the word before the kernel runs is **unknown**: the kernel's own `Gr2TpSetup` writes it, and a search of the 4.0.5G PROM's disassembly for stores near that offset found none (the PROM was not read end to end for this); a model that starts the word at 0 makes the kernel reset and re-initialise the board, which is the safe choice.
+3. `Gr2Reset` (MC `cpuctrl0` bit 10 low, 10 us, high), then `Gr2StartClock` ([devices/clock](../../devices/clock/README.md)), then `Gr2Init`.
+4. `Gr2TpSetup(base, width - 1, height - 1, 0)` (section C), which writes the console images and starts them.
+5. `Gr2ProbeVC1`: VC1 `addrhi` = 0, `addrlo` = 5, then read `testreg` and keep bits 2:0 as the VC1 revision (record byte `0x33`).
+6. Record byte `0x35` = 1 (board live), the board table entry's flag = 1, `dmasync` (`+0x6a050`) = 0. Established.
+
+Later, `gr2_init` (after the interrupt system is up): `Gr2RetraceInit`, `setgiovector` for GIO line 0 (`Gr2FIFOInterrupt`) and line 2 (`gr2_retr_intr`), `GfxRegisterBoard`. [section 5](#5-board-outputs-to-int2) has what the lines mean.
+
+### B. `Gr2Init`: `_Gr2RegisterInit`, then `_Gr2HQ2RegInit`
+
+`_Gr2RegisterInit` in order: pulse INT2 byte `0xbfb801df` bit 3 (clear, set); `_Gr2DacInit` on the three Bt457 windows `+0x6c0a0`, `+0x6c0c0` and `+0x6c0e0`; VC1 `sysctl` = 1, the cursor-mode and interlace and width writes, the timing images for the monitor code, the display-ID tables, VC1 registers `0x14`, `0x40`, `0x42`, `0x44`, `0x60`, `initGr2Cursor`, `sysctl` = `0x0c`; then `_Gr2XMAPInit1`, `2` and `3`. Every step and value is on the chip pages: [vc1-express](../../devices/vc1-express/README.md#initialisation-as-shipped), [xmap5](../../devices/xmap5/README.md#initialisation-as-shipped), [bt457](../../devices/bt457/README.md). Established; the monitor code picks the timing images ([monitor codes](../../devices/vc1-express/README.md#monitor-codes-and-the-kernels-built-in-tables)).
+
+`_Gr2HQ2RegInit` writes six HQ2 words, in this order [binary, established]:
+
+| Register | Offset | Value | Reading |
+|---|---|---|---|
+| `numge` | `+0x6a044` | probe record byte `0x36` (the GE count), with bit 4 also set when the count is 8 | inferred: the number of populated GE7 slots |
+| `refresh` | `+0x6a080` | `0x10` | unknown meaning |
+| `fifo_full_timeout` | `+0x6a054` | `0x64` | inferred |
+| `fifo_empty_timeout` | `+0x6a058` | `0xff` | inferred |
+| `fifo_full` | `+0x6a05c` | `0x28` (40, the FIFO interrupt threshold of [section 1](#what-raises-the-fifo-interrupt-and-how-it-clears)) | established as the kernel's default threshold |
+| `fifo_empty` | `+0x6a060` | `1` | unknown meaning |
+
+A model's reset values for these registers need not match (software writes them before use); it must accept the writes.
+
+### C. Console images (`Gr2TpSetup`, `gr2_tport.o` and `gr2_tpucode.o`)
+
+1. `Gr2DownloadHQ2` on the kernel's built-in HQ2 console image (129 records, named "IP12/GR2 PROM HQ Microcode"). A failure writes 0 to `ucode_ready` and returns -1.
+2. `Gr2DownloadGE7` on the built-in GE7 console image (264 records, "IP12/GR2 PROM GE Microcode"), the same way. Both loaders are on the chip pages: HQ2 first writes the 16-word attribute jump table from image offset `0xfc`, then each record word at `+0x60000 + 4 * address`, and reads every word back; GE7 copies the 512 constants words to shared RAM word 0 and reads them back, clears the microstore, then per record sets `gepc` and writes `+0x683e0`, `+0x683e4`, `+0x683e8`, `+0x683ec` and last `+0x6a064` ([devices/ge7](../../devices/ge7/README.md)). A mismatch makes the loader return failure (and print a line with the verbose flag, which the kernel does not set).
+3. `gepc` (`+0x6a070`) = 0, `unstall` (`+0x6a078`) = 0: the GE runs from address 0.
+4. The `INIT` token (`+0x40644`) with the **board class** as its operand: 0 for board revisions 0 to 3, 1 for 4, 9, 10 and 11, 2 for 5 to 8 (the revision is the inverted low nibble of the byte at `+0x6c000`, [section 4](#4-probe-answers-per-indigo-variant)); then `flushbus` and a 9 us delay. Established for the mapping; the meaning of the class is **inferred** (it selects the back-end variant the microcode drives).
+5. `COLOR` (`+0x40648`) = 0, then the `SBOXFI` token (`+0x40654`) with operands 0, 0 (data port), `width - 1`, `height - 1`: a full-screen box in colour 0. `Gr2TpSetup`'s own stores do not poll the FIFO line; the later console calls (`Gr2TpColor`, `Gr2TpDrawBitmap` and the rest) wait for INT2 status byte `0xbfb801c3` bit 0 to clear before each token.
+6. `Gr2BlankScreen(base, 0)`: wait up to 10000 x 1 us for XMAP5 chip 0's status bit 0 (`+0x6c11c`) to clear, then for each Bt457 window write address byte 4 and data `0xff` (unblank; the blank case writes 0).
+7. `ucode_ready` = 1.
+
+### D. Full images, from user space (`gfxinit`, `Gr2Download`, `Gr2Start`)
+
+`gfxinit` (5.3 `usr/gfx/gfxinit`) maps `hq2.bin`, then `ge7.bin`, from the microcode directory and hands each to the kernel in one request of the form {length, pointer} ([binary], the order is that of the two call sites; the request code `0x6c` is inferred from the register that carries it). `Gr2Download` accepts a length above 0 and below `0x100001` (otherwise 0 to `ucode_ready` and EINVAL), copies the data in (a failed copy gives EFAULT), chooses the loader by the magic half-word (`0x965e` HQ2, `0x966e` GE7; anything else prints the magic and returns an error) and writes 0 to `ucode_ready` when the loader fails. A model must therefore accept a second HQ2 and GE7 load over the running console images with the same register sequence; the kernel does not reset the board between them (inferred: no reset call in `Gr2Download`).
+
+`Gr2Start`, run when the graphics system starts, writes: `setgiovector` for line 2 to `Gr2RetraceInterrupt` (the full retrace handler replaces `gr2_retr_intr`), record byte `0x35` = 0, `gepc` = 0, `unstall` = 0, `fin2` = 0, then the board class (0, 1 or 2 as in C4) to the data port `+0x4077c` with no token before it, and waits for status bit 1 (`finflag2`), up to 1,000,000 us, calling `gr2_error` on a timeout. Then record byte `0x32` = the low byte of the shared word `+0x1ffe0`, `ucode_ready` = 2 and `Gr2BlankScreen(base, 0)`. Established for the stores and the poll. **Inferred:** the full image's first routine consumes the class word and raises finish flag 2, which is what the model has to do to let the kernel go on; the class word's use inside the image was not found, because `ge7.bin`'s boot routine at GE7 0 was not decoded here. What `+0x1ffe0` holds, and who writes it, is unknown (it is read back as the kernel's saved byte `0x32`).
+
+### What a model must provide for this sequence
+
+- Probe answers ([section 4](#4-probe-answers-per-indigo-variant)), the reset ([section 6](#6-what-the-graphics-reset-clears)) and the six HQ2 stores above accepted.
+- Loaders for both image kinds with read-back, the microstore clear, and `gepc` and `unstall` writes.
+- A console `INIT` token that accepts the class operand and a box fill, so the first FIFO words after the download are consumed (the count drains as in [section 1](#what-raises-the-fifo-interrupt-and-how-it-clears)).
+- `ucode_ready` as a plain shared-RAM word (0 at power-up, 1 after the console setup, 2 after `Gr2Start`), and the finish flag 2 raised after the class word at start.
 
 ## Review (2026-11-23)
 
