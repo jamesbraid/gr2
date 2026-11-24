@@ -12,9 +12,9 @@ side of the load registers that live in the HQ2 is [devices/hq2](../hq2/README.m
 Every fact carries one provenance tag. Grades are the repository's: **established** (read in full), **inferred** (reasoned, reasoning
 given), **unknown**.
 
-- `[public]`: published document or public driver (Elan Graphics Technical Report, the GR4 board schematic, NetBSD `grtwo`).
+- `[public]`: published document or public driver (Elan Graphics Technical Report, NetBSD `grtwo`).
 - `[binary]`: shipped binary, cited by object, routine and address. A software expectation, not a hardware measurement.
-- `[vendor-derived]`: rests on the upstream headers. None is used here: `GE7.h` was not consulted for this page.
+- `[vendor-derived]`: rests on the upstream headers or on the GR4 schematic scan (origin unstated). `GE7.h` was not consulted for this page.
 
 Binaries read (SHA-256 in [references/binaries.md](../../references/binaries.md) except where given): kernel objects `gr2_init.o`
 (`_Gr2ProbeGEs` `0x50`, `_Gr2ProbeChipRev` `0x108`, `Gr2DownloadGE7` `0xbc0`) and `gr2_tpucode.o`; PROM 070-8116-004 (4.0.5D, SHA-256
@@ -30,7 +30,7 @@ Binaries read (SHA-256 in [references/binaries.md](../../references/binaries.md)
   user planes (Cohen-Sutherland when needed), perspective divide, polygon decomposition into triangles, and the per-triangle or
   per-line parameters the raster engine iterates (lowest pixel centre, edge slopes, parameter slopes in X and Y). [public] Elan TR 4.2.
 - On the Indy Elan board (GR4, fab 034-8234-002) the published schematic has sheets named "GE7 Ucode & Shared RAM", "2GE7 ASIC (cavity
-  up)" and "2GE7 ASIC (cavity down)": two packages of two engines each, which fits four on the board. [public] GR4 schematic, sheet index
+  up)" and "2GE7 ASIC (cavity down)": two packages of two engines each, which fits four on the board. [vendor-derived] GR4 schematic, sheet index (an OCR'd scan of unstated origin, so not tagged public)
   (the scan text is poor; the page names are legible). The package count is inferred from the names.
 
 ## Engines per variant
