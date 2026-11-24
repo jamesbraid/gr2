@@ -64,7 +64,7 @@ ALU = {3: 'FADD', 4: 'FPASSA', 5: 'FNEGA', 6: 'FPASSB', 7: 'FNEGB', 8: 'FSUB', 9
        20: 'FABSA', 22: 'FABSB', 30: 'FMINABS', 31: 'FMAXABS', 32: 'NOTA', 33: 'AND', 34: 'OR', 35: 'XOR',
        36: 'ANDNOTB', 37: 'ANDNOTA', 38: 'ORNOTB', 39: 'ORNOTA', 40: 'IADD', 41: 'ISUB', 42: 'IRSUB', 44: 'SLRREG',
        45: 'SARREG', 46: 'SLLREG', 48: 'IMIN', 49: 'IMINABS', 50: 'IMAX', 51: 'IMAXABS', 52: 'IPASSA', 53: 'INEGA',
-       54: 'IABSA', 55: 'IPASSB', 56: 'INEGB', 57: 'IABSB'}
+       54: 'IABSA', 55: 'IPASSB', 56: 'INEGB', 57: 'IABSB', 60: 'SLRBR', 61: 'SARBR', 62: 'SLLBR'}
 
 def bits(w):
     return (w[1] & 0x7f) << 96 | w[2] << 64 | w[3] << 32 | w[4]
