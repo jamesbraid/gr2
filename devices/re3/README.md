@@ -40,13 +40,13 @@ and a Z buffer at twice the framebuffer bandwidth; no per-mode fill rate is give
 | 4 window-clipping (CID) planes | each window gets a 4-bit ID; a pixel writes only where the stored ID matches. |
 
 How those planes are packed into the five interleaved memory banks and the address bits that select a bank are **unknown**: the
-Technical Report gives the counts only. The framebuffer and Z RAM boards are the VM2, ZRB1 and RB1 parts; the published GR4 board
-schematic (Indy Elan, fab 034-8234-002) lists three ZRB1 sheets, an RB1 sheet and two Z-buffer sheets for banks A to J. [public]
+Technical Report gives the counts only. The framebuffer and Z RAM boards are the VM2, ZRB1 and RB1 parts; the GR4 board
+schematic (a scan of unstated origin) (Indy Elan, fab 034-8234-002) lists three ZRB1 sheets, an RB1 sheet and two Z-buffer sheets for banks A to J. [vendor-derived]
 GR4 schematic sheet index.
 
 ## How many per board
 
-Most boards carry one RE3. [public] the GR4 schematic has a single sheet named "RE3 ASIC"; Elan TR 4.3 speaks of one raster engine. The
+Most boards carry one RE3. [public] Elan TR 4.3 speaks of one raster engine; [vendor-derived] the GR4 schematic has a single sheet named "RE3 ASIC". The
 diagnostic program from Diagnostics 5.2 keeps a count `GBL_RE3Count` and sets it: for board revision 4 or later, **2 when the
 engine count is 8, else 1**; for board revisions below 4, from bit 5 of the byte it reads at `+0x6c000`. [binary] `ide.IP20`,
 `gr2_boardvers` (`0x8852f118`) and `print_hinv` (`0x8852f470` to `0x8852f4bc`). The value stored for revision 4 and later is

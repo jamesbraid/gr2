@@ -10,7 +10,7 @@ disassembled in full), the six IP20 kernel driver objects, the n32 and o32 GL co
 any access in `+0x6c200` to `+0x6c7ff`: none found (base-pointer forms excluded from the search). The Elan Technical Report sections 1 to 4
 (architecture only). Next, in order: (a) the diagnostic program's raster tests (`gr2_re3dma`, `gr2_shramre3dma`, `gr2_zb`, `gr2_chkpixels`,
 `gr2_chkoffset`, `gr2_bitp` and the pixel check routines), which exercise the engine through FIFO tokens and shared RAM and may name
-the registers a token loads, read in full; (b) the GR4 and VB3 board schematics (published, in `docs/`): the RE3 sheet lists its
+the registers a token loads, read in full; (b) the GR4 and VB3 board schematics in `docs/` (scans of unstated origin, so vendor-derived): the RE3 sheet lists its
 host-side address and data pins, which fixes the bank sizes; (c) the GE7 microcode, once its stores to the raster interface can
 be told apart (see [ge7.md](ge7.md) question 1); (d) Elan TR sections after 4.3.
 
