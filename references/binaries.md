@@ -30,6 +30,6 @@ Extracted `gr2.a` members (SHA-256):
 
 The upstream `root/...` symlinks name an IP12 build of these objects (it also lists a `gr2_corona_i2c.o`). They are not the IP20boot objects above; whether the shared members are byte-identical is not checked.
 
-Local PROM copies used by the microcode passes (hashes of the files read; the 4.0.5D image decodes as the page says, with the HQ2 image at `0x49840` and the GE7 image at `0x4a6f4`): 4.0.5D `e6e1f1ed90d5979ef5829f823c2a4ff65ea24c3273a2b065a8b71abeba97f82f`; a file read as 4.0.5G `ae35c0971b594c9f028f79e2fd97bf45fbf170697b334d2ca8a4f46349d939bd`, whose identity with `070-8116-005` was not checked against the library copy (that path was not in the checkout).
+Local PROM copies used by the microcode passes (hashes of the files read; the 4.0.5D image decodes as the page says, with the HQ2 image at `0x49840` and the GE7 image at `0x4a6f4`): 4.0.5D `e6e1f1ed90d5979ef5829f823c2a4ff65ea24c3273a2b065a8b71abeba97f82f`; 4.0.5G `ae35c0971b594c9f028f79e2fd97bf45fbf170697b334d2ca8a4f46349d939bd`, verified as `070-8116-005`: it is byte-identical to the library copy `library/cache/firmware/indigo/ip20prom-070-8116-005-BE.bin`, and its banner reads 4.0.5G Rev B (HQ2 image at `0x4d294`). The 4.0.5D banner reads 4.0.5D Rev A; its part number `070-8116-004` is not checked against a library copy (none was found).
 
 PROMs that probe the board: Indigo R4000 `070-8116-004` (4.0.5D) and `070-8116-005` (4.0.5G); the probe is described in the chips repository's `platforms/ip20/gio.md`.

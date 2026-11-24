@@ -462,7 +462,7 @@ def selftest(ide, prom=None, full=None, hq=None):
         return [v for w, _, v in e.stores if w == wd], e
     class MultB(Engine): MPYB6 = 'mult'
     # The same routine's RE3 writes put the host rectangle at 0x20 (x0), 0x21 (x1, bit 0 set), 0x24 (y0 - 1) and 0x25 (y1), each biased by 0x800 and shifted left 11; the flag only picks 0x67
-    # (0x180000 read, 0x100000 write; 0x67 is cleared at the end) and the path (1243 or 1236). The host's pixel compare puts the rectangle there, so this is the edge-register role of the rectangle.
+    # (0x180000 for flag 1, a write; 0x100000 for flag 0, a readback; 0x67 is cleared at the end) and the path (1243 or 1236). The host's pixel compare puts the rectangle there, so this is the edge-register role of the rectangle.
     def rect_re(flag, r, cls=Engine):
         e = cls(diag, C); e.ram0 = {8: flag, 1: r[0], 2: r[1], 3: r[2], 4: r[3]}; e.run(1208, 120); d = {}; [d.setdefault(a, v) for _, a, v in e.re]; return d, e.seq
     bias = lambda v: (v + 0x800) << 11
