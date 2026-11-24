@@ -135,7 +135,7 @@ data field instead of twenty.
 
 **Record layout** (length is `((u16 at 0xf8) + 6) rounded down to even`, 26 bytes here): a u16 microstore address; a u16 the loader
 never reads (value 1 in every record of both images); five 32-bit words at record offsets 4, 8, 12, 16 and 20; a u16 the loader never
-reads (varies per record: its role, a checksum or a source line, is unknown). Each 32-bit word is two half-words, high first. The
+reads: a checksum, the sum modulo 65536 of the record's address, its second half-word and every byte of its five data words (holds for every record of both PROM images, `hq2.bin` and `ge7.bin`; established [binary], `tools/ucode-decode.py info`; see [microcode.md](../../platforms/express/microcode.md)). Each 32-bit word is two half-words, high first. The
 words go to `+0x6a064` (offset 4), `+0x683ec` (8), `+0x683e8` (12), `+0x683e4` (16) and `+0x683e0` (20). Established [binary].
 The loader then walks the table a second time, sets the address, and compares all five registers with the table under the masks
 above, counting mismatches.

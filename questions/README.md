@@ -5,7 +5,8 @@ One file per chip or area. Each entry: the question, the routes tried, the next 
 and delete the entry.
 
 - [hq2.md](hq2.md): command engine, finish flags, context switch, probe values.
-- [ge7.md](ge7.md): microword fields, engine distribution, slots.
+- [ge7.md](ge7.md): engine distribution, header words, slots.
+- [microcode.md](microcode.md): GE7 microword data path, RE3 output path, control flow, HQ2 ops.
 - [re3.md](re3.md): raster engine registers, plane packing.
 - [xmap5.md](xmap5.md): mode word, cursor colours, chip counts.
 - [vc1-express.md](vc1-express.md): line programs, retrace enable, monitor codes.

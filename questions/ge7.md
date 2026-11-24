@@ -5,14 +5,9 @@ deleted here. Grades and provenance tags as in [AGENTS.md](../AGENTS.md).
 
 ## 1. What do the microword fields mean?
 
-The loader stores 128 bits per word across five registers and `ge7.bin` holds 23429 words, but no field (op code, operand selects,
-immediate, branch target) is decoded. Routes tried: the loader and its verify masks; the image header and record layout; the
-HQ2 dispatch from each FIFO token to a start address (which names the entry of 233 routines and the size of each); the constants block
-contents; the published Elan TR (architecture only, no instruction set). Next: decode the nine console routines in the PROM image
-(301 words), whose effect is known from the PROM caller (set colour, move, draw a point, box, line, character, copy): the
-operand-select and immediate fields show up as the values that change with the operand, and the page layout (code starts two words into
-each 256-word page) fixes the branch field width. Then extend to the matrix and state routines. The GR4 schematic sheets "GE7 Ucode &
-Shared RAM" and "2GE7 ASIC" are the other route; their text layer is poor and the sheets need a manual read.
+Partly answered: sequencer target, control and condition, and the input slot field are in [microcode.md](../platforms/express/microcode.md).
+The rest (data path, RE3 output) is [microcode.md](microcode.md) items 1 and 2. The GR4 schematic sheets "GE7 Ucode & Shared RAM"
+and "2GE7 ASIC" remain a route (poor text layer, manual read).
 
 ## 2. How does the HQ2 spread primitives over the engines?
 
@@ -21,12 +16,12 @@ The Technical Report says the command engine delegates one primitive to each eng
 reads, none selects an engine). Next: the HQ2 microcode routine reached from the vertex-attribute entries of `hq2.bin`, which holds the
 engine counter if there is one (this is the HQ2 page's decode).
 
-## 3. Header and record fields the loader does not read
+## 3. Header words the loader does not read
 
-`ge7.bin` header words at `0x08` (`0xe0`) and `0x18` (`0xfd`, `0xeb` in the PROM image), the half-word at record offset 2 (always 1) and
-the half-word at the end of each record (varies). Routes tried: comparison of both images; values against counts in the file (the
-`0x18` word matches the number of constants in use). Next: compare against a different `ge7.bin` build (other IRIX releases have
-different microcode builds in the Library) to see which fields track the content.
+`ge7.bin` header words at `0x08` (`0xe0`) and `0x18` (`0xfd`, `0xeb` in the PROM image) and the half-word at record offset 2 (always 1).
+The trailing record half-word is settled: a checksum (see [devices/ge7](../devices/ge7/README.md)). Routes tried: comparison of both images;
+values against counts in the file (the `0x18` word matches the number of constants in use). Next: compare against a different `ge7.bin` build
+(other IRIX releases have different microcode builds in the Library).
 
 ## 4. Slots 1 to 7 and the unprobed offsets of slot 0
 
