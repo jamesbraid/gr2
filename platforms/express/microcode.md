@@ -64,7 +64,7 @@ itself, so the operation of the microcode words is known from the test. All four
 | `gr2_SpfCondTest` (slot 58) | Same shape for the second condition set: it compares 8, 36, 4 and 2 result words against tables in the program and reports "SPF cond. QSAM / TSAM / VPSAM1 / VPSAM2 failed on N value". | Names the four sample strobes (the QSAM, TSAM, VPSAM and LSAM fields). Table contents not read. |
 | `gr2_GeSeqTest` (`0x8852dc50`) | One word to slot 12. Per engine, nine words of its RAM0 window must not be `0xffffffff` and shared word 255 + engine must be 1. | GE7 1354 to 1455: writes RAM0 addresses 0 to 10 and `0x7f`, then runs integer ALU operations each followed by a conditional branch over a failure word (a stall with a RAM0 write). Decoded in [the GeSeqTest section](#geseqtest-as-a-known-answer). |
 | `gr2_GeFifoTest` (`0x8852d878`) | Five words to slot 8 (into engine input slots 1, 2, 5, 6 and 7): x = 100, y = 100/150/200/250 and a colour as three words (red 255,0,0; green; blue; yellow 255,255,0). The program then reads the pixels back with a DMA from the frame buffer and expects ten pixels equal to `r \| g<<8 \| b<<16` under the plane mask of the installed boards. | The only known-answer test of the raster-engine output: the 16-word routine at GE7 989 must produce a ten-pixel span at (100, y) of that colour, so its output writes are RE3 commands for a span. |
-| `gr2_ShramTest`, `Ram12Test`, `SeedRomTest`, `SqRomTest`, `GeBusTest` | One word each to slots 3, 2, 4, 5 and 7. ShramTest: shared word 255 + n must equal n. Ram12Test: six words per engine at shared 255 + 6n on, each non-zero (two for RAM1, two for RAM2, two for the register file). The others compare an expected value with an actual one. | Names the units the microword's RAM1, RAM2 and register fields address. ShramTest is decoded (conditions 14 and 15, below). Ram12 (GE7 395 on) writes RAM1 addresses 0 to 31 (RAM1DEST = 3), then reads each back as ISUB with ALUB = 1 and ORs the differences with ALUA = 7, ALUB = 6, which suggests ALUB = 1 selects the RAM1 output; inferred. The SeedRom, SqRom and GeBus routines are unread. |
+| `gr2_ShramTest`, `Ram12Test`, `SeedRomTest`, `SqRomTest`, `GeBusTest` | One word each to slots 3, 2, 4, 5 and 7. ShramTest: shared word 255 + n must equal n. Ram12Test: six words per engine at shared 255 + 6n on, each non-zero (two for RAM1, two for RAM2, two for the register file). The others compare an expected value with an actual one. | Names the units the microword's RAM1, RAM2 and register fields address. ShramTest is decoded (conditions 14 and 15, below). Ram12 (GE7 395 on) writes RAM1 addresses 0 to 31 (RAM1DEST = 3), then reads each back as ISUB with ALUB = 1 and ORs the differences with ALUA = 7, ALUB = 6, which suggests ALUB = 1 selects the RAM1 output; inferred. The SeedRom, SqRom and GeBus routines are read in [their own section](#seedrom-sqrom-and-gebus). |
 
 Established [binary] for what the host sends and compares (the whole test routines were read for FloatOps, GeSeq and GeFifo). The
 microcode side below is inferred from them.
@@ -149,27 +149,60 @@ is withdrawn. Tool: [tools/ge7-step.py](../../tools/ge7-step.py), whose `selftes
   jump to 0" was wrong in its second half: a `0x31` word does not return to 0 and the stall is the only stop. Every routine in the
   images ends in a condition-10 word; what releases it is the HQ2 loading the next start address (inferred; consistent with HQ2 start
   words being the only entry).
-- **Control `0x31` with a non-zero field** (2144 words of `ge7.bin`, 1819 with a field that is a record address, 1624 below 256, 141 alone 272
-  times) is a *deferred or call-like* use of the field, not an immediate jump. [binary] Inferred. In the PROM image the routines COLOR,
-  PNT2I, RECTI2D and LINE2I each hold one such word with field `0x1d` (29), the first word of the block that writes
-  RE3 registers `0x73`, `0x74`, `0x6a`, `0x6e`, `0x70`, `0x71`, `0x7b`, `0x7c`, `0x52` to `0x55`, `0x46` to `0x49`, `0x4c` to `0x4f`, `0x7d`, `0x7e` (the second half of INIT).
-  The word in PNT2I is word 63, followed by five words that write `0x20`, `0x22`, `0x21`, `0x5f` and `0x40`, which are the draw (the
-  same address family as the GeFifoTest span, below); an immediate jump at 63 would skip them. So the jump is delayed, conditional on
-  something not in C0, or the field is data that happens to equal 29. Discriminator: whether an RE3 write trace of a console
-  point shows the `0x73` ... `0x7e` block after the draw. Unknown.
+- **Control `0x31` with a non-zero field is not a branch target; it is an address, most likely into the shared RAM.** [binary] Inferred.
+  Three independent measurements over `ge7.bin` (`ge7-step.py selftest` with the full image): (1) all 3194 conditional-branch targets
+  are records, but 325 of the 2144 non-zero `0x31` fields are not (239, 245, 225, 251, 252 and others, 20 to 76 times each), and a
+  jump into an empty word could not run; (2) only 22 of the 2144 equal an HQ2 start address (1.0%, the same as the 1.1% of records
+  that are starts), so they are not routine entries either; (3) the console routines pair the values like a writer and its readers.
+  COLOR (word 55, field `0x1d`) consumes the colour through the data bus and the stall at 56 is followed by a store word (57,
+  SHFTSRC = 3); CMOV2I (word 112, field `0x3c`) passes x and y and is followed by two store words (113, 114). PNT2I (63), RECTI2D (84),
+  LINE2I (90) and DRAWCHAR (123) carry `0x1d`, the same value COLOR writes, and DRAWCHAR's first words (115 to 117) carry `0x3c`,
+  `0x3d`, `0x3c`, the values CMOV2I writes. The same pairing holds in `hq2.bin`/`ge7.bin` (COLOR, PNT2I, RECTI2D, LINE2I `0x1d`,
+  CMOV2I `0x3c`, DRAWCHAR `0x3c 0x3d 0x3c ... 0x1d`). Reading: `0x1d` is the current drawing colour and `0x3c`/`0x3d` the current
+  position, kept in a small state area that a `0x31` word addresses. This also settles the PNT2I question: word 63 does not jump, so
+  words 64 to 68 execute, and the old "block at 29" reading was the coincidence that 29 is a record address. What the access is
+  (load or store, which RAM, how the data returns: `ALUA`/`ALUB` = 6 is used a word or two later in PNT2I and DRAWCHAR) is **not**
+  settled: the statistics do not separate it (a SHFTSRC = 3 word within four words follows 20% of non-zero-field `0x31` words against 24% of all
+  words). A delayed branch, a call and a conditional jump are all excluded by (1) and (2); a data-only field read by another unit is
+  what remains. Discriminator for a model: a write trace of the shared RAM during COLOR then PNT2I.
+- **BRCOND is a flag select for conditions 3, 4, 7 and 8 only.** [binary] Established as an encoding fact: of the 2535 words with those conditions
+  in `ge7.bin` none has BRCOND 0 (`ucode-decode.py cond`), while conditions 1, 2, 5 and 6 have BRCOND 0 on 606 of 659. So 1, 2, 5, 6
+  test fixed conditions and 3, 4, 7, 8 test the flag that BRCOND names. The values in use: `0x60` to `0x62`, `0x63`, `0x64`, `0x6b`
+  (ALU flags), `0x68`, `0x69` (multiplier flags, FpuCondTest) and `0x77` (in GeSeqTest, taken by conds 3, 7 and 8 alike). The field has other uses on
+  words that do not branch: the shift count of SLLBR/SLRBR/SARBR (SeedRom words 916, 920, 924: `0x17`, `0x10`, `0x10`; GeFifoTest: `0xb`,
+  `0xf`) and strobe-like values (`0x7a` to `0x7e`, `0x72`, `0x73`) next to FIFOEN writes and the sample strobes.
+- **Polarity (inferred).** Condition 8 is taken when the selected flag is clear: FpuCondTest uses nothing but cond 8 (92 branches) to jump
+  into its three failure writers, a healthy engine takes none, and the host prints "did not set FLAG flag". Within FpuCondTest the first
+  test of each function is built to give a zero result (16 of 16 integer and logic first tests that touch only registers 0, 5 and 7 give zero when register 0 = 0, register 5 = 1
+  and register 7 = all ones, three values that the tests over-determine; selftest; the other first tests use register 6 or 8, whose values
+  are not fixed), and its BRCOND is `0x64` (ALU) or `0x69` (multiplier):
+  `0x64`/`0x69` are the **zero flag**. `0x63`/`0x68` (second test) and `0x6b` (third test, never on the multiplier) are the other two flags, the
+  host's neg and pass in an unresolved order (the failure writers sit at 1900, 1903 and 1906, probably in the order of the host's flag
+  numbers 1, 2, 4, but that is the writers' data flow, which is not decoded). No simple sign predicate on the result fits them: IPASSA of the all-ones register 7 (result -1) and INEGA of it (result +1) are both tested
+  with `0x63`, and IPASSB, INEGB and IABSB of register 5 are tested with `0x6b`. The function number that each test loads
+  before it is the ALU function number plus 27 (45 of 45), which also fixes the multiplier operations: FMPYOP 0 IMPY, 1 FMPY, 2
+  MPASSA, 3 MPASSB (the tests numbered 16 to 19). The GeSeqTest table below adds the other conditions.
 - **Condition 10 with no target is the stall** (`0x02b6....`): the word waits, the next word is the `0x31` word of the pair. Seen as the
   idle pair at address 0 and 1, as the end of every routine, and in the failure words of GeSeqTest. In the drawing routines the stall word
   and the word after it carry FIFOEN writes (READDR `0x5f`, then `0x40`, `0x08` or `0x7e`): a flush write, the wait, a closing write. Inferred.
-- **Conditions 14 then 15 with control `0x17` and SHFTSRC = 3 write the ALU result to the shared RAM; this is the one transfer with a
-  known answer.** [binary] Inferred from a whole small routine: ShramTest (HQ2 slot 3, GE7 388 to 393 in the diagnostic image) is a condition-14 word, an
-  IPASSA word with ALUA = 0 and RESEN, a condition-15 word with control `0x17`, then the stall, and the host
-  (`gr2_ShramTest`, function at `0x8852cff0`) then requires shared word 255 + n to equal the engine number n for each engine n. So the
-  value stored is the ALU result, and one of the operand selects delivers a per-engine number (which select carries it is unknown: ALUA = 0 is the
-  only operand select in the word). FloatOps' tail (1549, 1550) and GeSeqTest's words 1418 and 1421 are the same pair, and the shared
-  results of FloatOps (word 255 + n) come from it. The shared address (255 + n) is not in the microword, so the HQ2 or the engine supplies it.
-- **Conditions 9, 11, 12 and 13 never carry a target** (11 once, with an immediate). Condition 9 words with an ALU add sit in FpuCondTest's
-  failure-record writer (GE7 1900 on) and GeSeqTest's last words (1442, 1444, 1446, 1448) are four condition-9 words each followed by a RAM0 address 3
-  to 6. Reading: they too are transfers with the shared RAM (a store at an incrementing address, as the failure records need). Inferred; unverified.
+- **Conditions 14 and 15 bracket a window of shared-RAM stores; the stores are the SHFTSRC = 3 words inside it.** [binary] Inferred, with
+  five independent known answers. The host reads engine n's results at shared word 255 + stride * n + i, and the stride is the number of
+  SHFTSRC = 3 words between a cond 14 word and the next cond 15 word: ShramTest (389 to 392) 1, FloatOps (1549, 1550) 1, GeSeqTest
+  (1418 to 1421) 1, GeBusTest (974 to 986) 10, Ram12Test (396 to 913) 6, each equal to the host's stride (selftest). So the engines take
+  turns (cond 14 requests the shared RAM, cond 15 releases it) and the block of each engine starts after the blocks of the engines
+  before it; the address is not in the microword. The routine that the host starts for SeedRomTest and SqRomTest has a one-store loop
+  (words 920 to 928 and 936 to 944, cond 7 with BRCOND `0x64` back to its head) with the host's stride 128, so about 128 passes. What is stored is the ALU result of the
+  preceding RESEN word (ShramTest: a per-engine number; GeSeqTest: the value 1 from register 1; GeBusTest: the ten words that the host sent).
+  FpuCondTest does not use the window: the engines run one at a time (the host starts slot 57 once per engine), the count goes to word
+  255 (word 1899, SHFTSRC = 3 after the stall at 1898) and the failure writers store the records at 256 on.
+- **Condition 11 is tied to the raster-engine flush write.** [binary] 13 of the 14 cond 11 words in `ge7.bin` carry FIFOEN with READDR `0x5f`
+  (the other sits between cond 3 words of a test sequence); the word before often carries BRCOND `0x7d` or `0x7e` and the word after
+  often READDR `0x4b`. Reading (inferred): cond 11 is the wait for the output FIFO to drain before the flush; nothing in the
+  diagnostic images runs it except GeSeqTest's word 1436, which is only a placeholder immediate carrier. Conditions 12 and 13 occur twice and
+  four times (GE7 6525 to 6598, one bracketing a cond 3 branch with BRCOND `0xe9`): unknown. Condition 9 (679 words, BRCOND 0 on 630)
+  precedes a store: the next word has a RAM0 destination in 17% of cases against 7% of all words, and in FpuCondTest's
+  three failure writers (1901, 1904, 1907) it is the IADD that the SHFTSRC = 3 store (1902, 1905, 1908) follows; reading: it sets the
+  address of the next store (inferred, unverified).
 - **C0[21] is probably not stored.** The stored microword is 128 bits ([devices/ge7](../../devices/ge7/README.md): 32 + 32 + 32 + 7 + 25), so
   the 25 stored bits of C0 cannot cover the 26 bits (25:0) that the records use, and the read-back mask `0x03dfffff` drops exactly bit 21.
   Inferred. The images set it in 88% of words (control `0x36` and `0x37`; `0x16` and `0x17` are the clear forms). It correlates with SHFTSRC: 2610 of the 2810 words
@@ -182,30 +215,62 @@ The routine is GE7 1354 to 1455 in the diagnostic image (HQ2 slot 12 starts it a
 engine (addresses 0 to 8 of its input RAM window) against `0xffffffff` and the shared word 255 + engine against 1; the messages name
 "Ram0_addr" and "shram_addr". [binary]
 
-Words 1354 to 1367 load the immediate 28 (`0x1c`) and write it to RAM0 addresses 0 to 10 and `0x7f` (RAM0DEST = 3): the RAM0 address test. The
+Words 1354 to 1367 load the immediate `0x1c` and write the ALU result to RAM0 addresses 0 to 10 and `0x7f` (RAM0DEST = 3): the RAM0 address test. The
 rest is a chain of integer ALU operations (IPASSA, INEGA, ISUB of a register with itself) each followed by a branch, laid out in
-blocks: a block of "operate, branch over the failure, failure = a condition-10 word with a RAM0 write to the block's own address, a
-`0x31` word". Seven failure words write RAM0 addresses 0, 1, 1, 7, 8, 9 and `0x7f`, and a corrupted branch would stall in one of them. The
-stepper enumerates every outcome of the thirteen condition 1 to 8 branches between 1368 and the final writes at 1450 that avoids all
-seven failure words (`ge7-step.py paths`): **four outcome sets**, and the branches that are the same in all four are the known answers:
+blocks: "operate, branch over the failure, failure = a condition-10 word with a RAM0 write to the block's own address, a `0x31` word". Seven
+failure words write RAM0 addresses 0, 1, 1, 7, 8, 9 and `0x7f`.
 
-| Word | Condition | BRCOND | Target | Required outcome | Context |
+**The passing path is unique.** The only shared-RAM store in the routine is word 1421 (cond 15, SHFTSRC = 3, after IPASSA of
+register 1 at 1419; the value 1 is register 1), so a run passes only if it reaches 1421 without stopping in a failure word. The earlier
+reading enumerated the paths to the last word (1450) and found four outcome sets; those sets are the four early exits (1394, 1396, 1403,
+1410 jump to the cond 9 tail at 1442 to 1448, which never stores the 1), and every one of them fails the shared-word check. Enumerating
+the paths to 1421 (`ge7-step.py paths`, which now treats a stall as the end of the routine) gives exactly one set, and it continues
+through the cond 3 and cond 8 branches of the tail (1423, 1431) to the last test word 1436 before the routine ends at the stall in 1440:
+
+| Word | Cond | BRCOND | Target | Outcome | Reading |
 |---|---|---|---|---|---|
-| 1369 | 5 | 0 | 1374 (past failure at 1372) | taken | previous ALU result IPASSA of +28 |
-| 1375 | 1 | 0 | 1381 (past failure at 1379) | taken | same |
-| 1383 | 3 | `0x60` | 1438 (into failure at 1440) | not taken | after ISUB of a register with itself (zero result) |
-| 1387 | 3 | `0x62` | 1393 (past failure at 1391) | taken | after a second ISUB x - x |
-| 1400, 1407 | 8, 4 | `0x60` | 1438 | not taken | after ISUB x - x |
+| 1369 | 5 | 0 | 1374 | taken | register 1 passed through IPASSA |
+| 1375 | 1 | 0 | 1381 | taken | register 1 negated (INEGA) |
+| 1383 | 3 | `0x60` | 1438 (failure path) | not taken | after ISUB x - x |
+| 1387 | 3 | `0x62` | 1393 | taken | same |
+| 1394 | 6 | 0 | 1442 (exit) | not taken | |
+| 1396 | 2 | 0 | 1444 (exit) | not taken | |
+| 1400 | 8 | `0x60` | 1438 (failure path) | not taken | |
+| 1403 | 8 | `0x62` | 1446 (exit) | not taken | |
+| 1407 | 4 | `0x60` | 1438 (failure path) | not taken | |
+| 1410 | 4 | `0x62` | 1448 (exit) | not taken | |
+| 1412 | 7 | `0x77` | 1417 | taken | skips the failure at 1415 |
+| 1423 | 3 | `0x77` | 1429 | taken | skips the failure at 1427 |
+| 1431 | 8 | `0x77` | 1436 | taken | skips the failure at 1434 |
 
-So, as inferred readings: **BRCOND is a flag select that works together with the condition**, because one condition number (3) is
-true for `0x62` and false for `0x60` over the same zero result; conditions 1 and 5 with BRCOND 0 are true for a positive non-zero result.
-The remaining branches (1394 condition 6, 1396 condition 2, 1403 condition 8 and 1410 condition 4) differ among the four sets, so their
-polarity is **unknown**; which flag value each needs depends on the flag latency and the INEGA-before-branch order, which the tests
-do not pin down. What writes the shared word's value 1, and what makes a failure word's RAM0 write differ from the load at the start, are also unknown:
-the block has no word that stores to the shared RAM except the condition 9, 14 and 15 words, whose operands are not decoded. The flag names the diagnostic program prints for
-FpuCondTest ("Fpu Cond: %s did not set %s flag": zero, neg and a third called pass, numbered 1, 2 and 4) are the flags these
-conditions test; their mapping to condition numbers is unknown. SpfCondTest's messages name the four sample strobes (QSAM, TSAM,
-VPSAM1, VPSAM2) and loop 8, 36, 4 and 2 values against a table in the program.
+What this fixes [binary, inferred]: all thirteen outcomes (the earlier text fixed four). Conditions 3, 7 and 8 are all taken on `0x77`,
+so `0x77` behaves as a flag that is always set (or a constant true). Conditions 1 and 5 are both taken, after IPASSA and INEGA of the same
+register: consistent with two senses of one sign-like flag, but which is which depends on the sign of register 1 (+1 or -1), which is not
+settled. None of the exits (cond 6, 2, and 8 and 4 with `0x62`) is taken. What stays open is the flag behind `0x60` and `0x62`:
+cond 3 is not taken on `0x60` and taken on `0x62` after x - x, yet cond 8 and cond 4 take neither at 1400, 1403, 1407, 1410 after the
+same kind of operation, so either the polarities of 3, 4 and 8 differ or the flags are sampled at a different pipeline stage
+(the word's own result or the previous word's; the blocks differ in which of IPASSA and INEGA ends them). Conditions 2 and 6 are
+not taken after IPASSA then INEGA, which does not assign a polarity to either.
+SpfCondTest's messages name the four sample strobes (QSAM, TSAM, VPSAM1, VPSAM2) and loop 8, 36, 4 and 2 values against tables in the program.
+
+### SeedRom, SqRom and GeBus
+
+All three are small routines of the diagnostic image started by HQ2 slots 4, 5 and 7; the host compares the stored words
+with tables of its own, so their contents are known answers for the ROMs, not for the sequencer. [binary]
+
+- **SeedRom** (slot 4, GE7 916 to 931): a cond 14 to cond 15 window (919 to 929) around a loop (920 to 928, cond 7 with BRCOND `0x64` back to
+  920) that shifts an immediate with SLLBR and SLRBR, ANDs it with `0x68` and stores one value per pass; the number of passes is not decoded, the host
+  expects 128 words per engine at shared word 255 + 128n. **The expected table is the reciprocal seed:
+  entry i = round(128 * (2 / (1 + i/128) - 1)), clamped to 127** (0x7f, 0x7e, 0x7c, ... 1; matches all 128 words; `ucode-decode.py roms`).
+  So the seed ROM maps the top seven mantissa bits of x to about 1/x in 7 bits.
+- **SqRom** (slot 5, 932 to 947): the same shape (immediate `0x67`); the table is the reciprocal square root seed over the 128 entries addressed
+  by an exponent-parity bit and six mantissa bits: for i < 64, floor(256 * (1/sqrt(2 (1 + i/64)) - 1/2)); for i >= 64,
+  min(127, floor(256 * (1/sqrt(1 + (i-64)/64) - 1/2))). All 128 entries match.
+- **GeBusTest** (slot 7, 948 to 987): HQ2 loads the ten words the host sent into engine slots 0 to 9; the engine copies each through RAM0 into
+  RAM1 and RAM2, reads RAM1 back with ALUA = 1 and stores the ten words in a cond 14 to cond 15 window (stride 10). The host's pattern
+  is ten words (0x12345678, 0x9abcdef0, 0x0fedcba9, 0x87654321 and the alternating-nibble words 0xbb44bb44 down to 0x66996699); a model passes
+  by moving them unchanged. ALUA = 1 (and ALUB = 1 in Ram12Test) therefore selects the RAM1 output; the shift forms and ROM indexing use ALUA = 5 immediates
+  and BRCOND as the shift count.
 
 ### The RE3 output path
 
@@ -267,8 +332,31 @@ New observations from the diagnostic HQ2 image and `hq2.bin` (inferred, from wor
 - **The diagnostic HQ2 image uses an older word form for the data reads**: the flag form is `0x60`/`0x40` with `0x4000 + 32 * n`
   (slot n of the GE7 input RAM, bit 14 set) instead of `32 * n`, and `0x40 0x0fe4` style words in its reset-wait loop. The two forms are
   the same instruction with an extra target-select bit. Inferred.
-- **Not decoded**: the `0x20` operands other than `0x2000` (27 words), the other flag forms of `0x40`/`0x60` and the ops `0x01` to
-  `0x06`, `0x10`, `0x22`, `0x81`, `0x90` to `0xd0`. No test known answer reaches them (the diagnostic image uses 20 op values).
+- **Ops other than 0x00 with a branch-shaped operand are conditional branches.** [binary] Inferred from the structure. The diagnostic image has two
+  runs (HQ2 680 to 710) of sixteen words alternating "op `0x06` or `0x07`, operand `(k << 13) | (address + 2)`" with a `0x40` read of slot
+  `16 + k`: k counts 0 to 7 under op `0x06` and again under `0x07`, so bits 15:13 are a selector (one of eight conditions) and the low 13 bits
+  are the target, which here skips the read that follows. `hq2.bin` has the same runs under op `0x02` (7 words with selectors 7 to 1, targets
+  2 apart) and the other branch ops (`0x01`: 91 words, 26 with `0x2257`; `0x04`: 56 words; `0x05`: 22 words). The poll loops in the
+  diagnostic image show how they are used: "`0x40` read, `0x80 0x1000`, `0x80 0x0020`, op `0x01` operand `0x4353`, `jump` back to the read"
+  (846 to 850): the loop exits through the conditional branch when the condition holds, so op `0x00` types 6 and 7 may be the same selector
+  form with op 0 as the condition code. Which condition each selector and each op number is stays unknown (no host test exercises it).
+- **`0x40`/`0x60` operand fields.** [binary] Inferred from the distributions over `hq2.bin`: bits 9:5 are the slot, bits 4:0 a small number
+  (`0x40`: 0 to 4 on 1021 of 1067 words, 1 on 505; `0x60`: 0 on 1454 of 1462) and bits 15:10 a code (`0x60`: 0 on 788, 9 on 364, 1 on 181;
+  `0x40`: 13 on 318, 4 on 227, 0 on 182). In the long reads of the diagnostic image the slot counts up one word at a time while bits 4:0
+  cycle 1, 2 and 0, or stay 1 or 2 for sixteen slots (HQ2 660 to 711), so bits 4:0 are not part of the slot number. The ops `0x48`, `0x50`
+  and `0x70` (operand `0x3660` each, in the diagnostic image only) are the same read with op bits 3 or 4 set: a read mode. The `0x20` operand
+  `0x0000` (10 words in the diagnostic image, and 11 in `hq2.bin`) sits between the first operand reads and the last one of tokens such as
+  FloatOps (HQ2 slot 59: slots 0 and 1, `0x20 0x0000`, slot 2), so it looks like a "commit what has been read so far" step; `0x6464` and
+  the 18 other `0x20` operands are unknown.
+- **`0x80` operands, with their contexts.** [binary] Inferred. `0x0060` is the poll mask (bits 5 and 6): "read, `0x80 0x0060`, type-7
+  branch back" waits (ShramTest, slot 3), and "`0x80 0x0060`, type-6 branch over `0x20 0x6464`" (GeFifoTest, slot 8, after the five
+  operand reads) skips the `0x6464` word when the condition holds. `0x1000` is the last control write before a start in the diagnostic image
+  (slots 3 and 8) and `0x0800` the one before a start that has read operands (slots 7 and 59), as in the console set; `0x0020` precedes
+  24 of 42 diagnostic starts; `0x0100` pairs with op `0xd0 0x0000` ("`0xd0`, `0x80 0x0100`" repeated, HQ2 1031 to 1042), and `0x0001`, `0x0601`
+  and `0x0641` follow starts. Bit meanings (which of 5 and 6 is empty or busy) are unknown. The remaining ops are in the diagnostic image only
+  and form self-test sequences of the HQ2 itself: `0x81 0x0000` after each read of a run of slots (718 to 723), `0xa0 0x0004`
+  before a read-last (768), `0xc8` and `0xd0` around `0x80 0x0100` (1031 to 1045, 1230 to 1236), `0x10 0x0000` before a call (1291). Their
+  effects are **unknown**.
 
 ## The schematic sheets
 
@@ -292,7 +380,7 @@ a slot (x, y and so on) comes from the PROM caller and is inferred for the GE7 s
 | Slot (token) | HQ2 sequence | PROM caller sends | GE7 routine (PROM image) |
 |---|---|---|---|
 | 401 INIT | control writes (`0x001f`, `0x0800`), one flag-form read, start GE7 at 10. The full image first reads one operand into slot 0. | one word, 0 in 4.0.5D | 10 to 50. Straight-line: loads constants and writes 36 raster-engine addresses (the table in [the RE3 section](#the-re3-output-path)), ending at the stall at 49. The old reading "jumps to 160" took the immediate `0xa0` of word 10 for a target. Established as the RE3 state initialiser by the write list; the PROM sends one zero word that INIT does not read. |
-| 402 COLOR | one read-last into slot 0, one control write (`0x0020`), start GE7 at 51 | the colour value | 51 to 57. Four do-nothing words, a `0x31` word with field `0x1d`, the stall, no raster-engine write and no RAM0 read in the words the stepper reaches. Inferred: the colour is consumed by the `0x31` word's target path, whatever that is; see the `0x31` item in the sequencer section. |
+| 402 COLOR | one read-last into slot 0, one control write (`0x0020`), start GE7 at 51 | the colour value | 51 to 57. Four do-nothing words, a `0x31` word with field `0x1d`, the stall, no raster-engine write and no RAM0 read in the words the stepper reaches. Inferred: the colour is passed on the data bus at the `0x31` word (55) and stored after the stall (57, SHFTSRC = 3) at the state address in its field (`0x1d`); see the `0x31` item in the sequencer section. |
 | 404 PNT2I | reads slots 0 (x) and 1 (y), the control write, start at 58 | x token, y data | 58 to 68. Three immediate loads (`0x7c`, `0x7c`, `0x40`), writes RE3 `00 08 20 22 21 5f` and after the stall `40`; slot 1 is read at word 63, the `0x31` word with field `0x1d`. Inferred: plots one pixel at (x, y). |
 | 405 RECTI2D | reads slots 0 to 3, the control write, start at 69 | x1, y1, x2, y2 | 69 to 88. Reads slots 2, 1 and 3 (RAM0AD) in words 70 to 80, writes RE3 `00 08 20 21 25 24 23 5f` then `40`, one `0x31` word with field `0x1d` at 84. Inferred: draws the filled box. |
 | 406 CMOV2I | reads slots 0 and 1, control write, start at 107 | x, y | 107 to 114. Five do-nothing words, a `0x31` word with field `0x3c` (60) at 112 that reads slot 1, the stall; no raster-engine write. Inferred: stores the current position; slots 0 and 1 are consumed into engine state, which is why no draw follows. |
@@ -309,10 +397,12 @@ operands are taken. Inferred from the word shape only.
 
 - A model that accepts the console tokens and draws their effect directly (the plan in [pipeline.md](pipeline.md)) needs none of this
   beyond the slot counts above: nine tokens, operand counts and their order. These are established.
-- A model that runs `hq2.bin` and `ge7.bin` for GL needs the full HQ2 op set (the `0x80` bits and about 10 unknown op values), the
-  rest of the GE7 data path (register file, RAM1/RAM2, the source and destination selects, the condition semantics) and the
+- A model that runs `hq2.bin` and `ge7.bin` for GL needs the full HQ2 op set (the `0x80` bits, the branch selectors and about 10 unknown op
+  values), the rest of the GE7 data path (register file, RAM1/RAM2, the source and destination selects, the condition semantics) and the
   RE3 command data. The ALU and multiplier operations, the input RAM address, the immediate select and the raster-engine write strobe and
-  register address are now located (graded inferred), and the control flow of conditions 1 to 8 is a conditional jump to the field; with them a
-  first GE7 data-path interpreter can run the FloatOps arms. It cannot yet run the polarity of every condition (GeSeqTest fixes four
-  of the thirteen branches), the `0x31` words with a target, or the shared-RAM transfers (conditions 9 to 15), and it does not know what any
-  RE3 address means.
+  register address are located (graded inferred); the control flow of conditions 1 to 8 is a conditional jump to the field; the known
+  answers now also give the shared-RAM store window (conditions 14 and 15), the zero flag (`0x64`, `0x69`), the unique passing path of
+  GeSeqTest, the ROM tables and the meaning of `0x31` with a field (an address, not a branch). With them a first GE7 data-path interpreter can
+  run the FloatOps arms, GeSeqTest and the ROM tests. It cannot yet run the polarity of every condition (the flags behind BRCOND `0x60`, `0x62`, `0x63`, `0x68`, `0x6b`, `0x77` and
+  the fixed conditions 1, 2, 5, 6 are open), the access a `0x31` word makes, or the cond 9, 12 and 13 words, and it does not know what any RE3
+  address means.
