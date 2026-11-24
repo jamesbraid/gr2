@@ -6,41 +6,36 @@ coordinator merges the index.
 
 ## 1. What do the remaining GE7 fields select?
 
-Located (see microcode.md, the field map): ALU function (FALUOP, C3[18:13]), multiplier operation, RAM0 address (the input slot),
-register selects, raster-engine write enable and address. Not decoded: what ALUA, ALUB, MPYA, MPYB, BUSEL, DSEL, REGFDEST, SHFTSRC,
-MISCSRC and the RAMn DEST fields choose, and how REGA to REGE and REGWR address the register file. Routes tried: the FloatOps arms
-(operand selects are the same in the add and subtract arms, differ in the multiply arms), field statistics. The Ram12, Shram, SeedRom, SqRom and GeBus routines are read (microcode.md): they give ALUA = 1 as the RAM1 output and the ROM tables, not the
-register-file or select roles. Next: step Ram12 (395 to 913) with a data model, read the GR4 sheet 11 and the RE3 sheet 12.
+Mostly answered in [microcode.md](../platforms/express/microcode.md#the-data-path) (operand selects 0, 1, 3, 4, 5, 6, 7, the register file with REGC and REGD on the ALU and REGA and REGB on the multiplier, REGWR with
+REGFDEST = 3, the constants block behind ALUA = 5, the result taps, RAM0DEST = 3 and RAM1DEST = 1 and 3). Still open, with the routes tried:
+
+- **Select 7 and select 4.** Select 7 is the result two words back in Ram12Test's OR chain, but RECTI2D's min/max pairs and DRAWCHAR's loop read it where the RAM0 word named by the previous word fits, and SeedRom and SqRom take the ROM output
+  with it. Select 4 is the previous result in every known answer, but a held result register (RESEN) is not excluded and RECTI2D's `FADD A = 4, B = 6` words would separate them. Routes tried: the engine on RECTI2D with both readings (the
+  coordinates come out as nonsense under the two-words-back reading, as plausible float min/max under the RAM0 reading but with doubled sums under select 4 = previous result). Next: GeBusTest and Ram12Test with select 2, the RAM2 path, and a run of LINE2I and DRAWCHAR once 7 is fixed.
+- **RESEN, REGFDEST 1 and 2, REGE, REGSEL, RAM2DEST, RAM0DEST and RAM1DEST values other than 1 and 3, MISCSRC, DSEL.** No known answer needs them. Routes tried: field statistics (REGFDEST 1 and 2 occur 295 and 395 times in `ge7.bin`
+  and the diagnostic image's FpuCondTest tail, words 1911 to 1913, uses 2 with RAM0AD values 0x20 and 0x40). Next: the other diagnostic tests (SpfCondTest's table compare) and the `ide` register-file test sequences.
+- **Where the SeedRom and SqRom values enter the data path.** The loops run 128 passes (checked) and store `ALUA = 7` shifted and masked; the ROM address is the counter shifted left 16. Next: decode the ROM select.
 
 ## 2. How is control flow resolved in the GE7 routines?
 
-Answered in microcode.md: C0[15:0] is also the ALU immediate (ALUA = 5), so the "jump chains" were immediates; `0x31` with target 0 falls
-through; condition 10 is the stall; C0[21] is probably unstored; conditions 3, 4, 7 and 8 carry a BRCOND flag select and 1, 2, 5, 6 do not;
-condition 8 is taken when its flag is clear and `0x64`/`0x69` are the zero flag; GeSeqTest has exactly one passing path (the shared store at
-1421); the shared-RAM stores are the SHFTSRC = 3 words between a cond 14 word and the next cond 15 word; and a `0x31` word with a non-zero field
-is not a branch (the field is an address: the colour is `0x1d`, the position `0x3c`/`0x3d`). Still open:
+Mostly answered in microcode.md: conditions 1 and 5 always branch and 2 and 6 never; conditions 3, 4, 7 and 8 branch on a flag line two words behind, the lines `0x62`, `0x63`, `0x64`, `0x68`, `0x69`, `0x6b` are decoded; `0x31`, `0x32` and `0x33` carry a
+shared-RAM address (`0x32` does not jump); the stall ends a routine, with the finish-flag evidence. Still open:
 
-- Which flag each BRCOND value selects beyond `0x64`/`0x69` (zero), and the polarity of 4, 7 and the fixed conditions 1, 2, 5, 6. Routes
-  tried: FpuCondTest as a known answer (its second and third tests are `0x63`/`0x68` and `0x6b` and fit no sign predicate on the result
-  once the registers are set by the zero tests: INEGA of an all-ones register and IPASSA of it both use `0x63`), GeSeqTest's table. Next:
-  decode the register file and the operand selects 0, 1, 2, 6 and 7 (FloatOps and Ram12 give 0 and 1; the pipelined result bus and ALUB = 6 are
-  open) and the FpuCondTest failure writers (1900, 1903, 1906), which show what the host's flag numbers 1, 2 and 4 are; then re-run
-  `ge7-step.py paths` with flags for the 12 branches of the GeSeqTest table (the cond 3 versus cond 8/4 mismatch on `0x62` says the flag
-  sampling stage matters).
-- What the `0x31` access is: load or store, which RAM, and how data returns (ALUA/ALUB = 6 a word or two later). Routes tried: the writer/reader pairing of
-  COLOR, CMOV2I and the drawing routines (microcode.md), statistics for a nearby SHFTSRC = 3 word (not separating). Next: a write
-  trace of the shared RAM during COLOR then PNT2I, or the HQ2 side of a console token.
-- What conditions 9, 12 and 13 do, and whether cond 11 is the FIFO-drain wait (13 of 14 sit on the `0x5f` flush write). Routes tried:
-  FpuCondTest's failure writers (cond 9 then a store), GeSeqTest's tail, the next-word statistics. Next: cond 9 against a known store address
-  (the failure record at 256 on) once the register file is decoded.
+- **The sense of the branches, and two GeSeqTest sites.** Two readings fit the 92 FpuCondTest tests; the one that also fits the SeedRom and SqRom loops and the `0x60` and `0x77` sites (all four conditions branch when the line is high,
+  five lines active low) misses the cond 8 and cond 4 branches on `0x62` at 1403 and 1410. Routes tried: both readings on all sites, the passing-path enumeration with and without stalls ending the routine, the sampling stage
+  (N-2 for conditions 3, 7, 8, 4 from the compare-operation statistics). Next: a second known answer for cond 4 and cond 8 on `0x62` (the full image has 17 and 5 uses), the HQ2 side of a stalled routine.
+- **What `0x60`, `0x61`, `0x77`, `0x6f`, `0x67` and the values above `0x77` select.** `0x60` and `0x61` follow ISUB, IRSUB and FSUB at N-2 and look like compare outcomes (less, greater); `0x6f` follows IPASSA (73 of 144 at N-2); `0x67` follows AND
+  (72 of 86). Next: simulate more of the full image with the engine and look for which values make a loop terminate.
+- **What conditions 9, 12 and 13 do, and whether cond 11 is the FIFO-drain wait** (13 of 14 sit on the `0x5f` flush write). Cond 9 is not needed by the store counter (CMOV2I has none); in FpuCondTest the cond 9 word is also the IADD
+  that bumps the failure count. Next: cond 12 and 13 at GE7 6526 to 6666 with the engine.
+- **The control `0x35` words** (63, fields up to `0xf280`) and `0x33` (16, up to `0x7fdf`), and the one-hot `0x34` codes against the three status bits (8 raised the host's finish flag 2; 2 and 4 follow DMA tokens whose host poll
+  reads bit 2). Routes tried: statistics of fields and contexts, the host's `diag_finish`, `pix_dma` and DMA tests. Next: HQ2 register decode of the finish flags in [devices/hq2](../devices/hq2/README.md).
 
 ## 2a. RE3 command data
 
-Written addresses per routine are in microcode.md (the PROM image's seven console routines and GeFifoTest). Open: the meaning of each address and
-the exact data source of a write (same-cycle ALU result is inferred, previous-word result not excluded). Routes tried: GeFifoTest known answer,
-console routines, INIT constants. The diagnostic image's own INIT (GE7 1004 to 1062) writes the same addresses with constants that are the PROM's
-shifted by `0x2d` (`0x2c` for two), so they are build-relative pointers or identifiers, not hardware reset values; the Ram12, Shram, SeedRom, SqRom
-and GeBus routines gave no RE3 information. Next: schematic sheet 12 (vendor-derived, so inferred at best).
+Answered for the span and point paths and INIT: the values are in [devices/re3](../devices/re3/README.md#addresses-the-microcode-writes) (start x, y and end x, the colour words, `2` to `0x5f`, the INIT table). Open: the meaning
+of each address beyond those roles (`0x00`, `0x08`, `0x23` to `0x25`, `0x5e`, `0x67`, `0x6f`, the bits of the INIT words), and the data of RECTI2D, LINE2I, DRAWCHAR and RECTCOPY, which need item 1's select 7 and select 4. Routes tried: GeFifoTest known
+answer, the console routines run on the engine, INIT in two builds. Next: schematic sheet 12 (vendor-derived, so inferred at best), and the float form of RECTI2D's coordinates against the RE3 floating-point inputs if the TR's iteration description gives them.
 
 ## 3. HQ2 ops outside the console set
 
