@@ -12,7 +12,7 @@ and delete the entry.
 - [dac.md](dac.md): Bt479 and Bt475, reset state, gamma.
 - [display.md](display.md): board configuration port byte lane, Z detect, clock chip, genlock, revision 4.
 
-Settled and removed: the HQ2 version field (status bits 31:23, see devices/hq2), the GE7 revision register (`+0x683f4`, see devices/ge7),
+Settled and removed: the layout of the HQ2 status word (see devices/hq2; which register carries the HQ2 revision is hq2.md 7), the GE7 revision register (`+0x683f4`, see devices/ge7),
 the XMAP5 window address, and the byte lane question, which is display.md 1.
 
 ## Indigo2 Extreme and XZ

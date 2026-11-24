@@ -19,7 +19,8 @@ copy of the finish flag (VC1 page) by reading the n32 `__glExpFinish` callers; s
 ## 3. Exact FIFO line condition
 
 Asserted at count >= `fifo_full` or > it; whether `fifo_empty` and the low-water bit gate a second condition. Routes tried: PROM and
-kernel flow control, ide field names. Next: none from software; model with >=.
+kernel flow control, ide field names, and the handler's own compare (`count < saved threshold` counts as drained, a software expectation of >=;
+the threshold it writes is count plus one, which suits either rule). Next: none from software; model with >=.
 
 ## 4. Which microcode routine sets which finish flag, and what 481 to 484, 496 save
 
@@ -33,3 +34,10 @@ variant strings in the 4.0.5G PROM.
 ## 6. Other microcode releases
 
 Only the IRIX 6.5 base-set `hq2.bin` and `ge7.bin` are held. Next: IRIX 5.x and 6.2 media.
+
+## 7. Which register carries the HQ2 revision?
+
+The PROMs fill probe-record byte `+0x30` from status bits 30:23; the kernel fills it from `hq_gepc` bits 23:16 (`_Gr2ProbeChipRev`), and `gr2_error`
+logs `hq_gepc` bits 15:0 as the GE PC. The diagnostic prints `hq_gepc` with "can't read - hw bug". NetBSD reads status with mask `0xff000000` and shift 23.
+Routes tried: `gr2.a`, both PROMs, `ide.IP20`, NetBSD, public gfxinfo postings (all print rev A, which fits 0 from either register). Next: read the
+`gfxinfo` binary to see which record byte prints as "HQ2 rev" and how the letter is formed; a board with a non-A HQ2 posting.
