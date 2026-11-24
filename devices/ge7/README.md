@@ -156,9 +156,15 @@ single-precision values falling geometrically from 1.0 to about 0.0047, each ste
 of one half), so every eighth entry is nearly half the one before: a lookup for an exponential, spot-light or fog attenuation
 curve. After that sit floating-point scalars the geometry code needs (one half, two, three, sixteen, sixty-four, powers of two up to
 `2^23`, the integers 255, 1023, 1279, 1280, 2047, 2048 as floats, the screen width 1280, small epsilons around `1e-6`), then
-integer constants: small enumerations, bit masks (`0xffff`, `0x3ffff`, `0x7fffff`), a count `10000`, and microstore addresses and
-mode words that look like jump targets and pipeline setup values. The split between float and integer data and the screen-size
-constants is established [binary] by inspection of the block; every statement about what each value is used for is **inferred** or
+integer constants: small enumerations, bit masks (`0xffff`, `0x3ffff`, `0x7fffff`), a count `10000`, loop counts, and the initial
+values the console microcode writes to the raster engine (mode words, the clip limits `1279 << 11` and `1023 << 10`; the table is
+in [devices/re3](../re3/README.md#addresses-the-microcode-writes)). They are data, not jump targets: the microcode reads them with
+the ALU operand select that names the shared word at the microword's 16-bit field on control `0x3f` words, and that field is a branch
+target only on branch words ([microcode.md](../../platforms/express/microcode.md#the-data-path)). The diagnostic image's block carries
+a table of small numbers (`C[27 + n] = n`) that its function test loads as ALU function numbers. Each image has its own block: the
+console INIT in the PROM image and in the diagnostic image load the same values from indices that differ by `0x2d`. The split between
+float and integer data and the screen-size constants is established [binary] by inspection of the block; that the microcode reads the
+block as data is **inferred** (known answers of the diagnostic program); what each value means to the hardware is **inferred** or
 unknown.
 
 ## What the shipped microcode does
@@ -189,10 +195,11 @@ This is the functional level that the tools support without decoding the instruc
    text-port routines at the top, 35931 to 36194 (init, colour, point, rectangle, line, cursor move, character draw). Established
    [binary] for the addresses (HQ2 dispatch); the roles come from the GL function names that use each token and are inferred.
 5. **The console routines are the smallest self-contained set.** The PROM-embedded GE7 image contains 301 words in two runs (0 to 1 and
-   10 to 308) and serves the nine console tokens; see [pipeline.md](../../platforms/express/pipeline.md).
+   10 to 308) and serves the eight console tokens; see [pipeline.md](../../platforms/express/pipeline.md).
 
-The instruction set, the register file layout inside an engine, the way the four engines are kept in step, and how the GE7 hands
-parameters to the RE3 are **unknown**. They need the microword field decode filed in [questions/ge7.md](../../questions/ge7.md).
+The instruction set is partly decoded (operand selects, the register file, result delays, flags: [microcode.md](../../platforms/express/microcode.md#the-data-path),
+inferred from the diagnostic program's known answers). The way the four engines are kept in step and the meaning of most RE3 addresses
+the microcode writes are **unknown**; see [questions/ge7.md](../../questions/ge7.md) and [questions/microcode.md](../../questions/microcode.md).
 
 ## Summary of grades
 
