@@ -71,6 +71,10 @@ def paths(M, a, goal, avoid):
 
 # ---- data path (platforms/express/microcode.md, "The data path") --------------------------------------------------------
 M32 = 0xffffffff
+ADDR = (0x11, 0x12, 0x13, 0x31, 0x32, 0x33)       # controls whose C0[15:0] loads the store address counter (bit 21 does not matter)
+# The tables the host expects of SeedRomTest and SqRomTest (closed forms, `selftest` checks the program's copies against them).
+SEED = [min(127, round(128 * (2 / (1 + i / 128) - 1))) for i in range(128)]
+SQRT = [math.floor(256 * (1 / math.sqrt(2 * (1 + i / 64)) - .5)) if i < 64 else min(127, math.floor(256 * (1 / math.sqrt(1 + (i - 64) / 64) - .5))) for i in range(128)]
 S32 = lambda v: (v & M32) - (1 << 32) if v & 0x80000000 else v & M32
 f2b = lambda f: struct.unpack('>I', struct.pack('>f', f))[0]
 b2f = lambda b: struct.unpack('>f', struct.pack('>I', b & M32))[0]
@@ -123,48 +127,66 @@ LINES = {0x62: lambda f: f['eq'], 0x64: lambda f: not f['zero'], 0x63: lambda f:
 class Engine:
     """One geometry engine's data path, enough to run the diagnostic known answers and the console routines.
 
-    Source selects (ALUA / ALUB): 0 RAM0[RAM0AD], 1 RAM1[RAM1AD], 3 register REGC / REGD, 4 and 6 the previous word's result, 5 the shared
-    word at C0[15:0] on a control 0x3f word (the constants block), 7 the result two words back. Writes: REGWR takes the previous word's
-    result, a shared store (SHFTSRC = 3) and an RE write (FIFOEN) take the result two words back. Branches: conditions 1 and 5 always,
-    2 and 6 never, 3, 4, 7 and 8 when the selected line (LINES) of the word two back is high.
+    Source selects (ALUA / ALUB): 0 RAM0[RAM0AD], 1 RAM1[RAM1AD], 3 register REGC / REGD, 4 and 6 the previous word's result, 5 the constants
+    block word C0[15:0] on a control 0x3f word and the state word (`state`, a second namespace) at C0[15:0] or the address counter on any other
+    control, 7 the multiplier output of the previous word (MPASSA of RAM0[RAM0AD] when the word does not multiply). Multiplier selects MPYA: 0 RAM0,
+    1 RAM1, 3 REGA, 4 the same word as ALUA = 5; MPYB: 0, 1, 3 REGB, 4 the seed ROM and 5 the square-root ROM, addressed by the value of REGB.
+    Writes: REGWR takes the previous word's result, a store (SHFTSRC = 3) and an RE write (FIFOEN) take the result two words back. Branches:
+    conditions 1 and 5 always, 2 and 6 never, 3, 4, 7 and 8 when the selected line (LINES) of the word two back is high.
     """
+    HELD = False
+
     def __init__(self, M, const, slots=None, bus=0):
         self.M, self.sh, self.ram0, self.ram1, self.bus = M, dict(enumerate(const)), dict(slots or {}), {}, bus
+        self.state, self.held = {}, 0
         self.regs, self.hist, self.re, self.stores, self.addr = [0] * 16, [], [], [], 0
+
+    @staticmethod
+    def rom(sel, rb):
+        """Multiplier B select 4 / 5: the seed / square-root ROM output, addressed by REGB: seven mantissa bits 22:16, or the exponent
+        low bit and six mantissa bits (bits 23:17). The value sits in bits 22:16; the other bits are not fixed by any known answer."""
+        return (SEED[rb >> 16 & 0x7f] if sel == 4 else SQRT[rb >> 17 & 0x7f]) << 16
 
     def src(self, d, sel, side):
         h = self.hist
         return {0: lambda: self.ram0.get(d['ram0'], 0), 1: lambda: self.ram1.get(d['ram1'], 0),
-                3: lambda: self.regs[d['regc' if side == 'A' else 'regd']], 4: lambda: h[-1][0] if h else 0,
-                5: lambda: self.sh.get(d['tgt'] if d['ctl'] == 0x3f else self.addr, 0), 6: lambda: h[-1][0] if h else 0,
-                7: lambda: h[-2][0] if len(h) > 1 else 0}.get(sel, lambda: 0)()
+                3: lambda: self.regs[d['regc' if side == 'A' else 'regd']], 4: lambda: (self.held if self.HELD else h[-1][0] if h else 0),
+                5: lambda: self.sh.get(d['tgt'], 0) if d['ctl'] == 0x3f else self.state.get(d['tgt'] or self.addr, 0), 6: lambda: h[-1][0] if h else 0,
+                7: lambda: h[-1][2] if h else 0}.get(sel, lambda: 0)()
 
-    def run(self, a, steps=400):
-        stalled = False
+    def run(self, a, steps=400, force=None):
+        """Run from word a. force maps a branch word (conditions 3, 4, 7, 8) to a taken flag and replaces the decoded line."""
+        stalled = False; self.seq = []
         for _ in range(steps):
             if a not in self.M: break
             w = self.M[a]; d = dec(w)
             d.update(ram0=field(w, 24, 7), ram1=field(w, 31, 6), regc=field(w, 8, 4), regd=field(w, 12, 4), rega=field(w, 0, 4), regb=field(w, 4, 4),
                      regwr=field(w, 20, 4), regf=field(w, 86, 2), brc=field(w, 51, 8), shft=field(w, 84, 2), busel=field(w, 71, 1),
                      mop=field(w, 43, 2), mpya=field(w, 59, 3), mpyb=field(w, 62, 3), alua=field(w, 65, 3), alub=field(w, 68, 3),
-                     ram1dest=field(w, 77, 3))
+                     ram1dest=field(w, 77, 3), resen=field(w, 73, 1))
             h = self.hist
-            if d['ctl'] in (0x31, 0x32, 0x33) and d['tgt']: self.addr = d['tgt']
+            if d['ctl'] in ADDR and d['tgt']: self.addr = d['tgt']
             A, B = self.src(d, d['alua'], 'A'), self.src(d, d['alub'], 'B')
             r, fl = alu(d['alu'], A, B, d['brc'])
-            ma = {0: self.ram0.get(d['ram0'], 0), 1: self.ram1.get(d['ram1'], 0), 3: self.regs[d['rega']]}.get(d['mpya'], 0)
-            mb = {0: self.ram0.get(d['ram0'], 0), 1: self.ram1.get(d['ram1'], 0), 3: self.regs[d['regb']]}.get(d['mpyb'], 0)
+            fl.update(lt=S32(A) < S32(B), gt=S32(A) > S32(B))
+            ma = {0: self.ram0.get(d['ram0'], 0), 1: self.ram1.get(d['ram1'], 0), 3: self.regs[d['rega']],
+                  4: self.sh.get(d['tgt'], 0) if d['ctl'] == 0x3f else self.state.get(d['tgt'] or self.addr, 0),
+                  6: h[-1][0] if h else 0, 7: h[-1][2] if h else 0}.get(d['mpya'], 0)
+            rb = self.regs[d['regb']]
+            mb = {0: self.ram0.get(d['ram0'], 0), 1: self.ram1.get(d['ram1'], 0), 3: rb, 4: self.rom(4, rb), 5: self.rom(5, rb),
+                  6: h[-1][0] if h else 0, 7: h[-1][2] if h else 0}.get(d['mpyb'], 0)
             mr, mf = mult(d['mop'], ma, mb); fl.update(mf)
             if d['busel']: r = mr if d['mpya'] or d['mpyb'] else self.bus
             if d['regf'] == 3 and h: self.regs[d['regwr']] = h[-1][0]
             if d['re'] is not None and len(h) > 1: self.re.append((a, d['re'], h[-2][0]))
-            if d['shft'] == 3 and len(h) > 1: self.stores.append((a, self.addr, h[-2][0])); self.addr += 1
+            if d['shft'] == 3 and len(h) > 1: self.stores.append((a, self.addr, h[-2][0])); self.state[self.addr] = h[-2][0]; self.addr += 1
             if d['ram1dest'] == 1: self.ram1[d['ram1']] = self.ram0.get(d['ram0'], 0)
-            h.append((r, fl))
+            h.append((r, fl, mr)); self.seq.append(a)
+            if d['resen']: self.held = r
             if stalled: return
             c = d['cond']
             if c == 10 and not d['tgt']: stalled = True
-            take = c in (1, 5) or (c in (3, 4, 7, 8) and len(h) > 2 and LINES[d['brc']](h[-3][1]))
+            take = c in (1, 5) or (c in (3, 4, 7, 8) and (force[a] if force else len(h) > 2 and LINES[d['brc']](h[-3][1])))
             a = d['tgt'] if 1 <= c <= 8 and take else a + 1
 
 def ints(s): return {int(x, 0) for x in s.split(',') if x}
@@ -349,7 +371,7 @@ def selftest(ide, prom=None, full=None, hq=None):
     check('GeFifoTest constants: C[0x62] = 0x800 (bias), C[0x25] = 10 (span length), C[0x1d] = 2 (the value written to 0x5f)', C[0x62] == 0x800 and C[0x25] == 10 and C[0x1d] == 2)
     if prom:
         pb = U['cut'](prom.read_bytes(), 0x4a6f4); P5, PK = load(pb), constants(pb)
-        e = Engine(P5, PK, {0: 100, 1: 200}); e.sh[0x1d] = 0x112233; e.run(58)
+        e = Engine(P5, PK, {0: 100, 1: 200}); e.state[0x1d] = 0x112233; e.run(58)
         r = {a: v for _, a, v in e.re}
         check('PNT2I data path: RE 0x20 = x and 0x21 = y biased by 0x800 and shifted left 11, 0x5f = 2, 0x40 = the stored colour shifted left 11',
               r[0x20] == (100 + 0x800) << 11 and r[0x21] == (200 + 0x800) << 11 and r[0x5f] == 2 and r[0x40] == (0x112233 << 11) & 0xffffffff and r[0] == 0x8000 and r[8] == 0)
@@ -364,6 +386,68 @@ def selftest(ide, prom=None, full=None, hq=None):
         nz = sorted(a for a in ri if ri[a] and ri[a] == rd.get(a))
         check('INIT: %d of the written values agree and are non-zero (%s); 0x6d, 0x73 and 0x74 do not fit a 16-bit immediate' % (len(nz), ' '.join('%02x' % a for a in nz)),
               nz == [0x60, 0x64, 0x66, 0x6d, 0x72, 0x73, 0x74] and all(ri[a] > 0xffff for a in (0x6d, 0x73, 0x74)))
+    # ---- second pass (platforms/express/microcode.md, "The data path"): select 7, the ROM selects, the state namespace, branch senses ----
+    class Sel7Back(Engine):                          # control: select 7 is the ALU result two words back
+        def src(self, d, sel, side):
+            return (self.hist[-2][0] if len(self.hist) > 1 else 0) if sel == 7 else super().src(d, sel, side)
+    class SwapRom(Engine):                           # control: the two ROM selects exchanged
+        rom = staticmethod(lambda sel, rb: Engine.rom(9 - sel, rb))
+    class ShiftRom(Engine):                          # control: the seed ROM addressed one bit lower
+        rom = staticmethod(lambda sel, rb: Engine.rom(sel, rb >> 1 if sel == 4 else rb))
+    ti = D.find(struct.pack('>3I', 0x7f, 0x7e, 0x7c)); host = [list(struct.unpack('>128I', D[ti + o:ti + o + 512])) for o in (0, 512)]
+    for cls, nm, fits in ((Engine, 'model', True), (Sel7Back, 'control, select 7 two words back', False), (SwapRom, 'control, ROM selects exchanged', False),
+                          (ShiftRom, 'control, seed ROM address one bit low', False)):
+        got = []
+        for start in (917, 933):
+            e = cls(diag, C); e.run(start, 2000); got.append([v for _, _, v in e.stores])
+        check('SeedRom and SqRom data path, %s: the 128 + 128 stored words %s the host\'s tables' % (nm, 'equal' if fits else 'differ from'), (got == host) == fits)
+    seqval = lambda e, a: e.hist[e.seq.index(a)][0]
+    if prom:
+        for xs, ys in (((150, 100), (200, 260)), ((100, 150), (260, 200))):
+            e = Engine(P5, PK, {0: xs[0], 1: ys[0], 2: xs[1], 3: ys[1]}); e.run(69, 60)
+            check('RECTI2D x = %s, y = %s: words 70, 73, 77, 80 (IMIN, IMAX, IMAX, IMIN) give xmin, xmax, ymax, ymin (select 7 = the multiplier pass of the RAM0 word)' % (xs, ys),
+                  [seqval(e, a) for a in (70, 73, 77, 80)] == [min(xs), max(xs), max(ys), min(ys)])
+        e = Sel7Back(P5, PK, {0: 150, 1: 200, 2: 100, 3: 260}); e.run(69, 60)
+        check('RECTI2D with select 7 two words back does not give xmin (control)', seqval(e, 70) != 100)
+        # RECTI2D separates select 4 = previous result from select 4 = register held by RESEN: with the first each RE3 value depends on one coordinate.
+        def rdeps(held):
+            cls = type('E', (Engine,), {'HELD': held}); base = {0: 100, 1: 200, 2: 150, 3: 260}
+            def res(sl):
+                e = cls(P5, PK, sl); e.state[0x1d] = 0x112233; e.run(69, 60); return [(a, v) for _, a, v in e.re]
+            b = res(base)
+            return b, {k: sorted(hex(a) for (a, x), (_, y) in zip(b, res({**base, k: base[k] + 7})) if x != y) for k in range(4)}
+        b, dp = rdeps(False); b2, dh = rdeps(True)
+        check('RECTI2D, select 4 = previous result: x1 -> 0x08 0x20, y1 -> 0x23 0x24, x2 -> 0x21, y2 -> 0x25; as a RESEN-held register y2 reaches %s' % dh[3],
+              dp == {0: ['0x20', '0x8'], 1: ['0x23', '0x24'], 2: ['0x21'], 3: ['0x25']} and len(dh[3]) == 3)
+        v = dict(b)
+        check('RECTI2D values: 0x20 = 200.0, 0x21 = 300.0 | 1, 0x25 = 520.0, 0x24 = 0x23 = 398.0, 0x00 = 0x5f = 0, 0x08 = 100 (floats are twice xmin, xmax, ymax and ymin - 1)',
+              (b2f(v[0x20]), v[0x21], b2f(v[0x25]), b2f(v[0x24]), v[0x24] == v[0x23], v[0], v[0x5f], v[8]) == (200.0, f2b(300.0) | 1, 520.0, 398.0, True, 0, 0, 100))
+    check('Ram12Test: each of the %d ALUA = 7 words follows an ISUB word with multiplier A select 6 and MPASSA (the multiplier passes the OR accumulator on)' % len(chain),
+          all(field(diag[a - 1], 59, 3) == 6 and field(diag[a - 1], 43, 2) == 2 for a in chain))
+    # GeSeqTest's BRCOND 0x60 and 0x62 branches of conditions 3, 4 and 8 follow the same ISUB x - x pattern and see identical ALU flags at stages 0 to 2,
+    # yet cond 3 must fire on 0x62 and none of the other five must. No truth value per line and polarity per condition fits.
+    want = {1369: 1, 1375: 1, 1383: 0, 1387: 1, 1394: 0, 1396: 0, 1400: 0, 1403: 0, 1407: 0, 1410: 0, 1412: 1, 1423: 1, 1431: 1}
+    g = Engine(diag, C); g.run(1354, 200, force=want)
+    check('GeSeq forced path: the 13 outcomes of the table end at 1441 and store once, at 1421', g.seq[-1] == 1441 and [x[0] for x in g.stores] == [1421])
+    vec = lambda a, k: (lambda f: (f['eq'], f['zero'], f['neg'], f['lt'], f['gt']))(g.hist[g.seq.index(a) - k][1])
+    same = all(len({vec(a, k) for a in grp}) == 1 for grp in ((1383, 1400, 1407), (1387, 1403, 1410)) for k in range(3))
+    sol = [(l60, l62, p3, p4, p8) for l60, l62, p3, p4, p8 in itertools.product((0, 1), repeat=5)
+           if l60 != p3 and l62 == p3 and l60 != p8 and l62 != p8 and l60 != p4 and l62 != p4]
+    check('GeSeq: 1383, 1400, 1407 (conds 3, 8, 4 on 0x60) and 1387, 1403, 1410 (on 0x62) have identical eq / zero / neg / lt / gt flags at stages 0 to 2, and no line value '
+          'with condition polarity fits the outcomes (%d solutions)' % len(sol), same and not sol)
+    if full:
+        K = constants(full.read_bytes())
+        st, rd = {}, {}
+        for a, w in F.items():
+            d = dec(w)
+            if d['ctl'] in (0x11, 0x12, 0x13) and d['tgt'] and field(w, 84, 2) == 3: st.setdefault(d['tgt'], []).append(a)
+            if d['ctl'] == 0x3f and d['tgt'] and (d['imm'] or field(w, 59, 3) == 4): rd.setdefault(d['tgt'], []).append(a)
+        both = sorted(set(st) & set(rd))
+        check('state namespace: %d store words with an explicit address (control 0x11 to 0x13, SHFTSRC 3) name %d addresses, %d also read as constants through control 0x3f '
+              '(K[0x41] = 0.5: %d reads, %d stores; K[0x8d] = 5: %d reads, %d stores; K[0x3d]: %d reads, %d stores)'
+              % (sum(map(len, st.values())), len(st), len(both), len(rd[0x41]), len(st[0x41]), len(rd[0x8d]), len(st[0x8d]), len(rd[0x3d]), len(st[0x3d])),
+              (sum(map(len, st.values())), len(st), len(both)) == (293, 126, 44) and K[0x41] == 0x3f000000 and K[0x8d] == 5
+              and (len(rd[0x41]), len(st[0x41]), len(rd[0x8d]), len(st[0x8d]), len(rd[0x3d]), len(st[0x3d])) == (111, 1, 66, 55, 17, 6))
     return ok
 
 def main():
