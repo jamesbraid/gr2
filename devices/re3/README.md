@@ -123,11 +123,11 @@ INIT (PROM image 4.0.5D, GE7 10 to 50; the diagnostic image's own INIT in bracke
 | `0x72` | `5` | agrees |
 | `0x73` | `0x27f800` = 1279 << 11 | agrees; 1279 is the last pixel of a 1280-wide screen, so probably the x clip limit in the same fixed point as `0x20` |
 | `0x74` | `0xffc00` = 1023 << 10 | agrees; 1023 is the last line of a 1024-line screen, probably the y limit (note the shift 10, not 11) |
-| `0x6a` | `0x44` | PROM only |
+| `0x6a` | `0x44` | the diagnostic build writes a different value (the model gives `0x807d`; unverified) |
 | `0x6e`, `0x70`, `0x71`, `0x7b`, `0x7c`, `0x7d`, `0x7e` | `0` | |
 | `0x46` to `0x49`, `0x4c` to `0x4f`, `0x52` to `0x55` | `0` | three groups of four |
 
-Nine addresses (`0x60`, `0x61`, `0x62`, `0x64`, `0x66`, `0x6d`, `0x72`, `0x73`, `0x74`) are written the same by both builds. The values are reset or configuration data for the raster engine, so a model that
+Nine addresses (`0x60`, `0x61`, `0x62`, `0x64`, `0x66`, `0x6d`, `0x72`, `0x73`, `0x74`) are written the same by the PROM build and the diagnostic build; two of them (`0x61`, `0x62`) are zero, so seven non-zero values agree. The values are reset or configuration data for the raster engine, so a model that
 reads them back should return them after INIT; what each bit of `0x63`, `0x65`, `0x66`, `0x67`, `0x6d` means is **unknown**, and a reset value must not be taken from them (a register read after firmware initialisation is not a reset value).
 The `0x5f` write is paired with the condition-11 sequencer word in 13 of the 14 places the full `ge7.bin` uses that condition, so it is the flush
 that waits for the output FIFO ([microcode.md](../../platforms/express/microcode.md)); inferred.
