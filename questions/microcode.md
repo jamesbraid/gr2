@@ -9,21 +9,20 @@ coordinator merges the index.
 Mostly answered in [microcode.md](../platforms/express/microcode.md#the-data-path) (operand selects 0, 1, 3, 4, 5, 6, 7, the register file with REGC and REGD on the ALU and REGA and REGB on the multiplier, REGWR with
 REGFDEST = 3, the constants block behind ALUA = 5, the result taps, RAM0DEST = 3 and RAM1DEST = 1 and 3). Still open, with the routes tried:
 
-- **Select 7 and select 4.** Select 7 is the result two words back in Ram12Test's OR chain, but RECTI2D's min/max pairs and DRAWCHAR's loop read it where the RAM0 word named by the previous word fits, and SeedRom and SqRom take the ROM output
-  with it. Select 4 is the previous result in every known answer, but a held result register (RESEN) is not excluded and RECTI2D's `FADD A = 4, B = 6` words would separate them. Routes tried: the engine on RECTI2D with both readings (the
-  coordinates come out as nonsense under the two-words-back reading, as plausible float min/max under the RAM0 reading but with doubled sums under select 4 = previous result). Next: GeBusTest and Ram12Test with select 2, the RAM2 path, and a run of LINE2I and DRAWCHAR once 7 is fixed.
+- **Select 4.** Select 7 is settled (the multiplier output) and the ROM selects are settled ([the data path](../platforms/express/microcode.md#the-data-path)). Select 4 is the previous ALU result or a register held by RESEN: both pass every known answer; RECTI2D favours the previous result (each RE3 value then depends on one coordinate) but
+  doubles each coordinate through `FADD A = 4, B = 6`, which is not understood. Routes tried: the engine on RECTI2D under both readings, the dependency of each RE write on each operand. Next: a known answer for a word with select 4 after a word that differs from the held register (none in the diagnostic images), the GL routines of the full image that add 0.5 or 1.0 (K[0x41], K[0x7c]) through select 5 and select 4 together.
 - **RESEN, REGFDEST 1 and 2, REGE, REGSEL, RAM2DEST, RAM0DEST and RAM1DEST values other than 1 and 3, MISCSRC, DSEL.** No known answer needs them. Routes tried: field statistics (REGFDEST 1 and 2 occur 295 and 395 times in `ge7.bin`
   and the diagnostic image's FpuCondTest tail, words 1911 to 1913, uses 2 with RAM0AD values 0x20 and 0x40). Next: the other diagnostic tests (SpfCondTest's table compare) and the `ide` register-file test sequences.
-- **Where the SeedRom and SqRom values enter the data path.** The loops run 128 passes (checked) and store `ALUA = 7` shifted and masked; the ROM address is the counter shifted left 16. Next: decode the ROM select.
+- **The upper bits of the ROM outputs.** The known answers fix bits 22:16 only. The GL words that use MPYB = 4 and 5 (199 FMPY and 27 MPASSB words) probably take the whole output as a float. Next: a Newton step in the full image (`FMPY` with the seed ROM followed by the correction) run with known operands.
 
 ## 2. How is control flow resolved in the GE7 routines?
 
 Mostly answered in microcode.md: conditions 1 and 5 always branch and 2 and 6 never; conditions 3, 4, 7 and 8 branch on a flag line two words behind, the lines `0x62`, `0x63`, `0x64`, `0x68`, `0x69`, `0x6b` are decoded; `0x31`, `0x32` and `0x33` carry a
 shared-RAM address (`0x32` does not jump); the stall ends a routine, with the finish-flag evidence. Still open:
 
-- **The sense of the branches, and two GeSeqTest sites.** Two readings fit the 92 FpuCondTest tests; the one that also fits the SeedRom and SqRom loops and the `0x60` and `0x77` sites (all four conditions branch when the line is high,
-  five lines active low) misses the cond 8 and cond 4 branches on `0x62` at 1403 and 1410. Routes tried: both readings on all sites, the passing-path enumeration with and without stalls ending the routine, the sampling stage
-  (N-2 for conditions 3, 7, 8, 4 from the compare-operation statistics). Next: a second known answer for cond 4 and cond 8 on `0x62` (the full image has 17 and 5 uses), the HQ2 side of a stalled routine.
+- **The senses of conditions 4 and 8 (and the `0x60` sites).** Proven that no line truth value and per-condition polarity fits GeSeqTest's six `0x60` / `0x62` sites of conditions 3, 4 and 8, whose ALU flags are identical at every stage ([microcode.md](../platforms/express/microcode.md#the-data-path)). Either conds 4 and 8 read another flag source or one of the six outcomes
+  is wrong. Routes tried: both polarities, stages 0 to 3 on equal, zero, neg, less and greater, the passing-path enumeration with and without stalls ending the routine. Next: a second known answer for cond 4 and cond 8 (GE7 24623 on has nine cond 4 words on `0x69`; the full image's 20 cond 8 words on `0x60` at GE7 1098 to 1142 sit in a diagnostic test whose host side is unread), and a negative case for `0x63`, `0x6b`, `0x68`, `0x69`: the
+  diagnostic image has none (every one of the 92 FpuCondTest branches is a positive test, and the other diagnostic users of cond 3, 4, 7 and 8 use `0x60`, `0x62`, `0x64` and `0x77` only); the console routines use `0x61`, `0x62` and `0x64`; in `ge7.bin` `0x63` has 33 sites, `0x6b` 72, `0x68` 2 and `0x69` 83, none with a host answer.
 - **What `0x60`, `0x61`, `0x77`, `0x6f`, `0x67` and the values above `0x77` select.** `0x60` and `0x61` follow ISUB, IRSUB and FSUB at N-2 and look like compare outcomes (less, greater); `0x6f` follows IPASSA (73 of 144 at N-2); `0x67` follows AND
   (72 of 86). Next: simulate more of the full image with the engine and look for which values make a loop terminate.
 - **What conditions 9, 12 and 13 do, and whether cond 11 is the FIFO-drain wait** (13 of 14 sit on the `0x5f` flush write). Cond 9 is not needed by the store counter (CMOV2I has none); in FpuCondTest the cond 9 word is also the IADD
@@ -33,9 +32,8 @@ shared-RAM address (`0x32` does not jump); the stall ends a routine, with the fi
 
 ## 2a. RE3 command data
 
-Answered for the span and point paths and INIT: the values are in [devices/re3](../devices/re3/README.md#addresses-the-microcode-writes) (start x, y and end x, the colour words, `2` to `0x5f`, the INIT table). Open: the meaning
-of each address beyond those roles (`0x00`, `0x08`, `0x23` to `0x25`, `0x5e`, `0x67`, `0x6f`, the bits of the INIT words), and the data of RECTI2D, LINE2I, DRAWCHAR and RECTCOPY, which need item 1's select 7 and select 4. Routes tried: GeFifoTest known
-answer, the console routines run on the engine, INIT in two builds. Next: schematic sheet 12 (vendor-derived, so inferred at best), and the float form of RECTI2D's coordinates against the RE3 floating-point inputs if the TR's iteration description gives them.
+Answered for the span and point paths, INIT and RECTI2D: the values are in [devices/re3](../devices/re3/README.md#addresses-the-microcode-writes) and [microcode.md](../platforms/express/microcode.md#recti2d-the-values-it-writes). Open: the meaning of `0x00`, `0x08` and the bits of the INIT words, the roles of `0x5e`, `0x67` and `0x6f`, and the data of LINE2I (its multiplier words are not
+modelled: y1 reaches no write), DRAWCHAR and RECTCOPY (branches on `0x61`, `0x6f`, `0x67`, `0x77`). Routes tried: GeFifoTest known answer, the console routines run on the engine, INIT in two builds, RECTI2D's dependency of each write on each operand. Next: schematic sheet 12 (vendor-derived, so inferred at best), and the float form of RECTI2D's coordinates against the RE3 floating-point inputs if the TR's iteration description gives them.
 
 ## 3. HQ2 ops outside the console set
 
@@ -53,10 +51,7 @@ GL tokens that use the rarer ops (vertex-attribute path in pipeline.md).
 The record trailer is a checksum (settled, see microcode.md). Still open from ge7.md item 3: the header words at `0x08` and `0x18`, and
 the half-word at record offset 2 (always 1).
 
-## 5. Where do the state words and the constants block meet?
+## 5. What is the mechanism behind the separate state namespace?
 
-The `0x31` field of COLOR, PNT2I, RECTI2D, LINE2I, DRAWCHAR and CMOV2I names shared words `0x1d`, `0x3c` and `0x3d` (colour and position, microcode.md), and the loader puts the constants block at shared word 0, so those words are constants-block entries `0x1d`, `0x3c`, `0x3d` (the attenuation-table values in the block). `ge7.bin` reads constants index `0x3d` as a constant (17 times, GE7 1849 to 1944 and 25395 to 25450) and the console routines at the end of the image name `0x3d` in a `0x31` word (36044, the CMOV2I position store). Either the `0x31` field addresses a memory other than the constants words, or those routines overwrite the table. Routes tried: the loader copy (512 words to shared word 0, both loaders), the `0x3f` reads of indices below `0x40` (only `0x3d` is read as a constant), the store addresses of the console routines. Next: find which routine reads index `0x3d` and whether it can run after CMOV2I; the cond 14 window base (host-visible results sit at shared word 255 on, past the 253 constants in use).
-
-## 6. The multiplier selects
-
-MPYA = 4 (3889 words of `ge7.bin`; all 556 control `0x3f` words whose field ALUA does not read) and MPYB = 4, 5 (199 FMPY words, 27 MPASSB words; SeedRom and SqRom differ in this field only) are read as 0 by the `Engine`. Routes tried: field statistics, the SeedRom/SqRom word-by-word difference. Next: a known answer that multiplies by a constant (the diagnostic image has none), then the float paths of RECTI2D, which use both.
+Settled that the constants block (control `0x3f` reads) and the words that stores and reads name (`0x11` to `0x13`, `0x31` to `0x33` fields) are not one memory at one base: `ge7.bin` has 293 explicit store words naming 126 addresses, 44 of them also read as constants (K[0x41] = 0.5, K[0x8d] = 5 and K[0x3d] among them) ([microcode.md](../platforms/express/microcode.md#the-data-path)). Open: whether the state
+words are a second memory or the same shared RAM with a base offset. No host-visible known answer goes through a state address. Routes tried: the loader copy (512 words to shared word 0 in both loaders), every store site against every constants read, the diagnostic image's own `0x67` / `0x68` use, the host side of `gr2_shramre3dma` and `gr2_dma_cpu_ge7` (they address shared word 255 by DMA, not by a state address). Next: the host side of the diagnostic test that starts GE7 1042 (HQ2 slot 51), which stores through `0x67` and `0x68`; and the DMA routines (GE7 1294, 1752) that take a shared start address from the host through a `0x35` word.

@@ -92,7 +92,7 @@ for a ten-pixel span. Per-routine order is in [microcode.md](../../platforms/exp
 **The values are decoded.** Each write sends the ALU result of the word two before it, and ALUA = 5 on those words reads the image's constants block (not an immediate; the
 [data path](../../platforms/express/microcode.md#the-data-path) gives the evidence). Running the routines on that model (`ge7-step.py run`, reproduced by its `selftest`) gives the values below. The earlier statement
 here that INIT's constants "differ between builds: build-relative pointers" is withdrawn: they are indices into each build's own constants block, and the values that the two builds write agree at nine addresses.
-Grades: the values are observed in the images and the delay and constants-block reading are **inferred** (three independent known answers each); the roles are **inferred** where the diagnostic program's span test fixes them and **unknown** elsewhere.
+Grades: the values are observed in the images and the delay and constants-block reading are **inferred** (three independent known answers each); the roles are **inferred** where the diagnostic program's span test or RECTI2D's per-coordinate dependency fixes them and **unknown** elsewhere.
 
 | Address | Value written | Role |
 |---|---|---|
@@ -103,7 +103,8 @@ Grades: the values are observed in the images and the delay and constants-block 
 | `0x22` | GeFifoTest: (x + 10 + `0x800`) << 11; PNT2I: y << 11 with no bias | the x of the end of the span in GeFifoTest, where the constant 10 is the host's ten pixels. PNT2I writes y here instead: for a point the word is not an end x, so a model that treats `0x22` as the end must take care. Inferred for the span case only |
 | `0x40`, `0x41`, `0x42` | the three colour words, each << 11 (GeFifoTest: slots 5, 6, 7 = red, green, blue of the host) | colour of the span. PNT2I writes the stored colour word, shifted left 11, to `0x40` only. Inferred: the host's red, green, blue order |
 | `0x5f` | `2` in PNT2I and GeFifoTest, written after the coordinates and before the last colour word | the draw command, written just before the routine's stall (the cond 11 word of other routines sits on it). Inferred from two routines |
-| `0x23` to `0x25`, `0x5e`, `0x67`, `0x6f` | RECTI2D, LINE2I, DRAWCHAR and RECTCOPY (float adds and min/max pairs, loops over the row words) | unknown: those routines need select 7 and the float adds of select 4 resolved |
+| `0x23`, `0x24`, `0x25` | RECTI2D: `0x25` = float 2 ymax; `0x23` and `0x24` both get float 2 (ymin - 1), the same word ([values](../../platforms/express/microcode.md#recti2d-the-values-it-writes)) | inferred from the dependency of each write on one coordinate. `0x20` and `0x21` are the low and high x edge, `0x25` the high y edge, `0x23` and `0x24` the low y edge less one line, in a float form twice the pixel coordinate; the factor is not settled. RECTI2D writes `0x08` = xmin as an integer, `0x00` = 0 and `0x5f` = 0 (PNT2I and the span write `2`) |
+| `0x5e`, `0x67`, `0x6f` | DRAWCHAR and RECTCOPY (a loop over the row words, branches on `0x61`, `0x6f`, `0x67`, `0x77` lines that no known answer fixes); LINE2I writes `0x20`, `0x40`, `0x21`, `0x22` twice, `0x00`, `0x5f`, `0x08` | unknown: the data of those routines is not run (see microcode.md) |
 
 INIT (PROM image 4.0.5D, GE7 10 to 50; the diagnostic image's own INIT in brackets where it differs), in order of writing:
 

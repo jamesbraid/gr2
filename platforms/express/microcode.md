@@ -6,7 +6,7 @@ been decoded, and what each console token's routine does. The loader view of the
 catalogue are in [pipeline.md](pipeline.md). Tool: [tools/ucode-decode.py](../../tools/ucode-decode.py) (`uv run --script`; it checks
 the images and prints statistics, per-slot walks and constants-block entries, never a listing) and [tools/ge7-step.py](../../tools/ge7-step.py) (control-flow stepper, the data-path model `run` and the regression `selftest`).
 
-**Status after the fifth pass (2026-11-23).** The data path is decoded far enough to run the diagnostic program's known answers ([the data path](#the-data-path)): ALUA = 5 is a read of the image's constants block (not an immediate), results have fixed tap delays, and the ALU flags behind `0x63`, `0x64`, `0x6b`, `0x68`, `0x69` and the polarity of conditions 1 to 8 are fixed except as listed there. Earlier statements that this contradicts are corrected in place.
+**Status after the sixth pass (2026-11-24).** The data path runs the diagnostic program's known answers ([the data path](#the-data-path)): ALUA = 5 is a read of the image's constants block (not an immediate), results have fixed tap delays, and the ALU flags behind `0x63`, `0x64`, `0x6b`, `0x68`, `0x69` are fixed except as listed there. The sixth pass settles three things: select 7 is the multiplier output (the SeedRom and SqRom loops now reproduce the host's 256 table words, and RECTI2D's min/max pairs read), the multiplier B selects 4 and 5 are the two ROMs, and the shared-RAM words that stores name are not the constants block. It also proves that the cond 4 and cond 8 outcomes in GeSeqTest cannot be explained by any line polarity. Earlier statements that this contradicts are corrected in place.
 
 Facts are `[binary]` unless tagged: the shipped images (`usr/gfx/ucode/hq2.bin`, `ge7.bin`, hashes in [references/binaries.md](../../references/binaries.md)),
 the 4.0.5D PROM `070-8116-004` (HQ2 image at file offset `0x49840` = `0xbfc49840`, GE7 image at `0x4a6f4`) and the diagnostic program
@@ -145,12 +145,28 @@ the shared word at an address register that a control `0x31` word loaded earlier
 between the two words is not fixed (1 to 7), so the exact timing is open.
 
 **Operand selects.** ALUA, ALUB: 0 RAM0\[RAM0AD\] (the input slots), 1 RAM1\[RAM1AD\], 3 register REGC (A) or REGD (B), 4 and 6 the result of the previous word, 5
-the shared word above (A only), 7 the result two words back. Established by function: FloatOps adds x (ALUA = 0, slot 0) and y (ALUB = 1, RAM1\[0\], which words 1533
+the shared word above (A only), 7 the multiplier output of the previous word. Established by function: FloatOps adds x (ALUA = 0, slot 0) and y (ALUB = 1, RAM1\[0\], which words 1533
 and 1534 fill from slot 1 with RAM1DEST = 1) in all six arms (checked on six operand pairs); the dispatch (1535 to 1542) is a chain of ISUB with ALUA = 6, ALUB = 3
-decrementing the operation number; Ram12Test's OR chain uses ALUA = 7, ALUB = 6 to accumulate. Open: 4 is "the previous result" in every known answer, but a held result register
-(updated by RESEN) is not excluded; 7 is the result two words back in Ram12Test, but RECTI2D and DRAWCHAR use it where the RAM0 word read by the previous word fits better;
-select 2 (RAM2) is never needed by a known answer. MPYA, MPYB: 0 RAM0, 1 RAM1, 3 register REGA / REGB (FpuCondTest's multiplier tests). Other values occur and the `Engine` reads them as 0: MPYA = 4 is on 3889 words of `ge7.bin` and on all 556 control `0x3f` words whose field ALUA does not read, so it probably selects the same shared word (inferred, review round 5); MPYB = 4 (199 words, all FMPY) and 5 (27, all MPASSB) are probably the seed and square-root ROM outputs, because SeedRom and SqRom run the same words and differ in that field only (word 923, 4 against 5; inferred). BUSEL = 1 puts the multiplier on the result bus
+decrementing the operation number.
+
+**Select 7 is the multiplier output, not "two words back"** (sixth pass; inferred, checked by `selftest` with controls). The multiplier runs on every word. Its operation is FMPYOP (0 IMPY, 1 FMPY, 2 MPASSA, 3 MPASSB), the idle value 2 passes operand A, and A is RAM0\[RAM0AD\] unless MPYA says otherwise, so an
+idle word leaves "the RAM0 word named by this word" in the multiplier output. Three independent sites read it with select 7 on the next word:
+(1) **SeedRom and SqRom.** Word 923 (939) is MPASSB with MPYB = 4 (5) and REGB holding the float built by 916 to 921; word 924 shifts select 7 right by 16 and 925 masks it with 0x7f, and the store at 927 writes the
+result. With the multiplier output as select 7 and the ROM tables below, the engine stores exactly the host's 128 + 128 words; with "result two words back", with the two ROM selects exchanged or
+with the seed ROM addressed one bit low, it does not. (2) **RECTI2D**, PROM image 70 to 83: `IMIN A = RAM0[2], B = 7` follows word 69, whose RAM0AD names slot 0, so it takes min(x2, x1); the other three pairs
+(words 73, 77, 80) give max x, max y, min y; run with both operand orders. The earlier "result two words back" reading made those nonsense. (3) **Ram12Test**: the 154 `OR A = 7, B = 6` words follow an `ISUB` whose MPYA is 6, so the multiplier
+passes the previous ALU result on: the OR accumulator, which the old reading also gave. MPYA and MPYB values: 0 RAM0, 1 RAM1, 3 REGA / REGB,
+4 (A) the shared word that ALUA = 5 reads, 6 and 7 the previous ALU result and the previous multiplier output (inferred from the 173 diagnostic words with MPYA = 6 and Ram12Test; no known answer uses MPYB = 6 or 7).
+
+**MPYB = 4 and 5 are the seed and square-root ROMs, addressed by REGB** (sixth pass; inferred, strong). The ROM output is read in bits 22:16 (7 bits). The seed ROM address is REGB bits 22:16 (the seven mantissa bits), the square-root ROM address is bit 23 and bits 22:17
+(exponent low bit and six mantissa bits). The loops build the address as `0x3f800000 | (i << 16)` (seed) and `0x3f000000 | (i << 17)` (square root), `i` = 0 to 127, and the host's tables are the closed forms of
+[SeedRom, SqRom and GeBus](#seedrom-sqrom-and-gebus); `Engine.rom` uses those forms, so the check is of the addressing and the output position, not of the table values. What the other output bits (31:23 and 15:0) are is unknown:
+the 199 GL words with FMPY and MPYB = 4 (27 MPASSB words with MPYB = 5) probably use the whole word as a float, which no known answer shows. MPYA = 4 has no data check: it is the same shared word as ALUA = 5 on all 556 control `0x3f` words that ALUA does not read (field statistics only), and no known answer consumes such a multiplier output.
+BUSEL = 1 puts the multiplier on the result bus
 (FloatOps IMPY and FMPY arms), and the COLOR word (BUSEL = 1, no multiplier operand) takes the host's data word, as the HQ2 `read-last` delivers it (inferred).
+
+**Select 4 is the previous result, not a register held by RESEN** (sixth pass; inferred, weak). Both readings pass every known answer, so they were still open. RECTI2D separates them: its four coordinate chains are `FLOATA`, `FADD A = 4, B = 6`. With select 4 = previous result the five RE3 values each depend on one coordinate (0x20 on min x, 0x21 on max x, 0x25 on max y, 0x23 and 0x24 on min y; see
+[the RE3 values of RECTI2D](#recti2d-the-values-it-writes)), with a held register every value is a running sum of the coordinates. The first can describe a rectangle, the second cannot; but the first doubles each coordinate, which is not understood.
 
 **Result taps.** The ALU result of word N is used at fixed delays by its consumers: a register write (REGWR with REGFDEST = 3) at N+1; select 6 at N+1; select 7 at N+2; a shared-RAM
 store (SHFTSRC = 3) at N+2; a raster-engine write (FIFOEN, READDR) at N+2; the flags for the conditional branches at N+2; RAM0DEST = 3 and RAM1DEST = 3 at N+1. Evidence: FpuCondTest loads
@@ -163,10 +179,19 @@ so INIT cannot tell "the previous result passes through" from "a result register
 **Shared-RAM stores.** A store takes its address from a counter that a `0x31` word (or `0x32`, `0x33`) loads from its field and that counts up by one after each store: COLOR (word 55 names `0x1d`, the
 store at 57 writes the host's colour there), CMOV2I (word 112 names `0x3c`, the stores at 113 and 114 write x and y to `0x3c` and `0x3d`, the words DRAWCHAR reads back with fields
 `0x3c`, `0x3d`, `0x3c`), and FpuCondTest's count at shared word 255 followed by records at 256 on (the window itself is set by the cond 14 word and the engine number). Checked on COLOR and CMOV2I; the cond 14
-window base is not modelled. Open: `0x1d`, `0x3c` and `0x3d` lie inside the constants block that the loader put at shared word 0, and `ge7.bin` reads constants index `0x3d` as a constant at 17 places while CMOV2I stores y to shared `0x3d`; either the store address is another memory than the constants words, or the stores overwrite entries of the block ([questions/microcode.md](../../questions/microcode.md)).
+window base is not modelled.
 
-**Control-field classes.** The control value says how C0[15:0] is used, measured over `ge7.bin` (maximum field, count): `0x3f` a constants index (`0xfb`, 3142 words); `0x31` a small shared-RAM
-address (`0x380`, 2144); `0x32` and `0x33` a wide shared-RAM address (`0x7d00` and `0x7fdf`, 99 and 16, none with a condition; fields below `0x8000` words = 128 KiB; 8 of the 99 `0x32` fields are not records);
+**The state words are not the constants block** (sixth pass; inferred, strong for the negative, open for the mechanism). `0x1d`, `0x3c` and `0x3d` are numerically inside the 253 constants the loader put at shared word 0, but the two sets cannot be one memory at one base. In `ge7.bin`
+293 store words with an explicit address (control `0x11` to `0x13`, SHFTSRC = 3; they carry the address exactly as `0x31` to `0x33` do, bit 21 of C0 being clear on store words) name 126 addresses, and 44 of those are also read as constants through control `0x3f`:
+`K[0x41]` = 0.5 is read 111 times and named by a store once, `K[0x8d]` = 5 (an immediate stand-in, like `K[0x89]` to `K[0x90]` = 1 to 8) is read 66 times and named by 55 stores (in 54 of them the word right after a condition-10 stall, the end of a routine),
+`K[0x3d]` is read 17 times (the Clear routine, GE7 25322, and the routine of HQ2 slot 13 add it to and subtract it from float coordinates: the float 0.0051) and named by 6 stores (GE7 1366, 23870, 23990, 24088, 24258, 24464, where it is updated with `0x3b` and `0x3c`; CMOV2I's y store at GE7 36042, addressed by the counter that 36040 loads, is a seventh). A single namespace would have the 55 routine tails clobber the constant 5 that 66 words read. The Engine therefore keeps two namespaces: control `0x3f` reads the constants block (`sh`), every other control reads and
+writes `state`. The diagnostic program's own images show it too: its slot-51 routine (GE7 1042) reads and rewrites `0x67` and `0x68`, which SeedRom and SqRom read as constants (`K[0x67]` = 0x7e, `K[0x68]` = 0x7f). What this does **not** settle is the mechanism: a second memory, or a base offset that puts state above the
+constants. No diagnostic known answer reads a shared word through a state address: every host-visible store is a window store whose address is not in the microword, and the console routines are self-consistent either way. The host-visible results start at shared word 255, and the diagnostic image
+has a `0x33` word with field `0xff` at word 2; whether that field is a host word index is not shown. The diagnostic program's `gr2_shramre3dma` writes 1 to 1024 into shared words 255 on and expects them in the frame buffer, so the host's shared word 255 is the address its DMA uses; nothing ties it to a state address.
+A QEMU model that models the host-visible shared RAM and the engines' state as one array can run the console routines but would corrupt the constants in `ge7.bin`.
+
+**Control-field classes.** The control value says how C0[15:0] is used, measured over `ge7.bin` (maximum field, count): `0x3f` a constants index (`0xfb`, 3142 words); `0x31` a small state address
+(`0x380`, 2144; `0x11` is the same with C0[21] clear, 369 words with a field, 287 of them a store: sixth pass); `0x32` and `0x33` (and `0x12`, `0x13`) a wide state address (`0x7d00` and `0x7fdf`, 99 and 16, none with a condition; fields below `0x8000` words = 128 KiB; 8 of the 99 `0x32` fields are not records);
 `0x34` a one-hot code (2, 4, 8 or 16, 81 words); `0x36`, `0x37` and the older `0x16`, `0x17` a branch target (`0x8d44`); `0x35` up to `0xf280`, 63 words, unknown.
 
 **Flags and conditions.** The line that a conditional branch (conditions 3, 4, 7, 8, BRCOND non-zero) tests comes from the word two back. The known answers fix these lines (the `Engine` passes
@@ -184,6 +209,13 @@ address (`0x380`, 2144); `0x32` and `0x33` a wide shared-RAM address (`0x7d00` a
 
 The known answers for `0x63`, `0x6b`, `0x68` and `0x69` are positive only: FpuCondTest requires the line to be active, so a decode that asserted the line always would pass it. The lines that also have negative cases (`0x62` in FloatOps, `0x64` in the ROM loops) are the better supported; the rules for `0x63`, `0x6b`, `0x68` and `0x69` say when the line must be active, not when it must be inactive.
 
+**No polarity explains the cond 4 and cond 8 sites** (sixth pass; established as a negative result, `selftest`). The six GeSeqTest sites that decide it are conds 3, 8 and 4 on `0x60` (1383, 1400, 1407, none taken) and conds 3, 8 and 4 on `0x62` (1387 taken, 1403 and 1410 not taken). Each is the
+same pattern, `ISUB` of register 0 with itself, an idle word, the branch, and the diagnostic engine's ALU flags (equal, zero, neg, A < B, A > B) are identical at the branch word, one word back and two words back for the three sites of each line. Any rule that is a function of a line value, a polarity per
+condition and those flags therefore gives conds 4 and 8 the same outcome as cond 3 on the same line. The data need different ones: write the lines' truth value after x - x as L60 and L62 and the
+polarity of cond c as p(c) (taken when L = p): cond 3 gives L60 != p(3) and L62 = p(3), conds 4 and 8 give L60 != p(c) and L62 != p(c); the first two make L60 != L62, the last make L60 = L62. No assignment exists (checked by enumeration). So
+either conds 4 and 8 read a different flag source than cond 3 (the FpuCondTest cond 8 sites read the ALU and multiplier flags, so a third source is possible), or one of the six outcomes of the unique-path analysis is wrong. The second means a stall does not end a routine, which the start statistic and the host's finish flag argue against.
+`0x60` has 20 more cond 8 uses in the diagnostic image (GE7 1098 to 1142, every one an `ISUB A = 7, B = 3` after a shift or mask, all targeting 1145), in a routine whose host test has not been read.
+
 The three names the host prints (zero, neg, pass, its flag numbers 1, 2, 4) belong to `0x64`, `0x63` and `0x6b` by the failure writers (`0x64` and `0x69` to 1900, `0x63` and `0x68` to 1903, `0x6b` to 1906, which
 OR in `0x100`, `0x200`, `0x400`); a healthy engine takes none of the 92 branches, so the host's message "did not set the flag" means the line stayed high. Reading **R2**, the one that fits best: all four
 conditions 3, 4, 7 and 8 branch when the selected line is high, and the lines of `0x63`, `0x64`, `0x68`, `0x69`, `0x6b` are active low (low when the named condition holds). R2 reproduces FpuCondTest (cond 8), FloatOps (cond 7 on `0x62`), the SeedRom and
@@ -192,11 +224,8 @@ SqRom loops (cond 7 on `0x64` branches back while the counter is not zero: 128 p
 `0x77` sites. The two readings differ only in the sense of the branch; both give the same flags. Conditions 1 and 5 always branch (the six arm words of FloatOps all end with cond 5 to the common tail at 1549; GeSeqTest takes 1369 and 1375), conditions
 2 and 6 never (GeSeqTest 1394, 1396).
 
-**What stays open.** (1) Why the `0x62` branches of conditions 4 and 8 at 1403 and 1410 fall through under R2 (all three `0x62` sites sit after the same ISUB; the two that miss are the ones whose own word is an IPASSA or INEGA with RESEN,
-as 1387 is too). A different sampling stage for conditions 4 and 8 on some lines, or a passing path that the stall-ends-the-routine reading excludes wrongly, would do it. (2) What `0x60`, `0x61`, `0x77`, `0x6f`, `0x67` and the values above `0x77` select.
-(3) RESEN, REGFDEST 1 and 2, RAM2DEST, the other RAM destination codes (RAM1DEST = 4 copies RAM0 slots in GeBusTest at a four-word offset), REGE, REGSEL. (4) Where the SeedRom and SqRom table values enter the data path: the loops (words 920 to 928)
-shift a counter by 16, OR and add, then take `ALUA = 7` shifted back by 16 and ANDed with `C[0x68]`; the two routines differ in the multiplier B select (4 against 5) so the ROM output enters through the multiplier (word 923) and how it returns to the ALU is open. (5) The RECTI2D min/max pairs
-(select 7 as the RAM0 word named by the previous word fits them), DRAWCHAR's 18-word loop and the float adds of select 4 with select 6.
+**What stays open.** (1) Why the `0x62` branches of conditions 4 and 8 at 1403 and 1410 fall through, and the `0x60` ones: see the negative result above; the next route is a second known answer for cond 4 and cond 8 (GE7 24623 on uses cond 4 with `0x69` nine times in a row, a routine of the full image without a host answer). (2) What `0x60`, `0x61`, `0x77`, `0x6f`, `0x67` and the values above `0x77` select.
+(3) RESEN, REGFDEST 1 and 2, RAM2DEST, the other RAM destination codes (RAM1DEST = 4 copies RAM0 slots in GeBusTest at a four-word offset), REGE, REGSEL. (4) The upper bits of the ROM outputs (see the ROM paragraph in the data path). (5) DRAWCHAR's 18-word loop, LINE2I (its y1 never reaches an RE write in the engine, so the model of its multiplier words is incomplete), RECTCOPY and the doubling in RECTI2D's `FADD A = 4, B = 6`.
 
 ### Sequencer: C0
 
@@ -235,7 +264,7 @@ is withdrawn. Tool: [tools/ge7-step.py](../../tools/ge7-step.py), whose `selftes
   (checked by `ge7-step.py run`); DRAWCHAR's words 115 to 117 carry `0x3c`, `0x3d`, `0x3c` and read the position back (ALUA = 5 on a `0x31` word reads the word named by its own field, so 116 and 117, which also add, are
   reads, not counterexamples); PNT2I (63), RECTI2D (84), LINE2I (90) and DRAWCHAR (123) carry `0x1d` and read the colour back (PNT2I word 66, control `0x36`, ALUA = 5, field 0, reads the word named
   at 63). The same pairing holds in `hq2.bin`/`ge7.bin` (COLOR, PNT2I, RECTI2D, LINE2I `0x1d`, CMOV2I `0x3c`, DRAWCHAR `0x3c 0x3d 0x3c ... 0x1d`). So `0x1d` is the current drawing colour and
-  `0x3c`/`0x3d` the current position in a state area at the start of shared RAM. The 0x31 word of RECTCOPY (244, field `0x8d`) names a constants-block word (PROM `C[0x8d]` = 0x17, an
+  `0x3c`/`0x3d` the current position, in a state namespace that is not the constants block ([the data path](#the-data-path), sixth pass). The 0x31 word of RECTCOPY (244, field `0x8d`) names a constants-block word (PROM `C[0x8d]` = 0x17, an
   enumeration), the field being a read address there. `0x32` fields (15218 to 16418 on most words, 32000 and 24550 on two) name a wider area, probably the output or feedback buffer that the 
   stores of the vertex routines fill; the field `0x4022` words are followed by two stores of result words. The `0x34` words carry a one-hot code (2, 4, 8, 16): see the stall bullet.
 - **BRCOND is a flag select for conditions 3, 4, 7 and 8 only.** [binary] Established as an encoding fact: of the 2535 words with those conditions
@@ -333,9 +362,10 @@ with tables of its own, so their contents are known answers for the ROMs, not fo
   920) that shifts a constant (`C[0x68]`) with SLLBR and SLRBR, ANDs it with another constant and stores one value per pass; the pass counter starts at `C[0x5d]` = 128 and counts down to zero, and the host
   expects 128 words per engine at shared word 255 + 128n. **The expected table is the reciprocal seed:
   entry i = round(128 * (2 / (1 + i/128) - 1)), clamped to 127** (0x7f, 0x7e, 0x7c, ... 1; matches all 128 words; `ucode-decode.py roms`).
-  So the seed ROM maps the top seven mantissa bits of x to about 1/x in 7 bits.
+  So the seed ROM maps the top seven mantissa bits of x to about 1/x in 7 bits. The engine now reproduces all 128 words from the microcode: 916 builds `0x3f800000` (`C[0x68]` = 0x7f shifted left 23), each pass ORs the counter shifted left 16, REGB takes the float, the MPASSB word 923 with MPYB = 4
+  reads the seed ROM at its bits 22:16, and 924 to 927 shift the multiplier output (select 7) right by 16, mask it with 0x7f and store it ([the data path](#the-data-path)).
 - **SqRom** (slot 5, 932 to 947): the same shape (constants `C[0x67]`, `C[0x68]`); the table is the reciprocal square root seed over the 128 entries addressed
-  by an exponent-parity bit and six mantissa bits: for i < 64, floor(256 * (1/sqrt(2 (1 + i/64)) - 1/2)); for i >= 64,
+  by an exponent-parity bit and six mantissa bits (the loop ORs the counter shifted left 17 into `0x3f000000`, so the counter's top bit is the exponent bit; MPYB = 5; the engine reproduces all 128 words): for i < 64, floor(256 * (1/sqrt(2 (1 + i/64)) - 1/2)); for i >= 64,
   min(127, floor(256 * (1/sqrt(1 + (i-64)/64) - 1/2))). All 128 entries match.
 - **GeBusTest** (slot 7, 948 to 987): HQ2 loads the ten words the host sent into engine slots 0 to 9; the engine copies each through RAM0 into
   RAM1 and RAM2, reads RAM1 back with ALUA = 1 and stores the ten words in a cond 14 to cond 15 window (stride 10). The host's pattern
@@ -378,6 +408,28 @@ with tables of its own, so their contents are known answers for the ROMs, not fo
 - **Next route.** The RE3 sheet and the diagnostic RE3 tests: no diagnostic test pins an RE3 register address to a meaning beyond the span (the program reads
   back only a pixel span), so the remaining per-address meaning needs either schematic sheet 12 (vendor-derived: inferred at best), the RECTI2D, LINE2I, DRAWCHAR and RECTCOPY data flows (which need select 7 and the float adds of select 4 resolved), or a software
   reader of the registers.
+
+### RECTI2D: the values it writes
+
+PROM image 69 to 88, run in the engine with the host's four operands in slots 0 to 3 (x1, y1, x2, y2) and the stored colour at state word `0x1d`. The routine has no conditional branch, so the values depend only on the data path. Inferred; select 4 as the previous result (see
+[the data path](#the-data-path)) is the weaker part, and every value that goes through a `FADD A = 4, B = 6` carries its doubling.
+Words 70, 73, 77 and 80 are the min and max pairs (select 7), so the routine accepts either corner order: xmin, xmax, ymax, ymin.
+
+| RE3 address | Value for x1, y1, x2, y2 = 100, 200, 150, 260 | Depends on |
+|---|---|---|
+| `0x00` | `0` (`K[0x40]`) | nothing (PNT2I writes `0x8000` here) |
+| `0x08` | `0x64` = xmin as an integer | xmin |
+| `0x20` | float 200.0 = 2 xmin | xmin |
+| `0x21` | float 300.0 with bit 0 set (`0x43960001`) = 2 xmax, OR 1 | xmax |
+| `0x25` | float 520.0 = 2 ymax | ymax |
+| `0x24`, `0x23` | float 398.0 = 2 (ymin - 1), the same word to both | ymin |
+| `0x5f` | `0` (PNT2I and GeFifoTest write `2`) | nothing |
+| `0x40` | the stored colour shifted left 11, as for PNT2I | colour |
+
+Varying one operand by 7 changes exactly those RE values (x1: `0x08` and `0x20`; y1: `0x23` and `0x24`; x2: `0x21`; y2: `0x25`), which is the evidence for the per-coordinate roles; with select 4 as a RESEN-held register every value is a running sum of all four coordinates. The roles are
+therefore inferred as: `0x20` and `0x21` the low and high x edge, `0x25` the high y edge and `0x23` and `0x24` the low y edge less one line, in a float form that is twice the pixel coordinate. Whether the factor of two is real (half-pixel units) or an artefact of select 4 is not settled.
+The first RE3 write is `0x00`, as in PNT2I; the command written to `0x5f` differs (0 against 2), which fits `0x5f` being a command or operation code. LINE2I, DRAWCHAR and RECTCOPY are not tabulated: LINE2I's y1 reaches no RE3 address in the engine, so its multiplier words (MPYA = 3 and 6, MPYB = 3, 4 and 7) are not modelled correctly,
+and DRAWCHAR and RECTCOPY branch on `0x61`, `0x6f`, `0x67` and `0x77` lines that no known answer fixes.
 
 ### Other observations
 
@@ -465,9 +517,9 @@ operands are taken. Inferred from the word shape only.
   beyond the slot counts above: eight tokens, operand counts and their order. These are established.
 - A model that runs `hq2.bin` and `ge7.bin` for GL needs the full HQ2 op set (the `0x80` bits, the branch selectors and about 10 unknown op
   values), the GE7 data path and the RE3 command data. The data path is now specified to the point of running the diagnostic known answers
-  ([the data path](#the-data-path), `Engine` in [tools/ge7-step.py](../../tools/ge7-step.py)): operand selects 0, 1, 3, 4, 5, 6, 7, the register file with its one-word write delay, the two-word taps for shared stores, RE writes and flags, the
-  constants block, the shared-RAM address of `0x31`, `0x32`, `0x33` words, the lines `0x62`, `0x63`, `0x64`, `0x68`, `0x69`, `0x6b`, conditions 1 to 8, and the RE3 write values of INIT, PNT2I and GeFifoTest. It cannot yet run
-  RECTI2D, LINE2I, DRAWCHAR and RECTCOPY (select 7 and the float adds of select 4 are not settled), the ROM tests' table values, flags `0x60`, `0x61`, `0x77` and above, the cond 9, 12 and 13 words, RAM2 and the other
+  ([the data path](#the-data-path), `Engine` in [tools/ge7-step.py](../../tools/ge7-step.py)): operand selects 0, 1, 3, 4, 5, 6, 7 (7 is the multiplier output) and the seed and square-root ROMs, the register file with its one-word write delay, the two-word taps for shared stores, RE writes and flags, the
+  constants block, the state namespace of the `0x11` to `0x13` and `0x31` to `0x33` words (separate from the constants block), the lines `0x62`, `0x63`, `0x64`, `0x68`, `0x69`, `0x6b`, conditions 1 to 8, and the RE3 write values of INIT, PNT2I and GeFifoTest. It cannot yet run
+  LINE2I, DRAWCHAR and RECTCOPY (the multiplier words of LINE2I and the flags `0x61`, `0x6f`, `0x67`, `0x77` are not settled; RECTI2D now runs), the ROM outputs' upper bits, flags `0x60`, `0x61`, `0x77` and above and the cond 4 and 8 senses, the cond 9, 12 and 13 words, RAM2 and the other
   RAM destination codes, and it knows the RE3 meaning of only the addresses listed in [devices/re3](../../devices/re3/README.md#addresses-the-microcode-writes).
 
 ## Review (2026-11-23)

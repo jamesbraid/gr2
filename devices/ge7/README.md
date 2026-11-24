@@ -160,7 +160,7 @@ integer constants: small enumerations, bit masks (`0xffff`, `0x3ffff`, `0x7fffff
 values the console microcode writes to the raster engine (mode words, the clip limits `1279 << 11` and `1023 << 10`; the table is
 in [devices/re3](../re3/README.md#addresses-the-microcode-writes)). They are data, not jump targets: the microcode reads them with
 the ALU operand select that names the shared word at the microword's 16-bit field on control `0x3f` words, and that field is a branch
-target only on branch words ([microcode.md](../../platforms/express/microcode.md#the-data-path)). The diagnostic image's block carries
+target only on branch words ([microcode.md](../../platforms/express/microcode.md#the-data-path)). The state words that store and read-back words name (the drawing colour at `0x1d`, the position at `0x3c` and `0x3d`) are numerically inside this block but are not these constants: `ge7.bin` reads 44 constants that stores also name, so state accesses use a separate namespace, mechanism unknown (second memory or base offset). The diagnostic image's block carries
 a table of small numbers (`C[27 + n] = n`) that its function test loads as ALU function numbers. Each image has its own block: the
 console INIT in the PROM image and in the diagnostic image load the same values from indices that differ by `0x2d`. The split between
 float and integer data and the screen-size constants is established [binary] by inspection of the block; that the microcode reads the
