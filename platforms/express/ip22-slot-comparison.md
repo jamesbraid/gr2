@@ -78,6 +78,16 @@ Indigo2 were not read; no IP22 PROM was in scope.
 - Everest and Challenge GL cores (`IP19`, `IP21`, `IP25`) form their FIFO addresses differently (base-register forms plus a large displacement,
   for example colour stored at `+0x4704c`), so their tokens are not comparable with this scan. Not examined further.
 
+## Kernel gr2.a and the +0x6c1c0 window
+
+Only `gr2_corona_i2c.o` in the IP22 kernel `gr2.a` (SHA-256 `637b6487...`) reaches `+0x6c1c0` to `+0x6c1fc`, and only through
+an index: `lui 0x70000`, plus an index register, minus a 16-bit displacement. So the address is `0x6c1c0` plus the index, not a
+fixed offset. `gr2_i2cProbe` stores `0x00`, `0x55` and `0xaa` at `0x6c1e0` plus the index and reads back `0x55` and `0xaa` to
+compare them. Two unnamed routines in the same object load the bytes at `0x6c1c0` and `0x6c1c4` (`.text` `0x98` to `0xb8`) and store
+to them (`.text` `0xcc` to `0x120`). The other six members (`gr2.o`, `gr2_init.o`, `gr2_retrace.o`, `gr2_tport.o`, `gr2_dma.o`, `gr2_tpucode.o`) have no
+access in the window. This is a scan of the archive's code with constant tracking, not a run; the index's source (the probe's
+first argument) and its callers are outside the archive and were not checked.
+
 ## Open
 
 - The IP22 PROM images and the Indy and Indigo2 board registers are not covered; a different GE count or board revision on IP22 would
