@@ -10,6 +10,8 @@
   ucode-decode.py ide IDE [OUTDIR]    find the microcode images embedded in the ide.IP20 diagnostic program (writes them to OUTDIR)
   ucode-decode.py fields IMG START [N] GE7 field values of N (default 8) words from START, by the field map in microcode.md
   ucode-decode.py alu IMG             histogram of the GE7 ALU function field, named from the diagnostic program's table
+  ucode-decode.py cond IMG            per sequencer condition 1-15: word count, words with BRCOND 0, targets, top BRCOND values
+  ucode-decode.py roms IDE            check the SeedRom and SqRom tables the diagnostic program expects against their closed forms
 
 Prints statistics and per-slot walks only, never a full listing. Format: platforms/express/microcode.md.
 """
@@ -99,6 +101,17 @@ def main():
                 open('%s/%s-%x.bin' % (args[1], 'ge7' if H(img, 0) == 0x966e else 'hq2', off), 'wb').write(img)
         return
     d = open(args[0], 'rb').read()
+    if cmd == 'roms':
+        import math
+        i = d.find(struct.pack('>3I', 0x7f, 0x7e, 0x7c))
+        seed, sq, bus = (struct.unpack('>%dI' % n, d[i + o:i + o + 4 * n]) for o, n in ((0, 128), (0x200, 128), (0x400, 10)))
+        okseed = all(seed[k] == min(127, round(128 * (2 / (1 + k / 128) - 1))) for k in range(128))
+        oksq = all(sq[k] == (math.floor(256 * (1 / math.sqrt(2 * (1 + k / 64)) - .5)) if k < 64
+                             else min(127, math.floor(256 * (1 / math.sqrt(1 + (k - 64) / 64) - .5)))) for k in range(128))
+        print('SeedRom table at %#x: round(128 * (2 / (1 + i/128) - 1)), clamped to 127: %s' % (i, okseed))
+        print('SqRom table: i < 64 floor(256 * (1/sqrt(2 * (1 + i/64)) - 1/2)); i >= 64 the same without the 2, clamped to 127: %s' % oksq)
+        print('GeBusTest pattern words:', ' '.join('%08x' % v for v in bus))
+        return
     rl, end, R = records(d)
     if cmd == 'info':
         bad = sum(((a + x + sum(b for v in w for b in v.to_bytes(4, 'big'))) & 0xffff) != t for a, x, w, t in R)
@@ -130,6 +143,13 @@ def main():
     elif cmd == 'alu':
         c = Counter(field(w, 45, 6) for _, _, w, _ in R)
         print(' '.join('%s:%d' % (ALU.get(k, k), v) for k, v in c.most_common()))
+    elif cmd == 'cond':
+        for c in range(1, 16):
+            S = [w for _, _, w, _ in R if w[0] >> 22 == c]
+            top = Counter(field(w, 51, 8) for w in S).most_common(5)
+            print('cond %2d: %5d words, BRCOND 0 on %5d, field non-zero on %5d, top BRCOND %s'
+                  % (c, len(S), sum(field(w, 51, 8) == 0 for w in S), sum(bool(w[0] & 0xffff) for w in S),
+                     ' '.join('%02x:%d' % kv for kv in top)))
     elif cmd == 'hq2':
         M = {a: w[0] for a, _, w, _ in R}
         for s in map(int, args[1:]) or list(range(401, 410)) + [417, 418, 419]:
