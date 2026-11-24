@@ -519,8 +519,8 @@ def selftest(ide, prom=None, full=None, hq=None, promg=None):
                 a += 1
             return False
         n4 = sum(lead(a) for a in st2)
-        check('full ge7.bin: %d of %d HQ2 routine starts read select 4 for real work before any RESEN word, so there it is neither a held register nor a previous result that '
-              'another routine left (history-dependent); it is the zero constant or the routine would depend on what ran before' % (n4, len(st2)), (n4, len(st2)) == (185, 263))
+        check('full ge7.bin: %d of %d HQ2 routine starts read select 4 for real work before any RESEN word, so under a held register or a previous result '
+              'they depend on what ran before (history-dependent); the zero reading that would avoid this is refuted below' % (n4, len(st2)), (n4, len(st2)) == (185, 263))
     # ---- eighth pass: the right edge of the pixel-DMA routines and the Z-plane DMA (host: gr2_chkzplanes, pix_dma_zb, the 4.0.5G PROM's copy of pix_dma) ----
     # Each routine computes ((x1 + 0x800) << 11) | 1, parks it in register 15 and reads it back later; the read word's result reaches the RE3 write 0x21 only
     # through select 4. With select 4 as the constant zero that value is lost: 0x21 = 0 whatever x1 is, and no RE3 write depends on x1.
