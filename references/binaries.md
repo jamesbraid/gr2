@@ -14,6 +14,7 @@ Copied by the reader from their own IRIX 6.5 base media (June 1998 set) into the
 | `usr/gfx/ucode/GR2/vof/adjntsc.bin` | `a189ed0798dccc5b348618d649ad37bb2a61cf6fd655a4500fdcaf22558cde2e` | Genlock adjustment data for NTSC. Not read. |
 | `usr/gfx/ucode/GR2/vof/adjpal.bin` | `790d4ca3dc3f8e493186f3d40fff8374724f90f6d1ff11c520856c6596b4727a` | Same for PAL. Not read. |
 | `usr/gfx/ucode/GR2/vof/60hz.u` | `db48eeccd7e72ceeefe6ab43b72b92ba67c3369ef552d96e805571a0242e67a9` | One of the 2176-byte video timing files (also `30hz`, `48hz`, `50hz`, `72hz`, `ccir50`, `ccir60`, `iris3k`, `ntsc`, `pal`, `presenter`, `presenter1280`). Not read. |
+| `ide.IP20` (the Diagnostics 5.2 program; MIPS-III ECOFF, not stripped) | `744fdebc31843998a3e7d1452873eb8eaf0560c17b8f051da79564ba28fedf14` | The Indigo diagnostic program. Carries four microcode images (a GE7 and an HQ2 diagnostic image, and a GE7 and an HQ2 console pair) and the host side of the known-answer tests (`gr2_FloatOpsTest`, `gr2_GeSeqTest`, `pix_dma` and the other tests named in the microcode page). Its symbols give the test names. Hashed 2026-11-24 from the reader's ignored `root/ide.IP20`; the install path on the media is not recorded. |
 | `usr/gfx/arch/IP12GR2/libGLcore.so` | `db8d0331ff6c657ab3e1dc60279741ff4ab00a6c11235c5d0df494ae26e13487` | GL core, o32 build, for GR2 on the R3000/R4000 Indigo. Not read. |
 | `usr/gfx/arch/IP12GR232/libGLcore.so` | `b6731da1b4422e1ea1e8fbe841af2e05989d4c3022d9c8b8143a53187f67de9a` | GL core, n32 build; the FIFO token addresses in the pipeline page are read from it. |
 | `usr/gfx/arch/IP12GR2*/libGL.so`, `libgl.so` | see media inventory | GL and IrisGL clients. Not read. |
@@ -28,5 +29,7 @@ Extracted `gr2.a` members (SHA-256):
 - `gr2_tpucode.o` `f77f0399144444240211430708450a556ef67644d4c3beabc220e575315ea211`
 
 The upstream `root/...` symlinks name an IP12 build of these objects (it also lists a `gr2_corona_i2c.o`). They are not the IP20boot objects above; whether the shared members are byte-identical is not checked.
+
+Local PROM copies used by the microcode passes (hashes of the files read; the 4.0.5D image decodes as the page says, with the HQ2 image at `0x49840` and the GE7 image at `0x4a6f4`): 4.0.5D `e6e1f1ed90d5979ef5829f823c2a4ff65ea24c3273a2b065a8b71abeba97f82f`; a file read as 4.0.5G `ae35c0971b594c9f028f79e2fd97bf45fbf170697b334d2ca8a4f46349d939bd`, whose identity with `070-8116-005` was not checked against the library copy (that path was not in the checkout).
 
 PROMs that probe the board: Indigo R4000 `070-8116-004` (4.0.5D) and `070-8116-005` (4.0.5G); the probe is described in the chips repository's `platforms/ip20/gio.md`.
