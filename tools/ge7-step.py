@@ -538,6 +538,17 @@ def selftest(ide, prom=None, full=None, hq=None):
     check('DMA routines, both flags: 0x21 = ((x1 + 0x800) << 11) | 1 and moves with x1 under select 4 = previous result and = RESEN-held register; as the constant zero 0x21 = 0 and no RE3 write depends on x1 '
           '(the right edge never reaches RE3: the zero reading is refuted for these routines)',
           all(v == bias(131) | 1 and not same for nm in ('previous', 'held') for v, same in edge[nm]) and all(v == 0 and same for v, same in edge['zero']))
+    # 1250 (HQ2 slot 56, the host's pix_dma_zb) sets RE3 0x6b to the constant C[0x1d] = 2 before the transfer. The host's gr2_chkzplanes sends 1 to slot 52 (+0x400d0) before writing
+    # Z rows and 0 after, and 2 to slot 53 (+0x400d4) before reading them back and 0 after; the slot 52 routine (GE7 1161) and slot 53 routine (GE7 1199) take that word from the bus.
+    def tok(st, v):
+        e = Engine(diag, C, {0: v}, bus=v); e.run(st, 60); return {a: x for _, a, x in e.re}
+    t52, t52z, t53, t53z = tok(1161, 1), tok(1161, 0), tok(1199, 2), tok(1199, 0)
+    check('Z-plane tokens: slot 52 with 1 writes 0x60 = 0, 0x61 = 0xffffffff, 0x65 = 0x40, 0x66 = 0; with 0 the pair swaps (0x60 = 0xffffffff, 0x61 = 0) and 0x65 = 0; slot 53 writes 0x6b = the host word (2, then 0)',
+          (t52[0x60], t52[0x61], t52[0x65], t52[0x66]) == (0, 0xffffffff, 0x40, 0) and (t52z[0x60], t52z[0x61], t52z[0x65]) == (0xffffffff, 0, 0) and (t53[0x6b], t53z[0x6b]) == (2, 0) and C[0x1d] == 2)
+    z1, z0 = (dwrites(Engine, 1250, fl, 131)[1] for fl in (1, 0))
+    zz = dwrites(Zero4, 1250, 0, 131)[1]
+    sixb = lambda e: [v for _, a, v in e.re if a == 0x6b]
+    check('GE7 1250: RE3 0x6b = 2 first; at the end 0 on the write path (flag 1) and, on the readback path (flag 0), the right-edge word 0x441801 for select 4 = previous result (0 for zero)', sixb(z1) == [2, 0] and sixb(z0) == [2, bias(131) | 1] and sixb(zz) == [2, 0])
     return ok
 
 def main():
