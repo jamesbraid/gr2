@@ -15,17 +15,24 @@ the GR4 sheet 11 and the RE3 sheet 12.
 
 ## 2. How is control flow resolved in the GE7 routines?
 
-Partly answered: condition 10 is the stall at idle; BRCOND (C3[26:19]) selects GE7 results for conditions 3, 4, 7, 8. Open: the
-polarity of conditions 1 to 8, what control `0x3f` and `0x31` do when the target is not wanted (the PROM chain 65, 125, 126, 127 has
-no exit; the FloatOps routine's second word is a `0x31` word that must fall through), and C0[21]. Routes tried: the GeSeqTest
-and FloatOps structure; BRCOND statistics. Next: step GeSeqTest's straight-line program with candidate polarities against its
-required outcome (nine RAM0 words not -1, shared flag 1).
+Answered in microcode.md: C0[15:0] is also the ALU immediate (ALUA = 5), so the "jump chains" were immediates; `0x31` with target 0 falls
+through; condition 10 is the stall; C0[21] is probably unstored. Still open:
+
+- The polarity of conditions 2, 4, 6 and 8 (GeSeqTest fixes only 1, 5 and 3 with BRCOND `0x60`/`0x62`, and the four consistent outcome sets
+  differ on the rest), and what flag each BRCOND value selects. Routes tried: `ge7-step.py paths` over GeSeqTest, FpuCondTest's flag names
+  (zero, neg, pass). Next: the FpuCondTest routine (GE7 1562 on) pairs each ALU function with a flag and a failure record; step it with the ALU
+  results of the immediates it loads to pin BRCOND to a flag.
+- What a `0x31` word with a non-zero field does (PNT2I word 63 must not jump at once). Routes tried: PNT2I, GeFifoTest, field statistics
+  (1624 of 2144 targets are below 256, 272 equal 141). Next: the HQ2 side of a console draw, or a trace of RE3 writes.
+- What conditions 9, 11, 12, 13, 14 and 15 do and what writes the shared pass word (1) at the end of GeSeqTest. Routes tried: their
+  position in FloatOps' tail, FpuCondTest's failure pad, GeSeqTest's end. Next: the same routines with the HQ2 operands of slots 12 and 57.
 
 ## 2a. RE3 command data
 
-READDR values per console routine are listed in microcode.md; which register each is and what supplies the data is not known. Routes
-tried: GeFifoTest known answer (a ten-pixel span at x = 100 from five words), PNT2I/RECTI2D/LINE2I word comparison. Next: schematic
-sheet 12, the data source fields (DSEL, REGFDEST), and the RE3 window offsets in devices/re3.
+Written addresses per routine are in microcode.md (the PROM image's seven console routines and GeFifoTest). Open: the meaning of each address and
+the exact data source of a write (same-cycle ALU result is inferred, previous-word result not excluded). Routes tried: GeFifoTest known answer,
+console routines, INIT constants. Next: schematic sheet 12 (vendor-derived, so inferred at best), and the Ram12, Shram, SeedRom, SqRom and GeBus
+tests for the RAM1/RAM2 and register-file destination fields (not yet read: their routines start at GE7 395, 388, 916, 932, and 948).
 
 ## 3. HQ2 ops outside the console set
 
