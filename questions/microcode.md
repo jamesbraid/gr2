@@ -4,30 +4,35 @@ Each entry: the question, the routes tried, the next route. Answered questions m
 and are deleted here. Grades and provenance tags as in [AGENTS.md](../AGENTS.md). This continues item 1 and item 3 of [ge7.md](ge7.md); the
 coordinator merges the index.
 
-## 1. Which GE7 fields carry the data path and the raster-engine output?
+## 1. What do the remaining GE7 fields select?
 
-Decoded so far: the 16-bit target in C0[15:0], the sequencer control and condition in C0[25:16], the input slot number in C4[31:24]
-(it matches the slot sets of all console routines), a register select in C1 qualified by C2[31:30]. Not decoded: C2 low half, all of C3,
-C4[23:0] and the second instruction form flagged by C2[25] (about 12% of words). The raster-engine write is not located. Routes tried:
-field statistics over `ge7.bin`; the nine console routines against the HQ2 slot sets; comparison of the drawing routines with
-CMOV2I, which draws nothing. Next: (a) the diagnostic program's `gr2_GeSeqTest` and `gr2_FloatOpsTest`, which exercise the sequencer
-and the floating-point unit with known operands and may name the operations; (b) the RE3 command words the GL core sends for a clear
-and for a point, found in the matching `ge7.bin` routines by following the HQ2 tokens (clear, point and line tokens in the pipeline table);
-(c) the GR4 schematic sheets "GE7 Ucode & Shared RAM" and "2GE7 ASIC".
+Located (see microcode.md, the field map): ALU function (FALUOP, C3[18:13]), multiplier operation, RAM0 address (the input slot),
+register selects, raster-engine write enable and address. Not decoded: what ALUA, ALUB, MPYA, MPYB, BUSEL, DSEL, REGFDEST, SHFTSRC,
+MISCSRC and the RAMn DEST fields choose, and how REGA to REGE and REGWR address the register file. Routes tried: the FloatOps arms
+(operand selects are the same in the add and subtract arms, differ in the multiply arms), field statistics. Next: the Ram12, Shram,
+SeedRom, SqRom and GeBus tests (their GE7 routines are known by HQ2 slots 2 to 7) as known answers for the RAM and register fields; read
+the GR4 sheet 11 and the RE3 sheet 12.
 
 ## 2. How is control flow resolved in the GE7 routines?
 
-Chains such as the shared tail of the PROM image loop forever if every jump word is unconditional; the exit condition is not in
-C0 or C1. Routes tried: jump-word statistics (5279 with C1 = 0, 630 with it nonzero). Next: decode the second instruction form
-(item 1) and check whether C3 or C4 carry a condition select; read the diagnostic program's sequencer test for the condition names.
+Partly answered: condition 10 is the stall at idle; BRCOND (C3[26:19]) selects GE7 results for conditions 3, 4, 7, 8. Open: the
+polarity of conditions 1 to 8, what control `0x3f` and `0x31` do when the target is not wanted (the PROM chain 65, 125, 126, 127 has
+no exit; the FloatOps routine's second word is a `0x31` word that must fall through), and C0[21]. Routes tried: the GeSeqTest
+and FloatOps structure; BRCOND statistics. Next: step GeSeqTest's straight-line program with candidate polarities against its
+required outcome (nine RAM0 words not -1, shared flag 1).
+
+## 2a. RE3 command data
+
+READDR values per console routine are listed in microcode.md; which register each is and what supplies the data is not known. Routes
+tried: GeFifoTest known answer (a ten-pixel span at x = 100 from five words), PNT2I/RECTI2D/LINE2I word comparison. Next: schematic
+sheet 12, the data source fields (DSEL, REGFDEST), and the RE3 window offsets in devices/re3.
 
 ## 3. HQ2 ops outside the console set
 
-The `0x80` control operand (`0x0611`, `0x0601`, `0x0641`, `0x1000`, ...), the `0x40`/`0x60` flag forms (`0x3661`, `0x1101`, `0x2600`),
-type-6 and type-7 branches and the roughly 400 words with op values `0x01` to `0x06`, `0x10`, `0x22`, `0x81`, `0x90` to `0xd0`
-are not decoded. Routes tried: value statistics over `hq2.bin`; the console routines. Next: follow the GL tokens that use them (the
-vertex-attribute path in [pipeline.md](../platforms/express/pipeline.md)), where the operand count and the engine
-distribution (ge7.md item 2) are visible in the sequence; the registers they write are the ones in [devices/hq2](../devices/hq2/README.md).
+Partly answered (microcode.md, "HQ2 words beyond the console set"): `0x80` words are status masks that the following type-6 or
+type-7 branch tests, the diagnostic image uses an older operand form. Open: which `0x80` bit is which, the `0x20` operands other than
+`0x2000`, the other `0x40`/`0x60` flag forms, the ops `0x01` to `0x06`, `0x10`, `0x22`, `0x81`, `0x90` to `0xd0`. Next: follow the GL
+tokens that use them (vertex-attribute path in pipeline.md); the diagnostic HQ2 image's 20 op values as known answers.
 
 ## 4. Header words and the second record half-word
 
