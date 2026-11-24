@@ -197,7 +197,7 @@ def selftest(ide, prom=None, full=None, hq=None):
     starts = {388, 395, 917, 933, 960, 1535}
     check('0x31 with target 0 is the routine\'s own work word at %s' % sorted(starts),
           all(dec(diag[a])['ctl'] == 0x31 and not dec(diag[a])['tgt'] for a in starts))
-    check('ALUB is never 5 (ALUA = 5 is the immediate select)', all(field(w, 68, 3) != 5 for w in diag.values()))
+    check('ALUB is never 5 (ALUA = 5 is the shared-word select)', all(field(w, 68, 3) != 5 for w in diag.values()))
     # GeSeqTest again: a passing run ends with the shared-RAM store of the value 1 (word 1421: cond 15, SHFTSRC 3, after
     # IPASSA of register 1 at 1419). Exactly one assignment reaches it, and it takes none of the four early exits.
     stores = [a for a in range(1354, 1456) if a in diag and field(diag[a], 84, 2) == 3 and dec(diag[a])['cond'] == 15]
@@ -230,7 +230,7 @@ def selftest(ide, prom=None, full=None, hq=None):
     fn = [(a, dec(diag[a])['tgt'] - 27, dec(diag[a + 1 + (field(diag[a + 1], 20, 4) != 12)])['alu']) for a in range(1580, 1897)
           if a in diag and dec(diag[a])['imm'] and field(diag[a], 68, 3) == 4 and dec(diag[a])['alu'] == 52 and not field(diag[a], 20, 4)]
     nmul = [f for _, f, _ in fn if 16 <= f <= 19]
-    check('FpuCond: the number loaded before each of %d tests is the ALU function number plus 27 (%d multiplier tests 16..19)' % (len(fn), len(nmul)),
+    check('FpuCond: the constants index loaded before each of %d tests is the function number plus 27 (%d multiplier tests 16..19)' % (len(fn), len(nmul)),
           all(f == alu or 16 <= f <= 19 for _, f, alu in fn) and sorted(nmul) == [16, 17, 18, 19] and len(fn) == 45)
     # ALUA = 5 on a 0x3f word reads shared word C0[15:0], which the loader filled from the image's constants block: the "function + 27" is the
     # index, and the constant at it is the function number itself.
@@ -266,6 +266,13 @@ def selftest(ide, prom=None, full=None, hq=None):
     check('SqRom table is floor(256 * (1/sqrt(m) - 1/2)) with m = 2(1 + i/64) for i < 64, 1 + (i-64)/64 above, clamped to 127',
           all(sq[k] == (math.floor(256 * (1 / math.sqrt(2 * (1 + k / 64)) - .5)) if k < 64 else min(127, math.floor(256 * (1 / math.sqrt(1 + (k - 64) / 64) - .5))))
               for k in range(128)))
+    # Select 7 in Ram12Test's OR chain: each A = 7, B = 6 word follows an ISUB, so 7 is the previous OR two words back and 6 the difference.
+    chain = [a for a in range(396, 914) if a in diag and field(diag[a], 65, 3) == 7 and field(diag[a], 68, 3) == 6]
+    check('Ram12Test: %d OR words with ALUA = 7, ALUB = 6 each follow an ISUB (the accumulator is two words back)' % len(chain),
+          len(chain) == 154 and all(dec(diag[a - 1])['alu'] == 41 for a in chain))
+    # SeedRom and SqRom run the same words; the multiplier B select is the only field that differs beside constants indices, shift counts and targets.
+    mb = [(916 + k, field(diag[916 + k], 62, 3), field(diag[932 + k], 62, 3)) for k in range(16) if field(diag[916 + k], 62, 3) != field(diag[932 + k], 62, 3)]
+    check('SeedRom and SqRom differ in the multiplier B select only, at word 923: %s (the two ROM outputs)' % mb, mb == [(923, 4, 5)])
     if prom:
         P5 = load(U['cut'](prom.read_bytes(), 0x4a6f4))
         want = {10: 'INIT', 51: 'COLOR', 58: 'PNT2I', 69: 'RECTI2D', 89: 'LINE2I', 107: 'CMOV2I'}
@@ -298,6 +305,8 @@ def selftest(ide, prom=None, full=None, hq=None):
         check('full ge7.bin: %d nonzero 0x3f fields all below 0xfc (max %#x); %d control 0x32 words, fields below 0x8000 (max %#x), %d not records, none with a condition'
               % (len(f3f), max(f3f), len(w32), max(t32), sum(t not in F for t in t32)),
               max(f3f) < 0xfc and len(w32) == 99 and max(t32) < 0x8000 and sum(t not in F for t in t32) == 8 and not any(dec(w)['cond'] for w in w32))
+        u = [w for w in F.values() if dec(w)['ctl'] == 0x3f and dec(w)['tgt'] and not dec(w)['imm']]
+        check('full ge7.bin: %d control 0x3f words carry a field that ALUA does not read; all have MPYA = 4' % len(u), len(u) == 556 and all(field(w, 59, 3) == 4 for w in u))
         w34 = [dec(w)['tgt'] for w in F.values() if dec(w)['ctl'] == 0x34]
         check('full ge7.bin: control 0x34 fields (%d words) are one-hot codes %s' % (len(w34), sorted(set(w34))), sorted(set(w34)) == [2, 4, 8, 16] and len(w34) == 81)
         # Every routine ends at a condition-10 stall: a routine start sits two words after a stall in 167 of 263 distinct HQ2 starts, and 251 of 263
@@ -352,6 +361,9 @@ def selftest(ide, prom=None, full=None, hq=None):
         check('INIT writes the same value in both builds at %d of 0x60 to 0x74 and 0x46 to 0x55 (%s ...), though its constants-block indices differ by 0x2d'
               % (sum(ri.get(a) == rd.get(a) for a in com), ', '.join('%02x=%x' % (a, ri[a]) for a in (0x64, 0x66, 0x6d, 0x72, 0x73, 0x74))),
               all(ri.get(a) == rd.get(a) for a in com) and len(com) >= 9)
+        nz = sorted(a for a in ri if ri[a] and ri[a] == rd.get(a))
+        check('INIT: %d of the written values agree and are non-zero (%s); 0x6d, 0x73 and 0x74 do not fit a 16-bit immediate' % (len(nz), ' '.join('%02x' % a for a in nz)),
+              nz == [0x60, 0x64, 0x66, 0x6d, 0x72, 0x73, 0x74] and all(ri[a] > 0xffff for a in (0x6d, 0x73, 0x74)))
     return ok
 
 def main():
