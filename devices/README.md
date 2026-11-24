@@ -4,4 +4,11 @@
 
 | Page | Title | Summary |
 |---|---|---|
+| [bt457/](bt457/README.md) | Bt457: the three colour DACs on the Express board | Three Brooktree Bt457 RAMDACs, one per colour, take the five XMAP5 pixel streams multiplexed 5:1 and produce the... |
+| [bt475/](bt475/README.md) | Bt475 and Bt477: datasheet only, no Express use found | The repository holds the Brooktree Bt475/Bt477 datasheet (`docs/Brooktree_Bt475_477.pdf`). |
+| [clock/](clock/README.md) | Board configuration ports and the pixel clock | The four byte-wide ports at `+0x6c000` to `+0x6c00c` and the clock data port at `+0x6c020` of the Express graphics... |
+| [ge7/](ge7/README.md) | GE7: the geometry engines | The floating-point geometry engines behind the HQ2. |
 | [hq2/](hq2/README.md) | HQ2: the host-visible window | What the Indigo PROM and the IRIX IP20 kernel driver touch in the HQ2's part of the graphics slot, as offsets from... |
+| [re3/](re3/README.md) | RE3: the raster engine | The third-generation raster engine that turns the geometry engines' line and triangle parameters into pixel writes. |
+| [vc1-express/](vc1-express/README.md) | VC1 on the Express board: timing, cursor and display IDs | The Express-side port set, init and monitor-load sequences for the VC1, the chip that generates the video timing... |
+| [xmap5/](xmap5/README.md) | XMAP5: window and colour mapper (five per Express board) | What the five XMAP5 chips do between the VC1 and the DACs, where the host reaches them, and what the Indigo PROM and... |

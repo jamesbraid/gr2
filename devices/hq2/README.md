@@ -2,17 +2,18 @@
 
 What the Indigo PROM and the IRIX IP20 kernel driver touch in the HQ2's part of the graphics slot, as offsets from the board
 base (`0x1f000000`). This is the window only; the HQ2's instruction set, token numbering and DMA engine are not covered. No
-`registers.toml` yet: the grades below are not yet settled enough to generate from. The board context is in
-[the survey](../../platforms/express/README.md).
+board context is in [the survey](../../platforms/express/README.md); the register map is [registers.toml](registers.toml) (generated reference
+[registers.md](registers.md)) and the host-side contract (flow control, completion flags, context switch, pixel DMA, probe answers) is
+[platforms/express/host-contract.md](../../platforms/express/host-contract.md). The shipped IRIX diagnostic program names every HQ2 register and
+status field; its names are used below next to NetBSD's. Provenance: `[binary]` shipped binary, `[public]` NetBSD or published document.
 
 Sources: IP20 kernel objects `gr2_init.o` and `gr2.o` (member offsets, disassembly with relocations; SHA-256 in
 [references/binaries.md](../../references/binaries.md)); NetBSD `grtwo.c` and `grtworeg.h` (software expectation); the Elan
 Graphics Technical Report for the chip's existence and the FIFO. Names in the "Name" column are NetBSD's where it has one and
 are not the vendor's. Labels as in [AGENTS.md](../../AGENTS.md).
 
-All accesses are from the IP20 driver as 32-bit loads and stores unless a width is given. A qtest can discriminate for each row
-the power-on reading, whether a write reads back, and any side effect; those are unknown for every row below because no
-reset-state source has been read, so none is listed per row.
+All accesses are from the IP20 driver as 32-bit loads and stores unless a width is given. No source states a reset value for any register
+here, so none is given except the constant probe word. Per-register qtest discriminators are in `registers.toml`.
 
 ## Regions
 
@@ -30,23 +31,28 @@ reset-state source has been read, so none is listed per row.
 | Offset | Name | Access seen in IRIX | Grade |
 |---|---|---|---|
 | `+0x6a000` to `+0x6a03c` | attribute jump table (NetBSD: `ATTRJUMP`) | the microcode loader writes 16 words from image offset `0xfc`, reads them back | established as a 16-word table (`Gr2DownloadHQ2`). Meaning inferred from NetBSD's name. |
-| `+0x6a040` | status (NetBSD: `VERSION`) | read in `Gr2FIFOHandler` (`gr2.o` `0x2a0`), `Gr2FIFOPollLowater` (`0x158`) and `Gr2FIFOTimeoutCallback` (`0x1f8`): bits 12:6 are compared with thresholds 35, 36, 40, 41, 63 as a FIFO fill count; bit 5 set makes the interrupt handler print an error. | established that the count and bit 5 are read this way. **NetBSD uses the same register as a version word**; unresolved, see [questions](../../questions/README.md). |
-| `+0x6a044` | `NUMGE` | write: GE count (from `_Gr2ProbeGEs`), or count with bit 4 set when it is 8 (`_Gr2HQ2RegInit` `0xb70`) | established |
+| `+0x6a040` | status (ide: "HQ2 version register"; NetBSD: `VERSION`) | read in `Gr2FIFOHandler` (`gr2.o` `0x2a0`), `Gr2FIFOPollLowater` (`0x158`), `Gr2FIFOTimeoutCallback` (`0x1f8`), `_Gr2UcodeReady`, the DMA triggers and `Gr2SetMonitor`. Decoded in full by the diagnostic program (`gr2_rdHQ2reg`): bit 0 finish flag 3, bit 1 finish flag 2, bit 2 finish flag 1, bits 4:3 DMA sync source, bit 5 FIFO overflow, bits 12:6 FIFO count, bit 13 FIFO low water, bits 15:14 zero, bits 19:16 `ge_ctr`, bits 22:20 `ge_ptr`, bits 31:23 HQ2 version. | established [binary] for the field names and boundaries; the roles of `ge_ctr`, `ge_ptr` and low water are unknown. Question 1 of the old list is settled: the version is bits 31:23, as the PROMs and NetBSD read it. |
+| `+0x6a044` | `NUMGE` | write: GE count (from `_Gr2ProbeGEs`), or count with bit 4 set when it is 8 (`_Gr2HQ2RegInit` `0xb70`). The diagnostic program reads it back and compares ("HQ2: Wrong NUMGE") | established |
+| `+0x6a048` | `FIN1` (ide: Finish Flag 1) | write 0 by the diagnostic program and the 4.0.5G PROM before a pixel DMA; clears status bit 2 | established [binary] |
+| `+0x6a04c` | `FIN2` (ide: Finish Flag 2) | write 0 before every context switch, microcode start and DMA command; clears status bit 1 | established [binary] |
+| `+0x6a050` | `DMASYNC` (ide: DMA sync source) | write 2 before every DMA; write 0 in early init; values 0 vertical interrupt, 1 video sync, 2 clear, 3 set | established for the stores and the value names; effect inferred |
 | `+0x6a054` | `FIFO_FULL_TIMEOUT` | write `100` | established value; NetBSD's name |
 | `+0x6a058` | `FIFO_EMPTY_TIMEOUT` | write `255` | established value; NetBSD's name |
 | `+0x6a05c` | `FIFO_FULL` | write `40` at init; the FIFO interrupt handler writes the same 40 back when re-arming (`Gr2FIFOPollLowater` `0x158`, handler `0x2a0`) | established value; the field is a fill threshold, inferred from the compares against the status field |
 | `+0x6a060` | `FIFO_EMPTY` | write `1` | established value; NetBSD's name |
 | `+0x6a064` | `GE7_LOAD_UCODE` | write: fifth word of each GE7 microcode record; read back masked with `0x03dfffff` | established (`Gr2DownloadGE7`) |
-| `+0x6a06c` | `HQ_GEPC` | read once in `_Gr2ProbeChipRev`; the upper 16 bits are kept as a revision byte | established that it is read and shifted; "revision" inferred |
+| `+0x6a068` | `GEDMA` | the GIO address of every MC graphics DMA to or from the board; the kernel writes 0 twice after a DMA timeout | established [binary]; see [host-contract](../../platforms/express/host-contract.md) section 3 |
+| `+0x6a06c` | `HQ_GEPC` | read once in `_Gr2ProbeChipRev`; the upper 16 bits are kept in the revision byte. The diagnostic program says it cannot be read ("hw bug") | established that it is read; the byte is **not** the HQ2 revision (that is status bits 31:23) |
 | `+0x6a070` | `GEPC` | write: GE microstore address (counts up to 0xffff when clearing the store; set to each record's address when loading); written 0 by `Gr2TpSetup` | established |
-| `+0x6a074` | `INTR` | not touched by the IP20 driver | unknown |
+| `+0x6a074` | `INTR` (ide: "Intr bit (cleared by host)") | not touched by the IP20 driver or PROMs; the diagnostic program can write it | inferred role as a host-cleared interrupt bit; which interrupt it raises unknown |
 | `+0x6a078` | `UNSTALL` | `Gr2TpSetup` writes 0 after the microcode loads | established that a 0 is written; the name's meaning is NetBSD's |
 | `+0x6a07c` | probe word (`MYSTERY`) | read in `Gr2Probe` after `badaddr`; must equal `0xdeadbeef` | established (also the PROM probe, via the chips gio page) |
 | `+0x6a080` | `REFRESH` | write `16` | established value; NetBSD's name |
-| `+0x6a100` | `FIN3` | not touched by the IP20 driver | unknown |
+| `+0x6a100` | `FIN3` (NetBSD) | not touched by any shipped program | unknown |
+| `+0x6b000` | Finish Flag 3 write port (ide) | write 0 to clear status bit 0 before a command; `Gr2PcxSwap` restores the saved bit of the incoming context here; the X server clears it before image reads and writes | established [binary] |
 
-NetBSD also names `+0x6a048` (`FIN1`), `+0x6a04c` (`FIN2`), `+0x6a050` (`DMASYNC`) and `+0x6a068` (`GEDMA`): not touched by
-the IP20 driver objects read so far, **unknown**.
+The roles of NetBSD's `FIN1`, `FIN2`, `DMASYNC` and `GEDMA` offsets, listed as untouched in the first pass, are settled by the kernel DMA and context
+routines and by the diagnostic program's HQ2 register menu (which prints "Finish Flag 1/2/3", "DMA sync source", "GE DMA", "Intr bit").
 
 ## GE7 slots (`+0x68000`)
 
@@ -66,9 +72,9 @@ the IP20 driver objects read so far, **unknown**.
 
 ## What would settle the unknowns
 
-HQ2 reset values: no source read yet. Candidates: the PROM's graphics diagnostic routine (`0xbfc0e6f0` onward in 4.0.5D), the
-Indigo diagnostic program `ide.IP20`, and the microcode images themselves (the attribute jump table and the first sequencer
-words show what the HQ2 expects at start). Reading plan is in the survey.
+HQ2 reset values: none stated by the PROM, the kernel or the diagnostic program (which only writes and reads back). The sequencer ISA, the
+meaning of `ge_ctr`, `ge_ptr` and the low-water bit, the two timeout units, and what raises `INTR` need the microcode decoded. Open items:
+[questions/hq2.md](../../questions/hq2.md).
 
 ## Review (2026-11-23)
 
@@ -83,3 +89,11 @@ this page:
 - `+0x6a040`: IRIX also tests bits 1 and 0; no IRIX read looks at bits 31:24, so NetBSD's version byte is unconfirmed (see question 1).
   The `+0x6a06c` upper-half revision remains inferred.
 - A qtest that sets up slots 1 and 3 but not 2 would discriminate the probe-count rule (the count would be 4).
+
+## Review update (host contract, 2026-11-23)
+
+- Question 1 of the survey list (is the top byte of `+0x6a040` an HQ2 version) is settled: yes, bits 31:23, named "HQ2 version" by the diagnostic program,
+  stored by both PROMs and NetBSD; the kernel's `+0x6a06c` upper half is a register the diagnostic program calls unreadable.
+- The status bits the kernel tests besides the FIFO count and overflow are finish flags 2 and 3 (bit 1 and bit 0), not error bits.
+- `+0x6b000` is the write port of the third finish flag; the HQ2 register page therefore extends over two 4 KiB pages (`+0x6a000`, `+0x6b000`) as NetBSD's
+  `+0x6b004` upper bound suggests.

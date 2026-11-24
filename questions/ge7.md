@@ -35,14 +35,3 @@ or only slot 0? What are the offsets `+0x683f8` to `+0x683ff` and the storage be
 tried: every access to `+0x68000` to `+0x69fff` in the PROM, the kernel objects and the diagnostic program. Next: the diagnostic
 program's per-engine tests (`gr2_GeBusTest`, `gr2_GeFifoTest`, `gr2_GeSeqTest`, `gr2_FloatOpsTest`, `gr2_Ram12Test`, `gr2_ShramTest`,
 `gr2_SeedRomTest`, `gr2_SqRomTest`) read in full: their names suggest the per-engine RAM, FIFO and ROMs they exercise.
-
-## 5. Revision register: resolved, kept for the index
-
-`+0x683f4` bits 7:5 (kernel driver and PROM) against NetBSD's `+0x680fc` bits 7:4: answered in the GE7 page in favour of `+0x683f4`.
-Question 3 in [README.md](README.md) can be deleted by the coordinator.
-
-## 6. Adjacent: HQ2 revision source (for the HQ2 page)
-
-The PROM probe stores `(word at +0x6a040) >> 23` as the HQ2 revision byte (`0xbfc0ecec`); the kernel probe stores
-`(half-word at +0x6a06c) >> 16` in the same record byte (`gr2_init.o` `0x108`). NetBSD agrees with the PROM. This bears on question 1 in
-[README.md](README.md) and on the HQ2 revision guess; recorded here because it was found while settling the GE7 revision.
