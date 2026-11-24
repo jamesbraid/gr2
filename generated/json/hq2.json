@@ -1,6 +1,6 @@
 {
  "generator": "defs-gen 3",
- "input_sha256": "db608454c7808b9d193bbbb9f5045bbecd35eddd286ca290684ba804a4f80078",
+ "input_sha256": "6b0209a7be7eb709d083d2295da39a130cc6e09c73033c65727cd369f60a2e2f",
  "schema": "defs-flat/1",
  "source": "devices/hq2/registers.toml",
  "profile": "public",
@@ -286,7 +286,7 @@
    "stride": 4,
    "space": null,
    "reset": "unknown",
-   "grade": "established"
+   "grade": "inferred"
   },
   {
    "unit": "hq2",

@@ -1,6 +1,6 @@
 <!-- generated from devices/hq2/registers.toml by defs-gen - do not edit, change the source -->
 <!-- defs-gen 3 -->
-<!-- input sha256 db608454c7808b9d193bbbb9f5045bbecd35eddd286ca290684ba804a4f80078 -->
+<!-- input sha256 6b0209a7be7eb709d083d2295da39a130cc6e09c73033c65727cd369f60a2e2f -->
 
 # HQ2 command engine: FIFO window, microstore and host registers
 
@@ -28,7 +28,7 @@ Every item has a grade: established, inferred or unknown. A grade says how the i
 | `fifo_empty` | 0x6a060 | rw | 32 |  |  | unknown | established |  |
 | `ge7_load_ucode` | 0x6a064 | rw | 32 |  |  | unknown | established |  |
 | `gedma` | 0x6a068 | rw | 32 |  |  | unknown | established |  |
-| `hq_gepc` | 0x6a06c | r | 32 |  |  | unknown | established |  |
+| `hq_gepc` | 0x6a06c | r | 32 |  |  | unknown | inferred |  |
 | `gepc` | 0x6a070 | w | 32 |  |  | unknown | established |  |
 | `intr` | 0x6a074 | rw | 32 |  |  | unknown | inferred |  |
 | `unstall` | 0x6a078 | w | 32 |  |  | unknown | established |  |
@@ -57,17 +57,17 @@ Array of 16 registers, stride 4.
 
 ### Register `status`
 
-Status word. The diagnostic program names it the HQ2 version register and prints the fields below; the kernel and PROMs read it by word load and use the fields marked. The ide field names are those it prints. Bits 2:0 are three finish flags set by microcode and cleared by host stores (finish_flag3 by the finish3 register, finish_flag2 by the fin2 register, finish_flag1 by the fin1 register). The fill count and overflow bit are the kernel's FIFO flow control. [binary] qtest: after a store at the fin2 register of 0 bit 1 reads 0; the count field equals the number of words queued and not consumed; version reads 0 on every board seen (gfxinfo prints HQ2 rev A, [public] Usenet postings).
+Status word. The diagnostic program names it the HQ2 version register and prints the fields below; the kernel and PROMs read it by word load and use the fields marked. The ide field names are those it prints. Bits 2:0 are three finish flags set by microcode and cleared by host stores (finish_flag3 by the finish3 register, finish_flag2 by the fin2 register, finish_flag1 by the fin1 register). The fill count and overflow bit are the kernel's FIFO flow control. [binary] qtest: after a store at the fin2 register of 0 bit 1 reads 0; the count field equals the number of words queued and not consumed; version is 0 on every board seen only if the PROM byte matches what gfxinfo prints (HQ2 rev A, [public] Usenet postings; see the version field).
 
 | Bits | Field | Grade | Values | Source | Description |
 |---|---|---|---|---|---|
-| 31:23 | `version` | established |  |  | ide HQ2 version. Both PROMs store (word >> 23) as the HQ2 revision byte (the low eight bits of this field). Gfxinfo's 'HQ2 rev A' corresponds to value 0 (inferred: rev letters count from A). [binary][public] |
+| 31:23 | `version` | established |  |  | ide HQ2 version. Both PROMs store (word >> 23) through a byte store, so the byte holds bits 30:23. NetBSD masks 0xff000000 and then shifts by 23, a doubled value of bits 31:24 that leaves bit 23 out; the two agree only while the field is 0. The kernel fills the same probe-record byte from bits 23:16 of hq_gepc instead, and gfxinfo's 'HQ2 rev A' most likely reports that byte (Gr2Info copies the record out; gfxinfo itself not read), so which register carries the revision is unsettled. Value 0 reads as rev A only if letters count from A (inferred). [binary][public] |
 | 22:20 | `ge_ptr` | established |  |  | ide ge_ptr. Role unknown; three bits, wide enough to count eight engines. [binary] |
 | 19:16 | `ge_ctr` | established |  |  | ide ge_ctr. Role unknown; four bits. [binary] |
 | 15:14 | `zero` | established |  |  | ide zero. Printed as a field that reads zero. [binary] |
 | 13 | `fifo_lowater` | established |  |  | ide FIFO low water. Never read by IRIX. Its condition (against FIFO_EMPTY or FIFO_FULL) is unknown. [binary] |
 | 12:6 | `fifo_count` | established |  |  | ide FIFO count. Words in the FIFO. The kernel compares it with 35, 36, 40, 41 and 63. [binary] |
-| 5 | `fifo_overflow` | established |  |  | ide FIFO overflow. The kernel interrupt handler prints 'FIFO overflowed, data is destroyed - Reset graphics' when set and does nothing else. How it clears is unknown. [binary] |
+| 5 | `fifo_overflow` | established |  |  | ide FIFO overflow. The kernel interrupt handler prints 'FIFO overflowed, data is destroyed - Reset graphics' when set, then calls gr2_error, which logs the low 16 bits of the hq_gepc register as the GE PC, flags the board, kills the graphics clients and resets the board (Gr2Reset, Gr2StartClock). No shipped code writes a clear for it, so the graphics reset is the inferred clear. [binary] Gr2FIFOHandler 0x2a0, gr2_error 0x0. |
 | 4:3 | `dma_sync_src` | established |  |  | ide dma_sync source: 0 vertical interrupt, 1 video sync, 2 clear, 3 set. A read-back of the DMASYNC register; the kernel stores 2 before every DMA and 0 at early init. [binary] |
 | 2 | `finish_flag1` | established |  |  | ide finflag1. The diagnostic program's DMA-done flag (it prints hq_version_reg when it times out) and the 4.0.5G PROM's pixel-DMA completion flag; cleared by a store of 0 to the fin1 register. [binary] |
 | 1 | `finish_flag2` | established |  |  | ide finflag2. The kernel's microcode-ready and DMA-done flag: _Gr2UcodeReady and both DMA triggers poll it; cleared by a store of 0 to the fin2 register. [binary] |
@@ -99,7 +99,7 @@ FIFO empty timeout. Written 255 by the kernel and 10 by the 4.0.5D PROM. Unit an
 
 ### Register `fifo_full`
 
-FIFO full threshold. Written 40 at init. The INT2 FIFO line (GIO line 0) is asserted while the fill count is at or above it, inferred from the PROM's wait-until-clear before every token and from the kernel handler raising it to level plus one to deassert the line. [binary] qtest: with the threshold at N the INT2 local-0 bit 0 equals (fifo_count >= N).
+FIFO full threshold. Written 40 at init. The INT2 FIFO line (GIO line 0) is asserted while the fill count is at or above it, inferred from the PROM's wait-until-clear before every token, from the kernel handler raising it to level plus one to deassert the line, and from the handler's own test, which treats count less than the saved threshold as drained (software expectation of >=; no read settles the hardware compare). Written 40 by Gr2FIFOPollLowater when it sees the count below 35; the handler writes max(40, min(count + 1, 63)). [binary] qtest: with the threshold at N the INT2 local-0 bit 0 equals (fifo_count >= N).
 
 ### Register `fifo_empty`
 
@@ -115,7 +115,7 @@ GE DMA port. The MC's graphics DMA engine addresses this location as the GIO sla
 
 ### Register `hq_gepc`
 
-HQ to GE7 program counter. The diagnostic program says it cannot be read ('hw bug'). The kernel probe nevertheless keeps bits 23:16 of a read as the 'HQ2 revision' byte, which is therefore not the revision (see the page). [binary] ide gr2_rdHQ2reg; _Gr2ProbeChipRev.
+HQ to GE7 program counter. The diagnostic program reads it and prints 'Currently, can't read - hw bug - HQ_GE7 PC'. The kernel reads it twice: gr2_error logs the low 16 bits as 'GE PC', and _Gr2ProbeChipRev stores bits 23:16 in the probe-record byte the PROMs fill from status bits 31:23. Whether those upper bits are a revision is not settled (inferred either way). [binary] ide gr2_rdHQ2reg; gr2_error; _Gr2ProbeChipRev. qtest: a read does not fault; model value 0 satisfies every shipped reader.
 
 ### Register `gepc`
 
@@ -151,5 +151,5 @@ Finish flag 3 write port (ide Finish Flag 3). The kernel and X server store 0 to
 |---|---|---|---|---|
 | `FIFO_DEPTH_LIMIT` | 0x3f | inferred |  | Largest fill level the kernel ever programs into the FIFO_FULL threshold (it clamps level plus one to 63). [binary] Gr2FIFOHandler. The status count field is seven bits wide, so the real depth is not shown by this. |
 | `FIFO_FULL_INIT` | 0x28 | established |  | Value both PROMs and the kernel write to FIFO_FULL at initialisation; the kernel writes it again when it waits for the FIFO to drain. [binary] _Gr2HQ2RegInit, Gr2FIFOPollLowater. |
-| `FIFO_SPACE_CHECK` | 0x23 | established |  | Fill level below which the kernel treats the FIFO as having room (it sleeps on the interrupt at 35 or more). [binary] Gr2FIFOPollLowater. |
+| `FIFO_SPACE_CHECK` | 0x23 | established |  | Fill level below which the kernel treats the FIFO as having room (Gr2FIFOPollLowater answers yes and re-arms FIFO_FULL only below 35, and no at 35 or more). [binary] Gr2FIFOPollLowater. |
 | `PROBE_WORD` | 0xdeadbeef | established |  | Value every probe expects at the probe_word register. [binary] Gr2Probe, PROM probe. |

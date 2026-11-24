@@ -1,7 +1,7 @@
 /* generated from devices/hq2/registers.toml by defs-gen - do not edit, change
  * the source */
 /* defs-gen 3 */
-/* input sha256 db608454c7808b9d193bbbb9f5045bbecd35eddd286ca290684ba804a4f80078 */
+/* input sha256 6b0209a7be7eb709d083d2295da39a130cc6e09c73033c65727cd369f60a2e2f */
 /* HQ2 command engine: FIFO window, microstore and host registers */
 #ifndef HQ2_GEN_H
 #define HQ2_GEN_H
@@ -56,8 +56,8 @@
  * the fin1 register). The fill count and overflow bit are the kernel's FIFO
  * flow control. [binary] qtest: after a store at the fin2 register of 0 bit 1
  * reads 0; the count field equals the number of words queued and not consumed;
- * version reads 0 on every board seen (gfxinfo prints HQ2 rev A, [public]
- * Usenet postings).
+ * version is 0 on every board seen only if the PROM byte matches what gfxinfo
+ * prints (HQ2 rev A, [public] Usenet postings; see the version field).
  */
 /* status: r32, reset unknown */
 #define HQ2_STATUS_OFFSET                            0x6a040u /* established */
@@ -149,9 +149,13 @@
 /*
  * FIFO full threshold. Written 40 at init. The INT2 FIFO line (GIO line 0) is
  * asserted while the fill count is at or above it, inferred from the PROM's
- * wait-until-clear before every token and from the kernel handler raising it to
- * level plus one to deassert the line. [binary] qtest: with the threshold at N
- * the INT2 local-0 bit 0 equals (fifo_count >= N).
+ * wait-until-clear before every token, from the kernel handler raising it to
+ * level plus one to deassert the line, and from the handler's own test, which
+ * treats count less than the saved threshold as drained (software expectation
+ * of >=; no read settles the hardware compare). Written 40 by
+ * Gr2FIFOPollLowater when it sees the count below 35; the handler writes
+ * max(40, min(count + 1, 63)). [binary] qtest: with the threshold at N the INT2
+ * local-0 bit 0 equals (fifo_count >= N).
  */
 /* fifo_full: rw32, reset unknown */
 #define HQ2_FIFO_FULL_OFFSET                         0x6a05cu /* established */
@@ -184,13 +188,16 @@
 #define HQ2_GEDMA_OFFSET                             0x6a068u /* established */
 
 /*
- * HQ to GE7 program counter. The diagnostic program says it cannot be read ('hw
- * bug'). The kernel probe nevertheless keeps bits 23:16 of a read as the 'HQ2
- * revision' byte, which is therefore not the revision (see the page). [binary]
- * ide gr2_rdHQ2reg; _Gr2ProbeChipRev.
+ * HQ to GE7 program counter. The diagnostic program reads it and prints
+ * 'Currently, can't read - hw bug - HQ_GE7 PC'. The kernel reads it twice:
+ * gr2_error logs the low 16 bits as 'GE PC', and _Gr2ProbeChipRev stores bits
+ * 23:16 in the probe-record byte the PROMs fill from status bits 31:23. Whether
+ * those upper bits are a revision is not settled (inferred either way).
+ * [binary] ide gr2_rdHQ2reg; gr2_error; _Gr2ProbeChipRev. qtest: a read does
+ * not fault; model value 0 satisfies every shipped reader.
  */
 /* hq_gepc: r32, reset unknown */
-#define HQ2_HQ_GEPC_OFFSET                           0x6a06cu /* established */
+#define HQ2_HQ_GEPC_OFFSET                           0x6a06cu /* inferred */
 
 /*
  * GE microstore address (ide: pc used for loading GE7 microcode, NetBSD GEPC).

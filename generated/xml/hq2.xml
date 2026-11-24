@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/hq2/registers.toml by defs-gen - do not edit, change the source -->
 <!-- defs-gen 3 -->
-<!-- input sha256 db608454c7808b9d193bbbb9f5045bbecd35eddd286ca290684ba804a4f80078 -->
+<!-- input sha256 6b0209a7be7eb709d083d2295da39a130cc6e09c73033c65727cd369f60a2e2f -->
 <genxml unit="hq2" prefix="HQ2" title="HQ2 command engine: FIFO window, microstore and host registers">
   <doc>Host-visible window of the HQ2 command engine in the Express graphics slot (physical 0x1f000000 on the Indigo): the FIFO window, the microstore load window and the register page with the finish-flag clear at the finish3 register. Provenance tags in item text: [public] published document or public driver, [binary] shipped IRIX, PROM or diagnostic-program binary (a software expectation, with the routine named), [vendor-derived] upstream headers (none supports any fact here). Register names marked ide are the names the shipped diagnostic program prints; names marked NetBSD are the public driver's. Grades: established means read in full in a shipped binary or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. Nothing was read on a board and no reset value is stated by any source, so none is given except where noted. Prose in devices/hq2/README.md.</doc>
   <struct name="FIFO_WINDOW" size="4" grade="established" register="yes" offset="0x40000" access="w" count="32768" stride="4" reset="unknown">
@@ -14,7 +14,7 @@
     <doc>Attribute jump table, 16 words. [binary] The loader writes 16 words from image offset 0xfc and reads them back (Gr2DownloadHQ2); the ide register menu writes entries by number 0 to 15 and reads the table. The table is indexed by bits 15:12 of the FIFO address: inferred from its size and from the GL core's address forms (pipeline page). qtest: each word reads back.</doc>
   </struct>
   <struct name="STATUS" size="4" grade="established" register="yes" offset="0x6a040" access="r" reset="unknown">
-    <doc>Status word. The diagnostic program names it the HQ2 version register and prints the fields below; the kernel and PROMs read it by word load and use the fields marked. The ide field names are those it prints. Bits 2:0 are three finish flags set by microcode and cleared by host stores (finish_flag3 by the finish3 register, finish_flag2 by the fin2 register, finish_flag1 by the fin1 register). The fill count and overflow bit are the kernel's FIFO flow control. [binary] qtest: after a store at the fin2 register of 0 bit 1 reads 0; the count field equals the number of words queued and not consumed; version reads 0 on every board seen (gfxinfo prints HQ2 rev A, [public] Usenet postings).</doc>
+    <doc>Status word. The diagnostic program names it the HQ2 version register and prints the fields below; the kernel and PROMs read it by word load and use the fields marked. The ide field names are those it prints. Bits 2:0 are three finish flags set by microcode and cleared by host stores (finish_flag3 by the finish3 register, finish_flag2 by the fin2 register, finish_flag1 by the fin1 register). The fill count and overflow bit are the kernel's FIFO flow control. [binary] qtest: after a store at the fin2 register of 0 bit 1 reads 0; the count field equals the number of words queued and not consumed; version is 0 on every board seen only if the PROM byte matches what gfxinfo prints (HQ2 rev A, [public] Usenet postings; see the version field).</doc>
     <field name="version" start="23" size="9" type="uint" grade="established"/>
     <field name="ge_ptr" start="20" size="3" type="uint" grade="established"/>
     <field name="ge_ctr" start="16" size="4" type="uint" grade="established"/>
@@ -46,7 +46,7 @@
     <doc>FIFO empty timeout. Written 255 by the kernel and 10 by the 4.0.5D PROM. Unit and effect unknown. [binary]</doc>
   </struct>
   <struct name="FIFO_FULL" size="4" grade="established" register="yes" offset="0x6a05c" access="rw" reset="unknown">
-    <doc>FIFO full threshold. Written 40 at init. The INT2 FIFO line (GIO line 0) is asserted while the fill count is at or above it, inferred from the PROM's wait-until-clear before every token and from the kernel handler raising it to level plus one to deassert the line. [binary] qtest: with the threshold at N the INT2 local-0 bit 0 equals (fifo_count &gt;= N).</doc>
+    <doc>FIFO full threshold. Written 40 at init. The INT2 FIFO line (GIO line 0) is asserted while the fill count is at or above it, inferred from the PROM's wait-until-clear before every token, from the kernel handler raising it to level plus one to deassert the line, and from the handler's own test, which treats count less than the saved threshold as drained (software expectation of &gt;=; no read settles the hardware compare). Written 40 by Gr2FIFOPollLowater when it sees the count below 35; the handler writes max(40, min(count + 1, 63)). [binary] qtest: with the threshold at N the INT2 local-0 bit 0 equals (fifo_count &gt;= N).</doc>
   </struct>
   <struct name="FIFO_EMPTY" size="4" grade="established" register="yes" offset="0x6a060" access="rw" reset="unknown">
     <doc>FIFO empty (low water) threshold. Written 1. Effect unknown; status bit 13 is the likely consumer (inferred). [binary]</doc>
@@ -57,8 +57,8 @@
   <struct name="GEDMA" size="4" grade="established" register="yes" offset="0x6a068" access="rw" reset="unknown">
     <doc>GE DMA port. The MC's graphics DMA engine addresses this location as the GIO slave address of every board DMA (its physical address, 0x1f06a068 on the Indigo, is the transfer's GIO address); the kernel writes 0 to it twice after a DMA timeout. The ide menu reads and writes it. Whether a CPU word store pushes a word into the transfer (the kernel's non-MC fallback may do so) is inferred. [binary] _Gr2CXSaveRestore, Gr2MCPixDma and _Gr2MCDMAtrigger, ide gr2_rdHQ2reg.</doc>
   </struct>
-  <struct name="HQ_GEPC" size="4" grade="established" register="yes" offset="0x6a06c" access="r" reset="unknown">
-    <doc>HQ to GE7 program counter. The diagnostic program says it cannot be read ('hw bug'). The kernel probe nevertheless keeps bits 23:16 of a read as the 'HQ2 revision' byte, which is therefore not the revision (see the page). [binary] ide gr2_rdHQ2reg; _Gr2ProbeChipRev.</doc>
+  <struct name="HQ_GEPC" size="4" grade="inferred" register="yes" offset="0x6a06c" access="r" reset="unknown">
+    <doc>HQ to GE7 program counter. The diagnostic program reads it and prints 'Currently, can't read - hw bug - HQ_GE7 PC'. The kernel reads it twice: gr2_error logs the low 16 bits as 'GE PC', and _Gr2ProbeChipRev stores bits 23:16 in the probe-record byte the PROMs fill from status bits 31:23. Whether those upper bits are a revision is not settled (inferred either way). [binary] ide gr2_rdHQ2reg; gr2_error; _Gr2ProbeChipRev. qtest: a read does not fault; model value 0 satisfies every shipped reader.</doc>
   </struct>
   <struct name="GEPC" size="4" grade="established" register="yes" offset="0x6a070" access="w" reset="unknown">
     <doc>GE microstore address (ide: pc used for loading GE7 microcode, NetBSD GEPC). Written with each record's address by the loaders and with 0 by Gr2TpSetup and the PROM before the unstall. [binary]</doc>

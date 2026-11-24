@@ -1,6 +1,6 @@
 // @generated from devices/hq2/registers.toml by defs-gen - do not edit, change the source
 // defs-gen 3
-// input sha256 db608454c7808b9d193bbbb9f5045bbecd35eddd286ca290684ba804a4f80078
+// input sha256 6b0209a7be7eb709d083d2295da39a130cc6e09c73033c65727cd369f60a2e2f
 // HQ2 command engine: FIFO window, microstore and host registers
 #![allow(dead_code)]
 #![allow(clippy::doc_markdown)]
@@ -192,7 +192,7 @@ pub mod gedma {
     pub const WIDTH: u32 = 32;
     pub const OFFSET: u64 = 0x6a068;
 }
-/// HQ to GE7 program counter. The diagnostic program says it cannot be read ('hw bug'). The kernel probe nevertheless keeps bits 23:16 of a read as the ' (established)
+/// HQ to GE7 program counter. The diagnostic program reads it and prints 'Currently, can't read - hw bug - HQ_GE7 PC'. The kernel reads it twice: gr2_err (inferred)
 pub mod hq_gepc {
     pub const WIDTH: u32 = 32;
     pub const OFFSET: u64 = 0x6a06c;

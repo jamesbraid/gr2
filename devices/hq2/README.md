@@ -38,11 +38,11 @@ here, so none is given except the constant probe word. Per-register qtest discri
 | `+0x6a050` | `DMASYNC` (ide: DMA sync source) | write 2 before every DMA; write 0 in early init; values 0 vertical interrupt, 1 video sync, 2 clear, 3 set | established for the stores and the value names; effect inferred |
 | `+0x6a054` | `FIFO_FULL_TIMEOUT` | write `100` | established value; NetBSD's name |
 | `+0x6a058` | `FIFO_EMPTY_TIMEOUT` | write `255` | established value; NetBSD's name |
-| `+0x6a05c` | `FIFO_FULL` | write `40` at init; the FIFO interrupt handler writes the same 40 back when re-arming (`Gr2FIFOPollLowater` `0x158`, handler `0x2a0`) | established value; the field is a fill threshold, inferred from the compares against the status field |
+| `+0x6a05c` | `FIFO_FULL` | write `40` at init; `Gr2FIFOPollLowater` (`0x158`) writes 40 back when it finds the count below 35; the handler (`0x2a0`) writes the count plus one, clamped to 40..63 | established value; the field is a fill threshold, inferred from the compares against the status field |
 | `+0x6a060` | `FIFO_EMPTY` | write `1` | established value; NetBSD's name |
 | `+0x6a064` | `GE7_LOAD_UCODE` | write: fifth word of each GE7 microcode record; read back masked with `0x03dfffff` | established (`Gr2DownloadGE7`) |
 | `+0x6a068` | `GEDMA` | the GIO address of every MC graphics DMA to or from the board; the kernel writes 0 twice after a DMA timeout | established [binary]; see [host-contract](../../platforms/express/host-contract.md) section 3 |
-| `+0x6a06c` | `HQ_GEPC` | read once in `_Gr2ProbeChipRev`; the upper 16 bits are kept in the revision byte. The diagnostic program says it cannot be read ("hw bug") | established that it is read; the byte is **not** the HQ2 revision (that is status bits 31:23) |
+| `+0x6a06c` | `HQ_GEPC` | read by `gr2_error` (low 16 bits logged as "GE PC") and by `_Gr2ProbeChipRev`, which keeps bits 23:16 in the probe-record byte the PROMs fill from status bits 31:23. The diagnostic program reads and prints it with "can't read - hw bug" | established that it is read and how; whether bits 23:16 are a revision is **inferred either way** (see the review below) |
 | `+0x6a070` | `GEPC` | write: GE microstore address (counts up to 0xffff when clearing the store; set to each record's address when loading); written 0 by `Gr2TpSetup` | established |
 | `+0x6a074` | `INTR` (ide: "Intr bit (cleared by host)") | not touched by the IP20 driver or PROMs; the diagnostic program can write it | inferred role as a host-cleared interrupt bit; which interrupt it raises unknown |
 | `+0x6a078` | `UNSTALL` | `Gr2TpSetup` writes 0 after the microcode loads | established that a 0 is written; the name's meaning is NetBSD's |
@@ -97,3 +97,20 @@ this page:
 - The status bits the kernel tests besides the FIFO count and overflow are finish flags 2 and 3 (bit 1 and bit 0), not error bits.
 - `+0x6b000` is the write port of the third finish flag; the HQ2 register page therefore extends over two 4 KiB pages (`+0x6a000`, `+0x6b000`) as NetBSD's
   `+0x6b004` upper bound suggests.
+
+## Review (2026-11-23, host contract)
+
+Independent re-read of `registers.toml`, this page and the host contract against `gr2.a` (June 1998 `IP20boot` members), PROM 4.0.5D and 4.0.5G, the
+Diagnostics 5.2 `ide.IP20` (SHA-256 `744fdebc...df14`; disassembled in full for `gr2_rdHQ2reg` and the write menu) and NetBSD `grtwo.c`/`grtworeg.h`
+(`netbsd-src` in the Library). Results:
+
+- Status field map: CONFIRMED. `ide` masks and shifts exactly bits 0, 1, 2 (finflag3, 2, 1), 4:3 (four named dma_sync strings), 5, 12:6, 13, 15:14,
+  19:16, 22:20 and 31:23, in that print order. The three finish clears (`+0x6a048` flag 1, `+0x6a04c` flag 2, `+0x6b000` flag 3) and `dmasync` `+0x6a050` (values 0..3)
+  are stores in `ide`'s write menu. That bits 4:3 read back `dmasync` is the field name only (inferred).
+- `+0x6a06c`: CONFIRMED as `HQ_GEPC` in `ide`, which reads it. WRONG as "read once": `gr2_error` also reads it and logs the low 16 bits as the GE PC.
+  GRADE: the claim that the kernel byte "is not the revision" is inferred, not established: PROMs and kernel fill the same probe-record byte (`+0x30`) from different
+  registers, and `gfxinfo` very likely prints that byte. The rev-A evidence cannot say which register supplied it.
+- Version field width: the PROMs keep bits 30:23 (byte store of `word >> 23`); NetBSD uses mask `0xff000000` with shift 23, which is not the same field. The
+  host contract's "NetBSD agrees" holds only for value 0.
+- FIFO overflow: WRONG that the handler does nothing else; it calls `gr2_error` (log, flag, kill clients, reset graphics).
+- `Gr2FIFOPollLowater`: WRONG as described earlier; it returns 1 and writes 40 to `+0x6a05c` when the count is below 35, and 0 without a write otherwise.
