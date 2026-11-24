@@ -134,7 +134,9 @@ class Engine:
     Writes: REGWR takes the previous word's result, a store (SHFTSRC = 3) and an RE write (FIFOEN) take the result two words back. Branches:
     conditions 1 and 5 always, 2 and 6 never, 3, 4, 7 and 8 when the selected line (LINES) of the word two back is high.
     """
-    HELD = False
+    HELD = False                                   # select 4 as a register held by RESEN (a reading the known answers do not exclude)
+    ZERO4 = False                                  # select 4 as the constant zero (likewise)
+    MPYB6 = 'alu'                                  # multiplier B select 6: 'alu' the previous ALU result, 'mult' the previous multiplier output
 
     def __init__(self, M, const, slots=None, bus=0):
         self.M, self.sh, self.ram0, self.ram1, self.bus = M, dict(enumerate(const)), dict(slots or {}), {}, bus
@@ -150,7 +152,7 @@ class Engine:
     def src(self, d, sel, side):
         h = self.hist
         return {0: lambda: self.ram0.get(d['ram0'], 0), 1: lambda: self.ram1.get(d['ram1'], 0),
-                3: lambda: self.regs[d['regc' if side == 'A' else 'regd']], 4: lambda: (self.held if self.HELD else h[-1][0] if h else 0),
+                3: lambda: self.regs[d['regc' if side == 'A' else 'regd']], 4: lambda: (0 if self.ZERO4 else self.held if self.HELD else h[-1][0] if h else 0),
                 5: lambda: self.sh.get(d['tgt'], 0) if d['ctl'] == 0x3f else self.state.get(d['tgt'] or self.addr, 0), 6: lambda: h[-1][0] if h else 0,
                 7: lambda: h[-1][2] if h else 0}.get(sel, lambda: 0)()
 
@@ -174,7 +176,7 @@ class Engine:
                   6: h[-1][0] if h else 0, 7: h[-1][2] if h else 0}.get(d['mpya'], 0)
             rb = self.regs[d['regb']]
             mb = {0: self.ram0.get(d['ram0'], 0), 1: self.ram1.get(d['ram1'], 0), 3: rb, 4: self.rom(4, rb), 5: self.rom(5, rb),
-                  6: h[-1][0] if h else 0, 7: h[-1][2] if h else 0}.get(d['mpyb'], 0)
+                  6: (h[-1][0] if self.MPYB6 == 'alu' else h[-1][2]) if h else 0, 7: h[-1][2] if h else 0}.get(d['mpyb'], 0)
             mr, mf = mult(d['mop'], ma, mb); fl.update(mf)
             if d['busel']: r = mr if d['mpya'] or d['mpyb'] else self.bus
             if d['regf'] == 3 and h: self.regs[d['regwr']] = h[-1][0]
@@ -448,6 +450,77 @@ def selftest(ide, prom=None, full=None, hq=None):
               % (sum(map(len, st.values())), len(st), len(both), len(rd[0x41]), len(st[0x41]), len(rd[0x8d]), len(st[0x8d]), len(rd[0x3d]), len(st[0x3d])),
               (sum(map(len, st.values())), len(st), len(both)) == (293, 126, 44) and K[0x41] == 0x3f000000 and K[0x8d] == 5
               and (len(rd[0x41]), len(st[0x41]), len(rd[0x8d]), len(st[0x8d]), len(rd[0x3d]), len(st[0x3d])) == (111, 1, 66, 55, 17, 6))
+    # ---- seventh pass: the pixel-DMA routines (host side: pix_dma, gr2_shramre3dma, gr2_stridedma, gr2_re3dma) --------------------------------------------
+    # The host sends the direction flag and x0, y0, x1, y1 (HQ2 slots 9, 11, 56 read them into RAM0 slots 8, 1, 2, 3, 4), then a DMA descriptor whose length
+    # is (x1 - x0 + 1) words by (y1 - y0 + 1) rows. The three routines (GE7 1208, 1294, 1250) form width * height with IMPY (REGA times the previous ALU result,
+    # MPYA = 3, MPYB = 6) and take it back through select 7 (IRSUB with 1: width * height - 1) as the count they store. Host cases: gr2_shramre3dma moves 1024
+    # words into the 32 x 32 rectangle (100, 100) to (131, 131), gr2_stridedma's first phase 441 (0x1b9) words into (10, 10) to (30, 30), gr2_re3dma one row of 0x500.
+    dma = ((1208, 1234), (1294, 1320), (1250, 1277))
+    host = (((100, 100, 131, 131), 1024), ((10, 10, 30, 30), 441), ((0, 37, 0x4ff, 37), 0x500), ((7, 3, 20, 12), 14 * 10))
+    def count(cls, st, wd, rect, flag=1):
+        e = cls(diag, C); e.ram0 = {8: flag, 1: rect[0], 2: rect[1], 3: rect[2], 4: rect[3]}; e.run(st, 120)
+        return [v for w, _, v in e.stores if w == wd], e
+    class MultB(Engine): MPYB6 = 'mult'
+    # The same routine's RE3 writes put the host rectangle at 0x20 (x0), 0x21 (x1, bit 0 set), 0x24 (y0 - 1) and 0x25 (y1), each biased by 0x800 and shifted left 11; the flag only picks 0x67
+    # (0x180000 read, 0x100000 write; 0x67 is cleared at the end) and the path (1243 or 1236). The host's pixel compare puts the rectangle there, so this is the edge-register role of the rectangle.
+    def rect_re(flag, r, cls=Engine):
+        e = cls(diag, C); e.ram0 = {8: flag, 1: r[0], 2: r[1], 3: r[2], 4: r[3]}; e.run(1208, 120); d = {}; [d.setdefault(a, v) for _, a, v in e.re]; return d, e.seq
+    bias = lambda v: (v + 0x800) << 11
+    rr, sq = rect_re(1, (100, 200, 131, 231)); rw, sw = rect_re(0, (100, 200, 131, 231))
+    check('pixel DMA 1208: RE3 0x20 = x0, 0x21 = x1 | 1, 0x24 = y0 - 1, 0x25 = y1 (biased, << 11), 0x23 = 0x200000; flag 1 sets 0x67 to 0x180000 and takes 1243, flag 0 sets 0x100000 and takes 1236',
+          all(r[a] == v for r in (rr, rw) for a, v in ((0x20, bias(100)), (0x21, bias(131) | 1), (0x24, bias(199)), (0x25, bias(231)), (0x23, 0x200000)))
+          and (rr[0x67], rw[0x67]) == (0x180000, 0x100000) and 1243 in sq and 1236 not in sq and 1236 in sw and 1243 not in sw)
+    ok_n = {cls.__name__: sum(count(cls, st, wd, r)[0][:1] == [n - 1] for st, wd in dma for r, n in host) for cls in (Engine, MultB)}
+    check('DMA routines 1208, 1294, 1250: the stored count is width * height - 1 for the host rectangles (%d of %d); with multiplier B select 6 as the previous multiplier output it is right in %d'
+          % (ok_n['Engine'], len(dma) * len(host), ok_n['MultB']), ok_n['Engine'] == 12 and ok_n['MultB'] == 0)
+    e = count(Engine, 1294, 1320, host[0][0])[1]
+    check('DMA routine 1294: the word stored after the count is C[0xee] = 0xff, the shared word where the host put the 1024 words (gr2_shramre3dma fills words 255 on)',
+          [(w, v) for w, _, v in e.stores] == [(1320, 0x3ff), (1321, 0xff)] and C[0xee] == 0xff)
+    mpy = [(a, field(diag[a + 1], 68, 3), field(diag[a], 59, 3), field(diag[a], 62, 3), field(diag[a], 43, 2)) for a in (1231, 1274, 1317)]
+    check('DMA routines: the multiply words 1231, 1274, 1317 are IMPY with MPYA = 3, MPYB = 6 and the next word reads select 7: %s' % mpy, all(m[1:] == (7, 3, 6, 0) for m in mpy))
+    # Select 4: three readings (previous ALU result, a register held by RESEN, the constant zero) pass the same known answers.
+    def known(cls):
+        r = {op: cls(diag, C, {0: x, 1: y, 2: op}) for op, (x, y, _) in cases.items()}
+        for op, e in r.items(): e.run(1533, 400)
+        o = [e.stores == [(1550, 0, cases[op][2])] for op, e in r.items()]
+        e = cls(diag, C); e.run(1562, 400); o.append(e.stores == [(1899, 0, 0)] and len(e.hist) == 338)
+        got = []
+        for start in (917, 933):
+            e = cls(diag, C); e.run(start, 2000); got.append([v for _, _, v in e.stores])
+        o.append(got == host_tables)
+        e = cls(diag, C, {1: 100, 2: 150, 5: 255, 6: 0, 7: 0}); e.run(989, 400)
+        o.append([(a, v) for _, a, v in e.re] == [(0, 0x8000), (8, 0), (0x20, (100 + 0x800) << 11), (0x21, (150 + 0x800) << 11), (0x22, (110 + 0x800) << 11), (0x40, 255 << 11), (0x41, 0), (0x5f, 2), (0x42, 0)])
+        for st, wd in dma: o.append(count(cls, st, wd, host[0][0])[0][:1] == [1023])
+        return all(o)
+    host_tables = [list(struct.unpack('>128I', D[ti + o:ti + o + 512])) for o in (0, 512)]
+    class Held4(Engine): HELD = True
+    class Zero4(Engine): ZERO4 = True
+    check('select 4 as the previous ALU result, as a RESEN-held register and as the constant zero all pass the known answers (FloatOps, FpuCond, SeedRom, SqRom, GeFifoTest, the DMA counts)',
+          known(Engine) and known(Held4) and known(Zero4))
+    if prom:
+        e = Engine(P5, PK, {8: 1, 1: 100, 2: 200, 3: 131, 4: 231}); e.run(245, 120)
+        check('console image: the pixel-DMA routine at 245 (the same words as GE7 1294) stores the count 1023 for the 32 x 32 rectangle', [v for w, _, v in e.stores] == [0x3ff] and e.seq.index(268) < e.seq.index(271))
+        zr = {}
+        e = Zero4(P5, PK, {0: 100, 1: 200, 2: 150, 3: 260}); e.state[0x1d] = 0x112233; e.run(69, 60); zr = {a: v for _, a, v in e.re}
+        check('RECTI2D with select 4 = zero: 0x20 = 100.0 (xmin), 0x21 = 150.0 | 1 (xmax), 0x25 = 260.0 (ymax), 0x24 = 199.0 (ymin - 1), 0x23 = 0.0: the pixel-DMA routine\'s edge registers, as floats, with no doubling',
+              (b2f(zr[0x20]), zr[0x21], b2f(zr[0x25]), b2f(zr[0x24]), zr[0x23]) == (100.0, f2b(150.0) | 1, 260.0, 199.0, 0))
+    if full and hq:
+        Hq2 = {a: w[0] for a, _, w, _ in U['records'](hq.read_bytes())[2]}
+        st2 = sorted({w & 0xffff for w in Hq2.values() if w >> 16 == 0xd8})
+        def lead(a):                                  # the first word of a routine that reads select 4 for real work, with no RESEN word before it
+            res = False
+            for _ in range(60):
+                d = dec(F[a]) if a in F else None
+                if d is None or (d['cond'] == 10 and not d['tgt']): return False
+                w = F[a]
+                if not (dec(w)['alu'] == 4 and field(w, 65, 3) == 4 and field(w, 68, 3) == 4) and (field(w, 65, 3) == 4 or field(w, 68, 3) == 4): return not res
+                res |= bool(field(w, 73, 1))
+                if 1 <= d['cond'] <= 8 and d['tgt']: return False
+                a += 1
+            return False
+        n4 = sum(lead(a) for a in st2)
+        check('full ge7.bin: %d of %d HQ2 routine starts read select 4 for real work before any RESEN word, so there it is neither a held register nor a previous result that '
+              'another routine left (history-dependent); it is the zero constant or the routine would depend on what ran before' % (n4, len(st2)), (n4, len(st2)) == (185, 263))
     return ok
 
 def main():
