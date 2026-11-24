@@ -10,7 +10,7 @@
   ge7-step.py run IMG START [--slot N=V,..] [--steps N] [--bus V]
                                                            data-flow run of one engine: RAM0 input slots, the image's constants block,
                                                            branches resolved from the decoded flags; prints RE writes and shared stores
-  ge7-step.py selftest IDE [PROM [GE7 [HQ2]]]              regression: the diagnostic known answers, and with the 4.0.5D PROM the console tokens,
+  ge7-step.py selftest IDE [PROM [GE7 [HQ2 [PROM4.0.5G]]]]              regression: the diagnostic known answers, and with the 4.0.5D PROM the console tokens,
                                                            with the full ge7.bin the statistics over all words, with the full hq2.bin the routine starts
 
 Sequencer model (platforms/express/microcode.md): C0[15:0] target or shared-RAM address, C0[21:16] control, C0[25:22] condition.
@@ -193,7 +193,7 @@ class Engine:
 
 def ints(s): return {int(x, 0) for x in s.split(',') if x}
 
-def selftest(ide, prom=None, full=None, hq=None):
+def selftest(ide, prom=None, full=None, hq=None, promg=None):
     D = ide.read_bytes()
     gb = [i for _, i in find_images(D) if U['H'](i, 0) == 0x966e]
     diagb = max(gb, key=len)
@@ -549,6 +549,19 @@ def selftest(ide, prom=None, full=None, hq=None):
     zz = dwrites(Zero4, 1250, 0, 131)[1]
     sixb = lambda e: [v for _, a, v in e.re if a == 0x6b]
     check('GE7 1250: RE3 0x6b = 2 first; at the end 0 on the write path (flag 1) and, on the readback path (flag 0), the right-edge word 0x441801 for select 4 = previous result (0 for zero)', sixb(z1) == [2, 0] and sixb(z0) == [2, bias(131) | 1] and sixb(zz) == [2, 0])
+    # The 4.0.5G PROM carries the diagnostic's pix_dma as an unreferenced "CPU to bitplanes DMA test" (0xbfc066e8): rows of 256 words at y = 0 and y = 1023, written with
+    # a1 = 0 (flag 1) and read back with a1 = 2 (flag 0), sent through slot 9, which its own console image does not handle. Its console images are the 4.0.5D ones.
+    if prom and promg:
+        pg = promg.read_bytes()
+        same = U['cut'](pg, 0x4d294) == U['cut'](prom.read_bytes(), 0x49840) and U['cut'](pg, 0x4e148) == pb
+        ok2 = True
+        for y in (0, 1023):
+            for fl in (1, 0):
+                e = Engine(P5, PK, {8: fl, 1: 0, 2: y, 3: 255, 4: y}); e.run(245, 120)
+                r = {a: v for _, a, v in e.re}
+                ok2 &= ([v for _, _, v in e.stores] == [255] and r[0x20] == bias(0) and r[0x21] == bias(255) | 1 and r[0x24] == bias(y - 1) & M32 and r[0x25] == bias(y) and r[0x67] == 0)
+        check('PROM 4.0.5G: its two console images equal the 4.0.5D ones; its pix_dma rows (0, y) to (255, y) at y = 0 and 1023 give the count 255 and the same edge registers on the console routine at 245 (y0 - 1 = -1 wraps in the bias)',
+              same and ok2)
     return ok
 
 def main():
