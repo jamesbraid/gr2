@@ -12,6 +12,7 @@
   ucode-decode.py alu IMG             histogram of the GE7 ALU function field, named from the diagnostic program's table
   ucode-decode.py cond IMG            per sequencer condition 1-15: word count, words with BRCOND 0, targets, top BRCOND values
   ucode-decode.py roms IDE            check the SeedRom and SqRom tables the diagnostic program expects against their closed forms
+  ucode-decode.py const IMG IDX...    entries of a GE7 image's constants block (shared RAM word IDX; ALUA = 5 on a 0x3f word reads it)
 
 Prints statistics and per-slot walks only, never a full listing. Format: platforms/express/microcode.md.
 """
@@ -111,6 +112,10 @@ def main():
         print('SeedRom table at %#x: round(128 * (2 / (1 + i/128) - 1)), clamped to 127: %s' % (i, okseed))
         print('SqRom table: i < 64 floor(256 * (1/sqrt(2 * (1 + i/64)) - 1/2)); i >= 64 the same without the 2, clamped to 127: %s' % oksq)
         print('GeBusTest pattern words:', ' '.join('%08x' % v for v in bus))
+        return
+    if cmd == 'const':
+        c = struct.unpack('>500I', d[0xfc:0xfc + 2000])
+        for i in args[1:]: print('%#x %#010x' % (int(i, 0), c[int(i, 0)]))
         return
     rl, end, R = records(d)
     if cmd == 'info':
