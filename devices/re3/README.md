@@ -83,19 +83,53 @@ depth and stencil) is a token to a geometry-engine routine, which holds it and s
 ## Addresses the microcode writes
 
 [binary] The geometry engines write the raster engine through an 8-bit address and an enable in each microword; the addresses are in
-the range 0 to 0xff and, by count, fit the host window above, but how an address maps to a bank at `+0x6c200`, `+0x6c280` or `+0x6c600`
+the range 0 to 0x7e (the eighth bit is never set) and, by count, fit the host window above, but how an address maps to a bank at `+0x6c200`, `+0x6c280` or `+0x6c600`
 is **unknown**. The console microcode in the 4.0.5D PROM writes: `0x00` and `0x08` at the start of every drawing primitive, `0x20` to
 `0x25`, `0x5e`, `0x5f` (written just before each routine's final stall), `0x67`, `0x6f`, and (INIT only) `0x46` to `0x49`, `0x4c` to
 `0x4f`, `0x52` to `0x55`, `0x60` to `0x6e`, `0x70` to `0x74`, `0x7b` to `0x7e`. The diagnostic program's GeFifoTest adds `0x40` to `0x42`
-for a ten-pixel span. Per-routine order is in [microcode.md](../../platforms/express/microcode.md#the-re3-output-path). Grade: the
-address set is observed in the images (read in full for the routines listed there); the meaning of every address is unknown, and the INIT values are
-constants (`0x40` in three groups of four; `0xa0`; `0xb1` to `0xbd`) whose purpose is unknown.
-The diagnostic image's own initialiser (GE7 1004 to 1062) writes the same addresses in nearly the same order (`0x60`, `0x61`, `0x62`, `0x63`,
-`0x65`, `0x64`, `0x6d`, `0x67`, `0x68`, `0x6b`, `0x66`, `0x72` ... `0x7e`), each write word carrying its own immediate, and the constants for
-`0x61` to `0x6d` are the PROM's shifted by `0x2d` (`0xde` for `0xb1`, and so on; `0x2c` for `0x66` and `0x72`). So those constants differ between microcode
-builds: they are build-relative pointers or identifiers rather than reset values, and a model that initialises its state from the microcode
-should take them from the image it runs. A write word using its own immediate also supports the same-cycle data source for the written value. The
-`0x5f` write is paired with the condition-11 sequencer word in 13 of the 14 places the full `ge7.bin` uses that condition, so it is the flush
+for a ten-pixel span. Per-routine order is in [microcode.md](../../platforms/express/microcode.md#the-re3-output-path).
+
+**The values are decoded.** Each write sends the ALU result of the word two before it, and ALUA = 5 on those words reads the image's constants block (not an immediate; the
+[data path](../../platforms/express/microcode.md#the-data-path) gives the evidence). Running the routines on that model (`ge7-step.py run`, reproduced by its `selftest`) gives the values below. The earlier statement
+here that INIT's constants "differ between builds: build-relative pointers" is withdrawn: they are indices into each build's own constants block, and the values that the two builds write agree at nine addresses.
+Grades: the values are observed in the images and the delay and constants-block reading are **inferred** (three independent known answers each); the roles are **inferred** where the diagnostic program's span test fixes them and **unknown** elsewhere.
+
+| Address | Value written | Role |
+|---|---|---|
+| `0x00` | `0x8000` first, in PNT2I and GeFifoTest | unknown: written first by every primitive (a mode or command word) |
+| `0x08` | `0` second | unknown: its pair |
+| `0x20` | (x + `0x800`) << 11 | x of the first pixel, biased by 0x800 and shifted left 11 (GeFifoTest: x = 100; PNT2I: the point's x). Inferred: the span test |
+| `0x21` | (y + `0x800`) << 11 | y, same form (GeFifoTest, PNT2I). Inferred |
+| `0x22` | GeFifoTest: (x + 10 + `0x800`) << 11; PNT2I: y << 11 with no bias | the x of the end of the span in GeFifoTest, where the constant 10 is the host's ten pixels. PNT2I writes y here instead: for a point the word is not an end x, so a model that treats `0x22` as the end must take care. Inferred for the span case only |
+| `0x40`, `0x41`, `0x42` | the three colour words, each << 11 (GeFifoTest: slots 5, 6, 7 = red, green, blue of the host) | colour of the span. PNT2I writes the stored colour word, shifted left 11, to `0x40` only. Inferred: the host's red, green, blue order |
+| `0x5f` | `2` in PNT2I and GeFifoTest, written after the coordinates and before the last colour word | the draw command, written just before the routine's stall (the cond 11 word of other routines sits on it). Inferred from two routines |
+| `0x23` to `0x25`, `0x5e`, `0x67`, `0x6f` | RECTI2D, LINE2I, DRAWCHAR and RECTCOPY (float adds and min/max pairs, loops over the row words) | unknown: those routines need select 7 and the float adds of select 4 resolved |
+
+INIT (PROM image 4.0.5D, GE7 10 to 50; the diagnostic image's own INIT in brackets where it differs), in order of writing:
+
+| Address | Value | Note |
+|---|---|---|
+| `0x6c` | `0xffffffff` (diag `0x3ff`) | |
+| `0x60` | `0xffffffff` | agrees |
+| `0x69` | `0` | PROM only |
+| `0x61`, `0x62` | `0` | agree |
+| `0x63` | `0x402413` (diag `0x401013`) | a mode word: the builds differ in bits 10, 12 and 13 |
+| `0x65` | `3` (diag `0x201`) | |
+| `0x64` | `1` | agrees |
+| `0x6d` | `0xffff01` | agrees |
+| `0x67` | `0x8000` (diag `0`) | |
+| `0x68`, `0x6b` | `0` | agree |
+| `0x66` | `0x100070` | agrees |
+| `0x72` | `5` | agrees |
+| `0x73` | `0x27f800` = 1279 << 11 | agrees; 1279 is the last pixel of a 1280-wide screen, so probably the x clip limit in the same fixed point as `0x20` |
+| `0x74` | `0xffc00` = 1023 << 10 | agrees; 1023 is the last line of a 1024-line screen, probably the y limit (note the shift 10, not 11) |
+| `0x6a` | `0x44` | PROM only |
+| `0x6e`, `0x70`, `0x71`, `0x7b`, `0x7c`, `0x7d`, `0x7e` | `0` | |
+| `0x46` to `0x49`, `0x4c` to `0x4f`, `0x52` to `0x55` | `0` | three groups of four |
+
+Nine addresses (`0x60`, `0x61`, `0x62`, `0x64`, `0x66`, `0x6d`, `0x72`, `0x73`, `0x74`) are written the same by both builds. The values are reset or configuration data for the raster engine, so a model that
+reads them back should return them after INIT; what each bit of `0x63`, `0x65`, `0x66`, `0x67`, `0x6d` means is **unknown**, and a reset value must not be taken from them (a register read after firmware initialisation is not a reset value).
+The `0x5f` write is paired with the condition-11 sequencer word in 13 of the 14 places the full `ge7.bin` uses that condition, so it is the flush
 that waits for the output FIFO ([microcode.md](../../platforms/express/microcode.md)); inferred.
 
 ## What each stage does to a pixel, from the GL core's tokens
@@ -120,7 +154,7 @@ the token names in the GL core and the report's text; the operand formats are in
 **Established**: nothing in this page is read from a raster-engine register. The facts established are the published chip description,
 the NetBSD bank addresses as a driver comment, the RE3-count branch in the diagnostic program, and the absence of host accesses
 (inferred, negative search). **Inferred**: the engine count reading, the register widths, how state reaches the engine. **Unknown**:
-the register layout, reset state, the interface between the geometry engines and the raster engine, the framebuffer bank packing.
+the register layout, reset state, the meaning of most of the addresses the microcode writes (the values are in the table above), the framebuffer bank packing.
 The open questions and the routes tried are in [questions/re3.md](../../questions/re3.md).
 
 ## Review (2026-11-23)
