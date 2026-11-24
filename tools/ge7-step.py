@@ -521,12 +521,29 @@ def selftest(ide, prom=None, full=None, hq=None):
         n4 = sum(lead(a) for a in st2)
         check('full ge7.bin: %d of %d HQ2 routine starts read select 4 for real work before any RESEN word, so there it is neither a held register nor a previous result that '
               'another routine left (history-dependent); it is the zero constant or the routine would depend on what ran before' % (n4, len(st2)), (n4, len(st2)) == (185, 263))
+    # ---- eighth pass: the right edge of the pixel-DMA routines and the Z-plane DMA (host: gr2_chkzplanes, pix_dma_zb, the 4.0.5G PROM's copy of pix_dma) ----
+    # Each routine computes ((x1 + 0x800) << 11) | 1, parks it in register 15 and reads it back later; the read word's result reaches the RE3 write 0x21 only
+    # through select 4. With select 4 as the constant zero that value is lost: 0x21 = 0 whatever x1 is, and no RE3 write depends on x1.
+    def dwrites(cls, st, flag, x1):
+        e = cls(diag, C); e.ram0 = {8: flag, 1: 100, 2: 100, 3: x1, 4: 131}; e.run(st, 120)
+        return {a: v for _, a, v in e.re}, e
+    rd15 = lambda w: any(field(w, a, 3) == 3 and field(w, b, 4) == 15 for a, b in ((65, 8), (68, 12)))
+    wr15 = lambda w: field(w, 20, 4) == 15 and field(w, 86, 2) == 3
+    shape = [([a for a in range(st, st + 45) if wr15(diag[a])], [a for a in range(st, st + 45) if rd15(diag[a])]) for st, _ in dma]
+    check('DMA routines 1208, 1250, 1294: register 15 is written once (start + 17) and read once (start + 26) in each of 1208, 1294, 1250: %s' % shape,
+          shape == [([1225], [1234]), ([1311], [1321]), ([1268], [1277])])
+    edge = {}
+    for nm, cls in (('previous', Engine), ('held', Held4), ('zero', Zero4)):
+        edge[nm] = [(dwrites(cls, st, fl, 131)[0][0x21], dwrites(cls, st, fl, 131)[0] == dwrites(cls, st, fl, 140)[0]) for st, _ in dma for fl in (1, 0)]
+    check('DMA routines, both flags: 0x21 = ((x1 + 0x800) << 11) | 1 and moves with x1 under select 4 = previous result and = RESEN-held register; as the constant zero 0x21 = 0 and no RE3 write depends on x1 '
+          '(the right edge never reaches RE3: the zero reading is refuted for these routines)',
+          all(v == bias(131) | 1 and not same for nm in ('previous', 'held') for v, same in edge[nm]) and all(v == 0 and same for v, same in edge['zero']))
     return ok
 
 def main():
     cmd, a = sys.argv[1], sys.argv[2:]
     if cmd == 'selftest':
-        sys.exit(0 if selftest(*[Path(x) for x in a[:4]]) else 1)
+        sys.exit(0 if selftest(*[Path(x) for x in a[:5]]) else 1)
     M = load(open(a[0], 'rb').read())
     opt = lambda k, dflt='': a[a.index(k) + 1] if k in a else dflt
     if cmd == 'run':
