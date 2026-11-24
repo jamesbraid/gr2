@@ -90,6 +90,13 @@ is **unknown**. The console microcode in the 4.0.5D PROM writes: `0x00` and `0x0
 for a ten-pixel span. Per-routine order is in [microcode.md](../../platforms/express/microcode.md#the-re3-output-path). Grade: the
 address set is observed in the images (read in full for the routines listed there); the meaning of every address is unknown, and the INIT values are
 constants (`0x40` in three groups of four; `0xa0`; `0xb1` to `0xbd`) whose purpose is unknown.
+The diagnostic image's own initialiser (GE7 1004 to 1062) writes the same addresses in nearly the same order (`0x60`, `0x61`, `0x62`, `0x63`,
+`0x65`, `0x64`, `0x6d`, `0x67`, `0x68`, `0x6b`, `0x66`, `0x72` ... `0x7e`), each write word carrying its own immediate, and the constants for
+`0x61` to `0x6d` are the PROM's shifted by `0x2d` (`0xde` for `0xb1`, and so on; `0x2c` for `0x66` and `0x72`). So those constants differ between microcode
+builds: they are build-relative pointers or identifiers rather than reset values, and a model that initialises its state from the microcode
+should take them from the image it runs. A write word using its own immediate also supports the same-cycle data source for the written value. The
+`0x5f` write is paired with the condition-11 sequencer word in 13 of the 14 places the full `ge7.bin` uses that condition, so it is the flush
+that waits for the output FIFO ([microcode.md](../../platforms/express/microcode.md)); inferred.
 
 ## What each stage does to a pixel, from the GL core's tokens
 
