@@ -53,10 +53,10 @@ GL tokens that use the rarer ops (vertex-attribute path in pipeline.md).
 The record trailer is a checksum (settled, see microcode.md). Still open from ge7.md item 3: the header words at `0x08` and `0x18`, and
 the half-word at record offset 2 (always 1).
 
-## 4. Where do the state words and the constants block meet?
+## 5. Where do the state words and the constants block meet?
 
 The `0x31` field of COLOR, PNT2I, RECTI2D, LINE2I, DRAWCHAR and CMOV2I names shared words `0x1d`, `0x3c` and `0x3d` (colour and position, microcode.md), and the loader puts the constants block at shared word 0, so those words are constants-block entries `0x1d`, `0x3c`, `0x3d` (the attenuation-table values in the block). `ge7.bin` reads constants index `0x3d` as a constant (17 times, GE7 1849 to 1944 and 25395 to 25450) and the console routines at the end of the image name `0x3d` in a `0x31` word (36044, the CMOV2I position store). Either the `0x31` field addresses a memory other than the constants words, or those routines overwrite the table. Routes tried: the loader copy (512 words to shared word 0, both loaders), the `0x3f` reads of indices below `0x40` (only `0x3d` is read as a constant), the store addresses of the console routines. Next: find which routine reads index `0x3d` and whether it can run after CMOV2I; the cond 14 window base (host-visible results sit at shared word 255 on, past the 253 constants in use).
 
-## 5. The multiplier selects
+## 6. The multiplier selects
 
 MPYA = 4 (3889 words of `ge7.bin`; all 556 control `0x3f` words whose field ALUA does not read) and MPYB = 4, 5 (199 FMPY words, 27 MPASSB words; SeedRom and SqRom differ in this field only) are read as 0 by the `Engine`. Routes tried: field statistics, the SeedRom/SqRom word-by-word difference. Next: a known answer that multiplies by a constant (the diagnostic image has none), then the float paths of RECTI2D, which use both.
