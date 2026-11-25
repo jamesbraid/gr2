@@ -28,7 +28,11 @@ NetBSD. Which the hardware does is **unknown** (see questions/display.md); do no
 | Screen | 1280 by 1024, or 1024 by 768 when monitor code is 6 | same |
 
 NetBSD agrees on the slot and depth tables [public] but treats the Z buffer as present only when both of `port1` bits 3:2 are
-clear (`!(rd1 & 0xc)`), the opposite polarity of the binary. Questions/display.md.
+clear (`!(rd1 & 0xc)`), the opposite polarity of the binary. The kernel, both PROMs and the diagnostic program all use both-set as
+absent (the IRIX source's diagnostic decode labels a field value of 3 "not installed" for every board slot), so for software the
+polarity is settled; NetBSD's reading is the odd one and is unexplained. The super video field (`port2` bits 5:4, inverted, the
+record byte at offset 56) is nonzero after inversion only when a super video board is fitted, and then gfxinfo prints a
+"Video board revision" line, so an Indigo with none fitted reads 3 there.
 
 The rest of `Gr2Probe`'s record (HQ2 and GE7 revisions) is in [hq2](../hq2/README.md).
 

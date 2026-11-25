@@ -6,11 +6,6 @@
 bits. Both work only if the gate array drives all lanes alike. Routes tried: the shipped driver, PROM 4.0.5D, NetBSD. Next: the GIO
 timing in the PROM's graphics diagnostic; physical read only with the owner's approval.
 
-## 2. Z buffer detect polarity below revision 4
-
-The binary treats the Z buffer as absent only when `port1` bits 3:2 are both set; NetBSD requires both clear for present. Next:
-`ide.IP20` graphics configuration display, PROM 4.0.5G.
-
 ## 3. Pixel clock chip and protocol
 
 Below revision 4 the part and the meaning of the 17 bytes and the `port0` selector (1, 2, 4) are unknown. At revision 4 and up the 56-bit word is only
