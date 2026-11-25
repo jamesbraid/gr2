@@ -16,11 +16,13 @@ the HQ2 finish-3 port. The user mapping (`Gr2MapGfx`) maps the register page at 
 offsets may be a different alias. Routes tried: GL core disassembly, kernel `Gr2MapGfx`. Next: decide whether `+0x6c040` reads reflect a
 copy of the finish flag (VC1 page) by reading the n32 `__glExpFinish` callers; see also questions/re3.md 2.
 
-## 3. Exact FIFO line condition
+## 3. Exact FIFO line condition and the timeouts
 
-Asserted at count >= `fifo_full` or > it; whether `fifo_empty` and the low-water bit gate a second condition. Routes tried: PROM and
-kernel flow control, ide field names, and the handler's own compare (`count < saved threshold` counts as drained, a software expectation of >=;
-the threshold it writes is count plus one, which suits either rule). Next: none from software; model with >=.
+Whether the line asserts at count `>=` `fifo_full` or only above it, and whether `fifo_full_timeout`, `fifo_empty_timeout` or the
+low-water bit gate a second condition. Routes tried: PROM and kernel flow control, ide field names, the handler's own compare (a
+software expectation of `>=`; the threshold it writes, count plus one, suits either rule), and the IRIX source library and diagnostic
+program (threshold names and values only). Next: none from software; the model uses `>=`
+([host contract section 1](../platforms/express/host-contract.md#what-raises-the-fifo-interrupt-and-how-it-clears)).
 
 ## 4. Which microcode routine sets which finish flag, and what 481 to 484, 496 save
 
