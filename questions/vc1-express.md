@@ -26,3 +26,10 @@ loader; XMAP5 questions 3.
 
 The Indigo's part reads 2 by the gfxinfo decode and the captures; whether other addresses return other test data is unknown. Next: none
 from software.
+
+## 7. Where a short mode sits on the screen and which way cursor y runs
+
+Modes below 1280 by 1024 (the 1024 by 768 and the interlaced and video files) have a different width and height, a display-ID table ending at
+`0x1300`, and a cursor y term of `height - 1024`, clamped at zero, that cannot be right for a pointer y counted from the top. Routes tried:
+`Gr2PositionCursor`, `Gr2SetCursorHotspot`, `Gr2SetMonitor`, `_Gr2CreateDummyDID`, the PROM text port, the X server cursor code. Next: the
+callers of `Gr2PositionCursor` in `gfx.o` and `rrm.o`, and the line programs of the 768-line timing files once the encoding is known.

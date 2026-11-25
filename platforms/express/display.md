@@ -52,7 +52,9 @@ Bt457 access in the shipped objects is revision independent). Established by rea
 
 Which cable or monitor each code means is unknown. [public] TR lists the monitors supported (72, 60, 30 Hz at 1280 by 1024 and 1024 by 768,
 NTSC, PAL, 120 Hz stereo); the held timing files are in [vc1-express](../../devices/vc1-express/README.md#monitor-codes-and-the-kernels-built-in-tables). The timing file also decides screen size: the driver stores width and height from the
-file at `Gr2SetMonitor` (a 1024-class mode is recorded as width 1025).
+file at `Gr2SetMonitor` (a 1024-class mode is recorded as width 1025). Where a mode smaller than 1280 by 1024 sits in the frame is unknown, and the
+cursor hot spot is software's (the driver subtracts it before writing the VC1 position registers); both are in the
+[VC1 page](../../devices/vc1-express/README.md#cursor).
 
 ## What a QEMU model needs, in layers
 

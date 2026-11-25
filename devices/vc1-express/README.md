@@ -145,14 +145,44 @@ file or monitor code and generate frames at the nominal rate (approximation; nee
 
 ## Cursor
 
-[binary] `Gr2PositionCursor`, `Gr2SetCursorHotspot` and the retrace handler: cursor x and y are written as two back-to-back half-words to
-registers `0x22` and `0x24` with the address pair saved and restored. x = (cursor x - hotspot x) + the board's x adjustment, only
-when the left edge is under 32 (`CURSOR_X_THRESHOLD`) and register 0 is switched to `0x800`; otherwise register 0 is `0x900` and no x
-adjustment is added. y = (cursor y - hotspot y) + y adjustment (plus the screen height beyond 1024 on taller screens). The adjustments come from the
-timing file (table above); the 60 Hz file carries 250 and 35. The glyph is 128 half-words (32 rows of two half-words in each of two
-planes, inferred from [public] NetBSD's commented glyph table in two "Bit" blocks). The cursor appears when `sysctl` bit 5 is set;
-the retrace handler sets or clears it at vertical retrace from pending flags. Cursor colours are three entries in the XMAP5s, where
-is **unknown** ([xmap5](../xmap5/README.md)).
+**The hot spot is software's, not a VC1 field.** The glyph is 32 by 32 in two bit planes (128 half-words at SRAM `0xa00` from the kernel and
+the X server, `0x200` from the PROM), and VC1 internal register `0x20` points at it. The chip puts the glyph's top-left pixel at the
+position held in registers `0x22` (x) and `0x24` (y); it has no notion of where inside the glyph the pointer is. The hot spot is a pair
+of small integers that the owner of the cursor image supplies and the driver subtracts before it writes the position:
+
+- The X server's `expInstallCursor` (IRIX 5.3 `gr2.so`; the 6.5 disassembly in `gr2_ddx/asm/exp_cursor.s`) loads the 128 half-words at
+  SRAM `0xa00`, writes register `0x26` (cursor mode) = 0 and register `0x20` = `0xa00`, then issues the `GR2_SETCURSOR_HOTSPOT` ioctl
+  (request 15003) with the cursor's hot spot as two 16-bit values. Its error text is "GR2_SETCURSOR_HOTSPOT failed". Established [binary].
+- The kernel keeps the pair in the board's record (`0x74`, `0x78`) and the pointer position in `0x6c`, `0x70`; `Gr2SetCursorHotspot`
+  and `Gr2PositionCursor` (`gr2_retrace.o` `0x10000c34`, `0x10000958`) recompute and write the two position registers (back to back, from
+  address `0x22`, with the address pair saved and restored). Established [binary].
+- The PROM text port does the same with its own pair (`tp_ptr_x_hot`, `tp_ptr_y_hot` in the IRIX source's `gr2_tp.c`): x = pointer x minus the hot spot, y = pointer y minus the hot spot.
+
+Register values, in the kernel's words: x register = pointer x minus hot x, plus the timing file's x adjustment; y register = pointer
+y minus hot y, plus the timing file's y adjustment, plus the clamped term `max(0, pointer y + height - 1024)` (see below). The adjustments
+come from the timing file (table above); the 60 Hz file carries 250 and 35, `72hz` 240 and 34, `iris3k` 150 and 39. They convert screen
+coordinates into the VC1's video-timing coordinates (the origin is the start of the line and of the frame, not the first visible pixel),
+which is why they differ per timing file. On a screen wider than 1025 the x adjustment applies only while the glyph's left edge is under
+32 (`CURSOR_X_THRESHOLD`) and register 0 holds `0x800`; at or beyond 32 register 0 holds `0x900` (the frame table built for the cursor)
+and no x adjustment is added. The PROM does exactly this split in `gr2_tp.c`: below 32, add the offset and use the standard frame
+table; otherwise use the cursor frame table. A move that crosses the threshold on a wide screen is not written at once: `Gr2PositionCursor` sets a pending flag and the retrace
+handler applies it, so the frame-table switch lands in vertical blanking (the reason is inferred); other moves, and every move on a screen
+under 1026 wide, are written immediately. Established [binary] for the branches, [source] for the PROM's split; the retrace handler's
+own cursor code was not read in full.
+
+The cursor appears when `sysctl` bit 5 is set; the retrace handler sets or clears it at vertical retrace from pending flags. Cursor
+colours are three entries in the XMAP5s, where is **unknown** ([xmap5](../xmap5/README.md)).
+
+**Where a mode smaller than 1280 by 1024 sits: unknown.** What the code shows: width and height come from the timing file (a 1024-wide
+file is recorded as 1025) or from monitor code 6 (1024 by 768, [clock](../clock/README.md)); the kernel moves the display-ID frame table
+for a short screen so that it ends at SRAM `0x1300`, the same end as a 1024-line table (`0x1300 - 2 * height` start); and the y register
+carries the `height - 1024` term above, clamped at zero. That clamp means a 768-line screen's cursor y register stops following the
+pointer in the top 256 lines, which cannot be what the hardware does, so the sign or the origin of the pointer y that reaches the
+driver is not what this page assumes. Which screen lines the picture occupies in the 1024-line frame (top, bottom or centre) and which
+way the pointer y runs are **unknown**. A model that supports only the 1280 by 1024 modes is unaffected. What would settle it: the
+frame table and line programs of `iris3k.u` or `presenter.u` against `60hz.u` (the line-program encoding is itself unknown,
+[questions](../../questions/vc1-express.md) 1), or the callers of `Gr2PositionCursor` in the common graphics layer (`gfx.o`, `rrm.o`), which
+were not read.
 
 ## Retrace interrupt
 
