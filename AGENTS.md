@@ -25,11 +25,11 @@ Proprietary SGI binaries are not committed (`root/` is gitignored; the upstream 
 - NetBSD `sys/arch/sgimips/gio/grtwo.c`, `grtworeg.h` and `grtwovar.h`: a public console driver. It shows what a working driver expects, not what the hardware does.
 - The Elan Graphics Technical Report (SGI, 1992, in `docs/`), the Brooktree datasheets and the board schematics in `docs/`: published, graded "established (published)" for what they state.
 - MAME and other emulators: notes from another project.
-- The restricted IRIX source submodule is carried by upstream and is not opened by this survey. Findings so far rest on the shipped IP20 kernel objects, the microcode images, NetBSD and the published documents.
+- The IRIX source tree carried by upstream is first-rank evidence, as `retools/tools/README-analysis.md#evidence-order` ranks it: read it, cite files by path, grade facts from it [source] and write them in your own words. Never paste source text, comments or macro bodies. Facts resting only on it stay out of QEMU manual pages.
 
 ## Evidence order
 
-Take each fact from the highest source that states it and grade it by that source. The order, the reset-value grading, the hardware-read limit and the checks that enforce them are in `retools/tools/README-analysis.md#evidence-order`. In short: shipped binaries and published manuals, public OS drivers, then other projects' notes. A physical hardware read is a last resort and needs the repository owner's approval. Emulator runs are model behaviour, never hardware evidence. A register read after firmware initialisation is not a reset value.
+Take each fact from the highest source that states it and grade it by that source. The order, the reset-value grading, the hardware-read limit and the checks that enforce them are in `retools/tools/README-analysis.md#evidence-order`. In short: the IRIX source tree, then shipped binaries and published manuals, public OS drivers, then other projects' notes. A physical hardware read is a last resort and needs the repository owner's approval. Emulator runs are model behaviour, never hardware evidence. A register read after firmware initialisation is not a reset value.
 
 ## Evidence: software only
 
