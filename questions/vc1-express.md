@@ -8,11 +8,6 @@ byte dumps of every shipped file; Entry board tables (newport), which use a diff
 held, searched `VC1`), `ide.IP20` video-timing diagnostics, the `*.u` names that look like annotated listings (`vof` files are
 binary here).
 
-## 2. What enables the retrace interrupt
-
-`sysctl` is `0x0c` in the kernel (bit 0 clear) and `0x3c` in the PROM, yet the retrace interrupt arrives in IRIX. Routes tried: all
-`sysctl` writes in `gr2.a`. Next: INT2 mask handling in `kernel.o` for GIO line 2, `ide.IP20`.
-
 ## 3. Monitor code meaning
 
 Which physical monitor each code 0 to 15 means. Next: Owner's Guide and monitor cable documents, `ide.IP20`.

@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/vc1-express/registers.toml by defs-gen - do not edit, change the source -->
 <!-- defs-gen 3 -->
-<!-- input sha256 56853136494c97d8c0e212e1ec4cc0d1b7a37ab83da870125cad050320332e82 -->
+<!-- input sha256 bdb968568ab6b51205c75e2c2446abd3a9e9233a34d6da8e3a16ac8b3520f8f4 -->
 <genxml unit="vc1_express" prefix="VC1X" title="VC1 video timing, cursor and display-ID controller on the Express board">
   <doc>The same LSI Logic part as the Indigo Entry board's VC1 (see the newport repository's VC1 page for shared facts) reached through a different port set: seven word-strided ports in the graphics window instead of the REX1 function selector. It runs video timing programs from an external SRAM, generates the hardware cursor, and produces a per-pixel display ID from run-length tables in the same SRAM. Offsets are from the graphics window base (physical 0x1f000000 on the Indigo); each port is the first byte of a 4-byte stride, the command and SRAM ports are half-words. Grades: established means read in full in the shipped Indigo driver archive or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver, [vendor-derived] a fact resting on the upstream headers only. Nothing was read on a board. Prose in devices/vc1-express/README.md.</doc>
   <struct name="COMMAND" size="2" grade="established" register="yes" offset="0x6c040" access="rw" reset="unknown">
@@ -24,7 +24,7 @@
     <doc>High byte of the address pair. Readable. [binary]</doc>
   </struct>
   <struct name="SYSCTL" size="1" grade="established" register="yes" offset="0x6c058" access="rw" reset="unknown">
-    <doc>System control byte; readable (read-modify-write by the retrace handler and Gr2SetMonitor). Bit roles are NetBSD names [public] except as noted: 0 interrupt, 1 timing generator, 2 VC1 core, 3 display IDs, 4 cursor logic, 5 cursor display (established: toggled at retrace), 6 genlock (inferred), 7 video. Values seen: 1 at start, 3 during table loads, 0x0c final in the kernel, 0x3c final in the PROM. Which bit enables the retrace interrupt is unknown: the kernel's final 0x0c has bit 0 clear and the interrupt still arrives. [binary]</doc>
+    <doc>System control byte; readable (read-modify-write by the retrace handler and Gr2SetMonitor). Bit roles are NetBSD names [public] except as noted: 0 interrupt, 1 timing generator, 2 VC1 core, 3 display IDs, 4 cursor logic, 5 cursor display (established: toggled at retrace), 6 genlock (inferred), 7 video. Values seen: 1 at start, 3 during table loads, 0x0c final in the kernel, 0x3c final in the PROM. Bit 0 is the vertical-interrupt disable: set blocks the retrace latch, clear lets it set (the final values clear it; a comment on the value 1 in the IRIX source says it disables the interrupt) [binary][source]. qtest: with bit 0 set no retrace latch sets over a frame, with it clear one does.</doc>
     <field name="video" start="7" size="1" type="uint" grade="unknown"/>
     <field name="genlock" start="6" size="1" type="uint" grade="inferred"/>
     <field name="cursor_display" start="5" size="1" type="uint" grade="established"/>
@@ -32,7 +32,7 @@
     <field name="did" start="3" size="1" type="uint" grade="inferred"/>
     <field name="core" start="2" size="1" type="uint" grade="inferred"/>
     <field name="timing" start="1" size="1" type="uint" grade="unknown"/>
-    <field name="interrupt" start="0" size="1" type="uint" grade="unknown"/>
+    <field name="interrupt" start="0" size="1" type="uint" grade="inferred"/>
   </struct>
   <constant name="CURSOR_X_THRESHOLD" value="0x20" grade="established"/>
   <constant name="REG_BLACKOUT" value="0x60" grade="inferred"/>

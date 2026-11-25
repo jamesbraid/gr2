@@ -1,6 +1,6 @@
 {
  "generator": "defs-gen 3",
- "input_sha256": "56853136494c97d8c0e212e1ec4cc0d1b7a37ab83da870125cad050320332e82",
+ "input_sha256": "bdb968568ab6b51205c75e2c2446abd3a9e9233a34d6da8e3a16ac8b3520f8f4",
  "schema": "defs-flat/1",
  "source": "devices/vc1-express/registers.toml",
  "profile": "public",
@@ -166,7 +166,7 @@
    "name": "sysctl.interrupt",
    "hi": 0,
    "lo": 0,
-   "grade": "unknown"
+   "grade": "inferred"
   },
   {
    "unit": "vc1_express",

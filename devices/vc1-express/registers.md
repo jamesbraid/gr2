@@ -1,6 +1,6 @@
 <!-- generated from devices/vc1-express/registers.toml by defs-gen - do not edit, change the source -->
 <!-- defs-gen 3 -->
-<!-- input sha256 56853136494c97d8c0e212e1ec4cc0d1b7a37ab83da870125cad050320332e82 -->
+<!-- input sha256 bdb968568ab6b51205c75e2c2446abd3a9e9233a34d6da8e3a16ac8b3520f8f4 -->
 
 # VC1 video timing, cursor and display-ID controller on the Express board
 
@@ -52,7 +52,7 @@ High byte of the address pair. Readable. [binary]
 
 ### Register `sysctl`
 
-System control byte; readable (read-modify-write by the retrace handler and Gr2SetMonitor). Bit roles are NetBSD names [public] except as noted: 0 interrupt, 1 timing generator, 2 VC1 core, 3 display IDs, 4 cursor logic, 5 cursor display (established: toggled at retrace), 6 genlock (inferred), 7 video. Values seen: 1 at start, 3 during table loads, 0x0c final in the kernel, 0x3c final in the PROM. Which bit enables the retrace interrupt is unknown: the kernel's final 0x0c has bit 0 clear and the interrupt still arrives. [binary]
+System control byte; readable (read-modify-write by the retrace handler and Gr2SetMonitor). Bit roles are NetBSD names [public] except as noted: 0 interrupt, 1 timing generator, 2 VC1 core, 3 display IDs, 4 cursor logic, 5 cursor display (established: toggled at retrace), 6 genlock (inferred), 7 video. Values seen: 1 at start, 3 during table loads, 0x0c final in the kernel, 0x3c final in the PROM. Bit 0 is the vertical-interrupt disable: set blocks the retrace latch, clear lets it set (the final values clear it; a comment on the value 1 in the IRIX source says it disables the interrupt) [binary][source]. qtest: with bit 0 set no retrace latch sets over a frame, with it clear one does.
 
 | Bits | Field | Grade | Values | Source | Description |
 |---|---|---|---|---|---|
@@ -63,7 +63,7 @@ System control byte; readable (read-modify-write by the retrace handler and Gr2S
 | 3 | `did` | inferred |  |  |  |
 | 2 | `core` | inferred |  |  |  |
 | 1 | `timing` | unknown |  |  |  |
-| 0 | `interrupt` | unknown |  |  |  |
+| 0 | `interrupt` | inferred |  |  |  |
 
 ## Constants
 

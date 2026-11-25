@@ -1,6 +1,6 @@
 // @generated from devices/vc1-express/registers.toml by defs-gen - do not edit, change the source
 // defs-gen 3
-// input sha256 56853136494c97d8c0e212e1ec4cc0d1b7a37ab83da870125cad050320332e82
+// input sha256 bdb968568ab6b51205c75e2c2446abd3a9e9233a34d6da8e3a16ac8b3520f8f4
 // VC1 video timing, cursor and display-ID controller on the Express board
 #![allow(dead_code)]
 #![allow(clippy::doc_markdown)]
@@ -120,7 +120,7 @@ pub mod sysctl {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod interrupt { // bits 0:0, unknown
+    pub mod interrupt { // bits 0:0, inferred
         pub const SHIFT: u32 = 0;
         pub const MASK: u32 = 0x1;
         pub const fn get(v: u32) -> u32 {

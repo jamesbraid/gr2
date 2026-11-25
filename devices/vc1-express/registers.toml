@@ -99,10 +99,10 @@ width = 8
 reset = "unknown"
 grade = "established"
 from = "gr2_init.o _Gr2RegisterInit, gr2.o Gr2SetMonitor, Gr2GetMonitor, gr2_retrace.o (read-modify-write at retrace)"
-doc = "System control byte; readable (read-modify-write by the retrace handler and Gr2SetMonitor). Bit roles are NetBSD names [public] except as noted: 0 interrupt, 1 timing generator, 2 VC1 core, 3 display IDs, 4 cursor logic, 5 cursor display (established: toggled at retrace), 6 genlock (inferred), 7 video. Values seen: 1 at start, 3 during table loads, 0x0c final in the kernel, 0x3c final in the PROM. Which bit enables the retrace interrupt is unknown: the kernel's final 0x0c has bit 0 clear and the interrupt still arrives. [binary]"
+doc = "System control byte; readable (read-modify-write by the retrace handler and Gr2SetMonitor). Bit roles are NetBSD names [public] except as noted: 0 interrupt, 1 timing generator, 2 VC1 core, 3 display IDs, 4 cursor logic, 5 cursor display (established: toggled at retrace), 6 genlock (inferred), 7 video. Values seen: 1 at start, 3 during table loads, 0x0c final in the kernel, 0x3c final in the PROM. Bit 0 is the vertical-interrupt disable: set blocks the retrace latch, clear lets it set (the final values clear it; a comment on the value 1 in the IRIX source says it disables the interrupt) [binary][source]. qtest: with bit 0 set no retrace latch sets over a frame, with it clear one does."
 
 [registers.sysctl.fields]
-interrupt = { bits = [0, 0], grade = "unknown" }
+interrupt = { bits = [0, 0], grade = "inferred" }
 timing = { bits = [1, 1], grade = "unknown" }
 core = { bits = [2, 2], grade = "inferred" }
 did = { bits = [3, 3], grade = "inferred" }

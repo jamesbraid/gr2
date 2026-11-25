@@ -156,14 +156,38 @@ is **unknown** ([xmap5](../xmap5/README.md)).
 
 ## Retrace interrupt
 
-[binary] The retrace handler (`gr2_retr_intr`, `gr2.o` `0xa0`) re-arms the INT2 port register bit 3 by clearing then setting it, then
-runs `Gr2RetraceHandler`, which applies the pending cursor, display-mode and buffer-swap changes. The source of the pulse is the VC1;
-which `sysctl` bit enables it is unknown (the kernel's final `0x0c` has bit 0 clear). For a QEMU model: raise INT2 local 1 bit 7 once
-per frame while video is enabled; the guest only clears via the port register pulse. See questions/vc1-express.md.
+[binary] The retrace handler (`gr2_retr_intr`, IRIX 5.3 `IP20boot/gr2.a` `gr2.o` `0x100000c0`) re-arms the INT2 port register bit 3 by
+clearing then setting it, then runs `Gr2RetraceHandler`, which applies the pending cursor, display-mode and buffer-swap changes. The
+pulse source is the VC1 (the board has no other video source and no acknowledge register).
+
+What enables it, in three layers:
+
+1. **INT2 mask.** `gr2_init` (`gr2.o` `0x10000774`) calls `setgiovector(2, 2, gr2_retr_intr, 0)`: GIO line 2, slot 2. The kernel's
+   `setgiovector` (`kernel.o` `0x100053c0`) installs the shared line handler with `setlclvector(0xf, ...)`, which unmasks INT2 local 1
+   bit 7. No GR2 code writes the INT2 mask itself. Established [binary]. `Gr2Start` re-points the same line at `Gr2RetraceInterrupt`
+   (`gr2.o` `0x1000011c`) without touching the mask.
+2. **VC1 `sysctl` bit 0.** The shipped values are 1 at the start of init, 3 while `Gr2SetMonitor` loads tables (restored with `& ~0x43`
+   afterwards), `0x0c` at the end of the kernel's init and `0x3c` at the end of the PROM's. Every final value has bit 0 clear, and every
+   value written while tables load has it set. The IRIX 6.5.7 PROM library (`stand/arcs/lib/libsk/graphics/EXPRESS/gr2_init.c`) writes
+   `0x1` under a comment that says it disables the interrupt to the VC1 and blacks out the display, and the diagnostic video-timing
+   routines (`stand/arcs/ide/fforward/graphics/EXPRESS/db.c`) name `0x3` "disable interrupt and VC1 function" and `0x3c` "enable".
+   So bit 0 is an active-high **disable** for the VC1's vertical interrupt: set masks it, clear lets it through. This answers the
+   earlier puzzle of an interrupt arriving with the kernel's final `0x0c`. Grade: established for the values [binary]; the polarity
+   rests on the source comments [source], so inferred as a hardware statement. Bit 1 is set together with bit 0 in the same two
+   places (`0x3`) and is read as the timing-generator or video-output disable: inferred, no code writes it alone.
+3. **The latch.** The pulse is a latch in INT2 local 1 bit 7 that stays set until the host pulses INT2 port bit 3 low and high
+   (`0xbfb801df`); the live vertical status can also be read at bit 0 of `0xbfb801d3`, which `Gr2RetraceHandler` polls up to ten times
+   at 1 microsecond (routing in the chips repository's `platforms/ip20/interrupts.md`; [host contract section 5](../../platforms/express/host-contract.md#5-board-outputs-to-int2)).
+
+The PROM leaves `sysctl` at `0x3c` (bit 0 clear) but does not unmask the INT2 bit, so the latch sets every frame and nothing is taken.
+
+For a QEMU model: while `sysctl` bit 0 is clear (and the timing generator runs), set the INT2 local 1 bit 7 latch once per frame at
+the start of vertical retrace; clear it only on the INT2 port bit 3 pulse; let the INT2 mask decide whether the CPU is interrupted.
+A qtest can write `sysctl = 1`, confirm no latch sets across a frame, write `0x0c`, and confirm it sets again.
 
 ## Status
 
 Established: ports and offsets, address-pair behaviour, SRAM map for the loaded images, init and `Gr2SetMonitor` sequences, the
 two built-in images, the timing-file layout and contents of the 14 held files, DID table shapes, cursor register sequence.
-Inferred: monitor code meaning, sysctl bit roles other than bit 5, glyph plane layout. Unknown: line-program format, line-count
-semantics, retrace enable bit, cursor colour location, `xmapmode` port, reset values.
+Inferred: monitor code meaning, sysctl bit roles other than bits 0 and 5, glyph plane layout. Unknown: line-program format, line-count
+semantics, cursor colour location, `xmapmode` port, reset values.
