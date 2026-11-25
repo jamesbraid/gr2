@@ -13,7 +13,7 @@ load. Registers: [registers.toml](registers.toml). Labels follow [AGENTS.md](../
 word. NetBSD [public] reads the word and masks low bits of the same registers (`bus_space_read_4`; for example board revision =
 `~word & 0xf`), which on the same host is the opposite lane. Both cannot see the same value unless the gate array drives every byte
 lane the same. A faithful model for the shipped drivers returns the value in the most significant lane; replicating the byte across all four lanes also satisfies
-NetBSD. Which the hardware does is **unknown** (see questions/display.md); do not rely on the NetBSD behaviour as evidence.
+NetBSD. Which the hardware does is **unknown**; the model rule and the full list of byte accesses are in the [host contract](../../platforms/express/host-contract.md#4-probe-answers-per-indigo-variant). Do not rely on the NetBSD behaviour as evidence.
 
 ## Decoding (established as software expectation)
 

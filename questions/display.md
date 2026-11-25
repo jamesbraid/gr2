@@ -1,11 +1,5 @@
 # Open questions: display back end
 
-## 1. Byte lane of the board configuration ports
-
-`Gr2Probe` and the PROM probe use byte loads at the first byte of each word (the most significant lane). NetBSD reads a word and masks low
-bits. Both work only if the gate array drives all lanes alike. Routes tried: the shipped driver, PROM 4.0.5D, NetBSD. Next: the GIO
-timing in the PROM's graphics diagnostic; physical read only with the owner's approval.
-
 ## 3. Pixel clock chip and protocol
 
 Below revision 4 the part and the meaning of the 17 bytes and the `port0` selector (1, 2, 4) are unknown. At revision 4 and up the 56-bit word is only
