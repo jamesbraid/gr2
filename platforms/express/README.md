@@ -30,9 +30,9 @@ host connection with a graphics FIFO inside the HQ2.
 
 | Product | Host | Geometry engines | Colour | Z buffer | Grade and source |
 |---|---|---|---|---|---|
-| Indigo XS | Indigo | one | 8-bit (Virtual24) | optional 24-bit | Colour and Z: established, Elan TR section 1. One GE7: **inferred** from the parts list (GR2-1 board, "XS, XS24"); the TR gives no XS count. |
-| Indigo XS24 | Indigo | one | 24-bit | optional 24-bit | As XS. |
-| Indigo XZ | Indigo | two | 24-bit | not stated | Two GE7: parts list (GR2-2 board). The TR predates XZ. Secondary only, **inferred**. |
+| Indigo XS | Indigo | one | 8-bit (Virtual24) | optional 24-bit | **Shipped.** Colour and Z: established, Elan TR section 1. One GE7: **established**: the IRIX inventory code names a one-engine board without the 24-plane flag "GR2-XS" (the hinv source, and the kernel sets the one-engine flag from the probe count at `gr2.o` `0x10000820`); eight `hinv` captures of "Graphics board: GR2-XS" on R4000 and R3000 Indigos are in the Library mail archive (below); an SGI engineer's posting says XS24Z has one GE7 and XZ two. No `gfxinfo` capture of an XS is held, so the plane count rests on the TR and the name. |
+| Indigo XS24 | Indigo | one | 24-bit | optional 24-bit | One GE7 established by the same decode and by `gfxinfo` captures ("1 GE, 1 RE, 24 bitplanes"). |
+| Indigo XZ | Indigo | two | 24-bit | required (the inventory adds " missing Z" without it) | Two GE7: established by `gfxinfo` captures ("2 GEs") and the inventory decode; the parts list (GR2-2 board) agrees. The TR predates XZ. |
 | Indigo Elan | Indigo | four | 24-bit | standard 24-bit, 4 stencil planes | Established, Elan TR section 1 and 4.2 ("four geometry engines"). |
 | Extreme, XZ, Elan on Indigo2 | Indigo2 | unknown | unknown | unknown | **Unknown.** The driver names `-XS`, `-XZ`, `-Elan` and `-Extreme` as renderer-name suffixes (see below). Topology is not transferable from Indigo. |
 
@@ -161,6 +161,6 @@ Independent review of this survey against the shipped objects (`gr2.a` sha256 `c
 | GE7 loader | CONFIRMED except the `+0x6a064` read-back mask, which is `0x03dfffff`, not `0x003dffff` (WRONG, fixed). Magic `0x966e`, 512 constants to `+0x0`, microstore clear of 64K entries, the register mapping and the `+0x683ec` 7-bit mask match. Flag word `+0x1fffc`: written 0 on a failed download and 1 by `Gr2TpSetup` on success, CONFIRMED. |
 | Interrupt wiring | CONFIRMED: `setgiovector` with line 0 and `Gr2FIFOInterrupt`, line 2 and `gr2_retr_intr`, both slot 2; agrees with the chips interrupt page. The FIFO handler clears bit 0 of `0xbfb801c7` on entry and restores it on exit. |
 | Grades: Elan four GE7 | CONFIRMED, established (published): the TR names four geometry engines in the configuration list of section 1 and in sections 2.2, 4.1 and 4.2. The file is HTML without page numbers, so the section number is the citation. |
-| Grades: XS one, XZ two | GRADE stays inferred. The only source is the parts listing (`GR2-1 ... with 1 GE-7 (XS,XS24)`, `GR2-2 ... with 2 GE-7's (XZ)`), a secondary list of part descriptions, not a manual or a binary. |
+| Grades: XS one, XZ two | Superseded: both are now established, see the product table and [host contract section 4](host-contract.md#4-probe-answers-per-indigo-variant). The parts listing (`GR2-1 ... with 1 GE-7 (XS,XS24)`, `GR2-2 ... with 2 GE-7's (XZ)`) agrees. |
 | The four filed disagreements | See [questions](../../questions/README.md): the XMAP5 window is settled and removed; the `+0x6a040` entry is reduced (disjoint bit fields, not a conflict); the byte-lane entry gained the PROM route (the PROM agrees with the kernel); the GE7 revision entry stays open. |
 | Scaffold | `retools` is pinned at `b1e357ba`, the same as newport; retools main is now `b75bedf2` (noted, not bumped). The workflow is identical to newport's; gr4's differs only in leading comments. `retools/tools/defs/ci-check` prints "no decode headers" and passes; `docs-index --check` and `check-links` pass. `AGENTS.md` has no internal hosts or paths (the only matches are the branch name), and techomancer's original text is intact apart from trailing blank lines. |
