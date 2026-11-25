@@ -54,7 +54,7 @@ A second release, read from the reader's copy of the IRIX 5.3 install disc image
 | `usr/cpu/sysgen/IP12boot/gr2.a` (the R3000 Indigo's; the chips repository hashes the same file) | 90984 | `bbe461d4e0919bcf4a68c48562036d339131a17761fbbb1d65f8fa85e0478e68` |
 | `usr/gfx/arch/IP12GR2/libGLcore.so` (o32, MIPS-I) | 1563764 | `0148b9b01abb053d97a092acca01494549a1c675e4e924dc7b3b0a1fa11e9f88` |
 | `usr/gfx/arch/IP12GR2/libGL.so` | 323188 | `8599ce098e5fe1fc746b6e577655b7295f8846c9f1caa17213c9c312603eee50` |
-| `usr/gfx/arch/IP12GR2/libgl.so` (IrisGL, 7068 function and object symbols) | 1914236 | `2627309d869d730caf489b2d0a4796905a41b1463e0f70198f0bb93db2a89228` |
+| `usr/gfx/arch/IP12GR2/libgl.so` (IrisGL, 3534 function and object symbols in each of `.symtab` and `.dynsym`) | 1914236 | `2627309d869d730caf489b2d0a4796905a41b1463e0f70198f0bb93db2a89228` |
 | `usr/gfx/arch/IP12GR2/libgl_s` (ECOFF) | 1405968 | `7443de15d2fc83511b866a19d44d79da67ac17b2eb3a1ee0950e02ae376cf8a3` |
 | `usr/gfx/gfxinit` (the user-space loader of the two images) | 178376 | `524c75008943e9fb7d6db74ae65414573661561f78acc222ef2f78375de91e54` |
 | `usr/lib/X11/dyDDX/gr2.so` (Indigo; stripped) | 1337584 | `c806ccc8c338cba9dd45beea8142284fb1151278d2e65e120a4cacad53650d60` |
