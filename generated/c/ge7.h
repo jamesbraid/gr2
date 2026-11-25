@@ -1,7 +1,7 @@
 /* generated from devices/ge7/registers.toml by defs-gen - do not edit, change
  * the source */
 /* defs-gen 3 */
-/* input sha256 4b24a0dac5a13b9f43b822999a4bd0e8cfedcb3e360d3db1c332e9bdb57d3ece */
+/* input sha256 e30b0fdf775c51b8fdeab63c9fca6fbdcc7b0ebfdb6d0844c750cd3ef14767df */
 /* GE7 geometry engines: host window and microcode load registers */
 #ifndef GE7_GEN_H
 #define GE7_GEN_H
@@ -77,9 +77,11 @@
  * GE7 revision. [binary] The kernel driver and the PROM probe write zero, read
  * the word back and keep bits 7:5 of the low byte. [public] NetBSD reads
  * another offset in slot 0 and keeps bits 7:4; no shipped binary read touches
- * that offset, so this register is taken as the revision. That the three bits
- * are a revision number is inferred. qtest: after a write of zero, bits 7:5
- * read as the configured revision.
+ * that offset, so this register is taken as the revision. gfxinfo decodes the
+ * field as 1 = A and 2 = B, and every captured Indigo prints B, so the Indigo
+ * reads 2 (low byte 0x40) [binary]. That the three bits are a revision number
+ * is inferred. qtest: after a write of zero, bits 7:5 read as the configured
+ * revision.
  */
 /* revision: rw32, reset unknown */
 #define GE7_REVISION_OFFSET                          0x683f4u /* established */

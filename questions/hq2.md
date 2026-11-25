@@ -37,9 +37,8 @@ variant strings in the 4.0.5G PROM.
 
 Only the IRIX 6.5 base-set `hq2.bin` and `ge7.bin` are held. Next: IRIX 5.x and 6.2 media.
 
-## 7. Which register carries the HQ2 revision?
+## 7. Which register is the hardware's HQ2 revision?
 
-The PROMs fill probe-record byte `+0x30` from status bits 30:23; the kernel fills it from `hq_gepc` bits 23:16 (`_Gr2ProbeChipRev`), and `gr2_error`
-logs `hq_gepc` bits 15:0 as the GE PC. The diagnostic prints `hq_gepc` with "can't read - hw bug". NetBSD reads status with mask `0xff000000` and shift 23.
-Routes tried: `gr2.a`, both PROMs, `ide.IP20`, NetBSD, public gfxinfo postings (all print rev A, which fits 0 from either register). Next: read the
-`gfxinfo` binary to see which record byte prints as "HQ2 rev" and how the letter is formed; a board with a non-A HQ2 posting.
+The kernel's gfxinfo path reads `hq_gepc` bits 23:16 (0 = HQ2, 1 = HQ2.1), the PROMs and the diagnostic program read status bits 31:23, and
+both give 0 on every Indigo ([host contract section 1](../platforms/express/host-contract.md#the-hq2-revision-prom-or-kernel)). Nothing
+in the Indigo model depends on the answer. Next: a board that reads HQ2.1, which the Indy and Indigo2 boards are.

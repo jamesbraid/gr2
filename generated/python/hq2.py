@@ -1,6 +1,6 @@
 """generated from devices/hq2/registers.toml by defs-gen - do not edit, change the source
 defs-gen 3
-input sha256 6b0209a7be7eb709d083d2295da39a130cc6e09c73033c65727cd369f60a2e2f
+input sha256 cba5637da661ab8b8f3e475b328cfed1722aba88cfb3d1a80e1228cd43c13f30
 HQ2 command engine: FIFO window, microstore and host registers"""
 
 UNIT = 'hq2'

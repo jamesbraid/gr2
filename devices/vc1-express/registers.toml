@@ -69,7 +69,7 @@ ro = 0xff
 reset = "unknown"
 grade = "established"
 from = "gr2_init.o Gr2ProbeVC1 0x148; PROM 0xbfc0ed2c"
-doc = "Revision read: after addrhi = 0 and addrlo = 5, the low three bits are stored as the VC1 revision. The value a real part returns is not recorded. [binary]"
+doc = "Revision read: after addrhi = 0 and addrlo = 5, the low three bits are stored as the VC1 revision. gfxinfo decodes 1 as A and 2 as B and every captured Indigo prints B, so the Indigo's part reads 2 (inferred from the decode and the captures; no direct read). [binary]"
 
 [registers.testreg.fields]
 revision = { bits = [2, 0], grade = "established" }

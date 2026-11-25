@@ -1,6 +1,6 @@
 <!-- generated from devices/hq2/registers.toml by defs-gen - do not edit, change the source -->
 <!-- defs-gen 3 -->
-<!-- input sha256 6b0209a7be7eb709d083d2295da39a130cc6e09c73033c65727cd369f60a2e2f -->
+<!-- input sha256 cba5637da661ab8b8f3e475b328cfed1722aba88cfb3d1a80e1228cd43c13f30 -->
 
 # HQ2 command engine: FIFO window, microstore and host registers
 
@@ -61,7 +61,7 @@ Status word. The diagnostic program names it the HQ2 version register and prints
 
 | Bits | Field | Grade | Values | Source | Description |
 |---|---|---|---|---|---|
-| 31:23 | `version` | established |  |  | ide HQ2 version. Both PROMs store (word >> 23) through a byte store, so the byte holds bits 30:23. NetBSD masks 0xff000000 and then shifts by 23, a doubled value of bits 31:24 that leaves bit 23 out; the two agree only while the field is 0. The kernel fills the same probe-record byte from bits 23:16 of hq_gepc instead, and gfxinfo's 'HQ2 rev A' most likely reports that byte (Gr2Info copies the record out; gfxinfo itself not read), so which register carries the revision is unsettled. Value 0 reads as rev A only if letters count from A (inferred). [binary][public] |
+| 31:23 | `version` | established |  |  | ide HQ2 version. Both PROMs store (word >> 23) through a byte store, so the byte holds bits 30:23. NetBSD masks 0xff000000 and then shifts by 23, a doubled value of bits 31:24 that leaves bit 23 out; the two agree only while the field is 0. The kernel fills the same probe-record byte from bits 23:16 of hq_gepc instead, and gfxinfo prints that byte: 0 is 'HQ2 rev A', 1 is 'HQ2.1 rev A' (gfxinit decode, read in full), so the kernel's register is the one users see; which of the two the hardware calls the revision is unsettled. Every captured Indigo reads 0. [binary][public] |
 | 22:20 | `ge_ptr` | established |  |  | ide ge_ptr. Role unknown; three bits, wide enough to count eight engines. [binary] |
 | 19:16 | `ge_ctr` | established |  |  | ide ge_ctr. Role unknown; four bits. [binary] |
 | 15:14 | `zero` | established |  |  | ide zero. Printed as a field that reads zero. [binary] |
@@ -115,7 +115,7 @@ GE DMA port. The MC's graphics DMA engine addresses this location as the GIO sla
 
 ### Register `hq_gepc`
 
-HQ to GE7 program counter. The diagnostic program reads it and prints 'Currently, can't read - hw bug - HQ_GE7 PC'. The kernel reads it twice: gr2_error logs the low 16 bits as 'GE PC', and _Gr2ProbeChipRev stores bits 23:16 in the probe-record byte the PROMs fill from status bits 31:23. Whether those upper bits are a revision is not settled (inferred either way). [binary] ide gr2_rdHQ2reg; gr2_error; _Gr2ProbeChipRev. qtest: a read does not fault; model value 0 satisfies every shipped reader.
+HQ to GE7 program counter. The diagnostic program reads it and prints 'Currently, can't read - hw bug - HQ_GE7 PC'. The kernel reads it twice: gr2_error logs the low 16 bits as 'GE PC', and _Gr2ProbeChipRev stores bits 23:16 in the probe-record byte the PROMs fill from status bits 31:23. gfxinfo prints that byte as 'HQ2 rev A' for 0 and 'HQ2.1 rev A' for 1, so those bits are what users see as the revision (established as the decode; the hardware's own name for the field is unknown). [binary] ide gr2_rdHQ2reg; gr2_error; _Gr2ProbeChipRev. qtest: a read does not fault; model value 0 satisfies every shipped reader.
 
 ### Register `gepc`
 

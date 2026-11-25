@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/ge7/registers.toml by defs-gen - do not edit, change the source -->
 <!-- defs-gen 3 -->
-<!-- input sha256 4b24a0dac5a13b9f43b822999a4bd0e8cfedcb3e360d3db1c332e9bdb57d3ece -->
+<!-- input sha256 e30b0fdf775c51b8fdeab63c9fca6fbdcc7b0ebfdb6d0844c750cd3ef14767df -->
 <genxml unit="ge7" prefix="GE7" title="GE7 geometry engines: host window and microcode load registers">
   <doc>Host-visible window of the GE7 geometry engines in the Express graphics slot. Provenance tags in item text: [public] published document or public driver, [binary] shipped IRIX or PROM binary (a software expectation), [vendor-derived] upstream headers (none used here). Routine names, addresses and cross-references are in the unit README.</doc>
   <struct name="SHARED_RAM" size="4" grade="established" register="yes" offset="0x0" access="rw" count="32767" stride="4" reset="unknown">
@@ -27,7 +27,7 @@
     <field name="stored" start="0" size="7" type="uint" grade="established"/>
   </struct>
   <struct name="REVISION" size="4" grade="established" register="yes" offset="0x683f4" access="rw" reset="unknown">
-    <doc>GE7 revision. [binary] The kernel driver and the PROM probe write zero, read the word back and keep bits 7:5 of the low byte. [public] NetBSD reads another offset in slot 0 and keeps bits 7:4; no shipped binary read touches that offset, so this register is taken as the revision. That the three bits are a revision number is inferred. qtest: after a write of zero, bits 7:5 read as the configured revision.</doc>
+    <doc>GE7 revision. [binary] The kernel driver and the PROM probe write zero, read the word back and keep bits 7:5 of the low byte. [public] NetBSD reads another offset in slot 0 and keeps bits 7:4; no shipped binary read touches that offset, so this register is taken as the revision. gfxinfo decodes the field as 1 = A and 2 = B, and every captured Indigo prints B, so the Indigo reads 2 (low byte 0x40) [binary]. That the three bits are a revision number is inferred. qtest: after a write of zero, bits 7:5 read as the configured revision.</doc>
     <field name="rev" start="5" size="3" type="uint" grade="inferred"/>
   </struct>
   <struct name="SLOT_RAM" size="4" grade="established" register="yes" offset="0x68400" access="rw" count="1792" stride="4" reset="unknown">

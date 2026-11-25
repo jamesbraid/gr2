@@ -1,6 +1,6 @@
 """generated from devices/vc1-express/registers.toml by defs-gen - do not edit, change the source
 defs-gen 3
-input sha256 bdb968568ab6b51205c75e2c2446abd3a9e9233a34d6da8e3a16ac8b3520f8f4
+input sha256 25734a17818e96cd0d8d228db9bbafb76b5aba73b4daabd22058b0bf5bc47127
 VC1 video timing, cursor and display-ID controller on the Express board"""
 
 UNIT = 'vc1_express'

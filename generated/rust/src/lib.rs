@@ -1,6 +1,6 @@
 // @generated from devices/ and formats/ by defs-gen - do not edit, change the source
 // defs-gen 3
-// input sha256 daba3bbd0dbdce8aa4aae5a83db354377f7dd6b0fd1a88bd00f802f563c090a2
+// input sha256 a56d9ddb1ec158389478edca1f82ffc8f6b9286866636b2a13d9d2d41557cf41
 #![no_std]
 #![cfg_attr(rustfmt, rustfmt_skip)]
 pub mod bt457;

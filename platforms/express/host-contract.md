@@ -55,7 +55,24 @@ Reset values software relies on: none. Software stores 0 before every use; `prob
 
 ### The HQ2 revision: PROM or kernel?
 
-Answer: the HQ2 version is `status` bits 31:23. Established [binary] that this is the field the diagnostic calls "HQ2 version"; both PROMs store `word >> 23` (4.0.5D `0xbfc0ecec`, 4.0.5G `0xbfc11a98`); NetBSD agrees [public]. The kernel stores bits 23:16 of the word at `+0x6a06c` into the same probe-record byte (`_Gr2ProbeChipRev` `0x124`, record byte `+0x30`). That register is `hq_gepc`, the HQ to GE program counter: the diagnostic program prints it with "can't read - hw bug" and `gr2_error` logs its low 16 bits as the GE PC. Which register is the revision is **not settled**: both readers fill one byte, and `gfxinfo` (not read) very likely prints it as "HQ2 rev A" on every Indigo board in public postings (XS24, XZ, Elan; Library mail archive). Model: `status` bits 31:23 = 0 and `hq_gepc` reads 0, which satisfies every shipped reader. Inferred for the value 0 = rev A.
+Answer: both read a register, they read different ones, and a model that returns 0 from both is right for every Indigo board on record.
+
+- **What gfxinfo prints.** `gfxinfo` is `usr/gfx/gfxinit` (5.3 disc; the name is a symlink to it). Its GR2 report formats the 60-byte probe record the kernel copies out through `Gr2Info`. Record byte `0x30` selects the HQ2 text: 0 prints "HQ2 rev A", 1 prints "HQ2.1 rev A", anything else "HQ2 rev unknown" (`gfxinit` `0x40aa04` to `0x40aa60`, strings at file offsets `0x2844` to `0x2860`). Established [binary]. Public captures agree: every Indigo board (GR2 revision 2) prints "HQ2 rev A", and the later GR2 revision 4 and 6 boards (Indy and Indigo2) print "HQ2.1 rev A" (Library mail archive, `3EBA4AA5.8080302@sgi.com`, `20071209164502.GA13877@deprecation.cyrius.com`).
+- **Where the kernel gets byte `0x30`.** From bits 23:16 of the word at `+0x6a06c` (`hq_gepc`): `_Gr2ProbeChipRev`, IRIX 5.3 `gr2_init.o` `0x100001dc` to `0x100001e4` (a word load, a shift right by 16, a byte store), the same in 6.5. Established [binary]. The same register's low 16 bits are the GE program counter that `gr2_error` logs.
+- **Where the PROMs get theirs.** From bits 31:23 of the status word at `+0x6a040` (`word >> 23` through a byte store; 4.0.5D `0xbfc0ecec`, 4.0.5G `0xbfc11a98`). The IRIX source's PROM library does the same (`info->HQ2Rev = base->hq.version >> 23`, `stand/arcs/lib/libsk/graphics/EXPRESS/gr2_init.c`) and the diagnostic program prints the same field as "HQ2 version". Established [binary][source]. Nothing in the PROM path reaches gfxinfo; the kernel reprobes.
+- **Which one is "the revision".** Not settled by software: the two fields would agree only at 0, and 0 is the value for every captured Indigo. The kernel's field is the one users see (value 1 = HQ2.1). For a board that reads 0 in both, the Indigo, nothing depends on it. Model: `status` bits 31:23 = 0 and `hq_gepc` bits 23:16 = 0 for HQ2 rev A, which is every Indigo configuration. If an HQ2.1 board were ever modelled, put 1 in `hq_gepc` bits 23:16 (what gfxinfo needs) and 1 in status bit 23, the PROM-side placement being a guess. NetBSD masks `0xff000000` and shifts 23, a different field again [public]. Grade: the decode and the captures established; "register A is the revision and register B is not" unknown.
+
+### The other revision read-backs gfxinfo prints
+
+The same record carries three more chip revisions. The decode tables are in `gfxinit` (the three letter tables at file offsets `0x2870` to `0x28dc`), established [binary]; the values the captures need are inferred from them.
+
+| Record byte | Source in the kernel | gfxinfo decode | Capture (XS24, XZ, Elan) | Value to read |
+|---|---|---|---|---|
+| `0x31` GE7 | word at `+0x683f4` after a store of 0, byte bits 7:5 (`gr2_init.o` `0x100001e8` to `0x100001f8`) | 1 = A, 2 = B, else unknown | "GE7 rev B" on all | `0x40` in the low byte (field value 2) |
+| `0x32` RE3 | low byte of shared-RAM word `+0x1ffe0`, copied in `Gr2Start` and on the reuse path; the microcode writes it (`Gr2Start`'s failure message is "RE version read back failed") | low nibble 1 to 4 = A to D (RE3), 5 = A (RE3.1), else unknown | XS24 and the IP12 Elan 4D/30 posting: D and C; XZ postings: "unknown" | 4 for rev D; the INIT routine must leave it |
+| `0x33` VC1 | `testreg` low three bits after `addr = 5` (`Gr2ProbeVC1`) | 1 = A, 2 = B, else unknown | "VC1 rev B" on all | 2 |
+
+An earlier version of this page and of the GE7 and VC1 register maps said the value for rev B was 1; the decode above shows A is 1 and B is 2.
 
 ## 2. Context save and swap (`_Gr2CXSaveRestore`, `Gr2PcxSwap`)
 
@@ -118,9 +135,9 @@ Register answers a probe needs, for board revision 2. Established [binary] for w
 | port2 (+0x6c008) | bits 3:2 back end version, inverted by the kernel (zero after inversion fails); bits 5:4 super video board version (inverted); bits 1:0 monitor code bits 2:1 | back end field nonzero after inversion; VB1.1 vs VB1.0 mapping unknown |
 | port3 (+0x6c00c) | memory board versions: bits 1:0, 3:2, 5:4 for slots A, B, C; kernel: slot present unless the field is 3; ide: present unless the field is 0 | present boards: field value 1 (satisfies both); XS 8 bit: slot A only; 16-bit: A and B; XS24, XZ, Elan 24 bit: A, B and C; absent slot: 3 |
 | GE slots (+0x68000, stride 0x400) | the kernel writes five words per slot 1 to 7 and reads them back; count = highest answering slot + 1 | XS and XS24: slot 0 only; XZ: slots 0 and 1; Elan: slots 0 to 3. Absent slots must not raise a bus error: the kernel and PROM use plain loads there, so shipped IRIX on a one-engine board would otherwise fault (inferred) |
-| GE revision (+0x683f4 after a store of 0) | bits 7:5; gfxinfo prints GE7 rev B | 1 << 5 (value 1 = B; inferred letter scheme) |
-| HQ revision | see section 1 | 0 |
-| VC1 revision | internal register 5 low 3 bits via the VC1 ports; gfxinfo prints rev B | 1 |
+| GE revision (+0x683f4 after a store of 0) | bits 7:5; gfxinfo prints GE7 rev B for field value 2 | 2 << 5 (`0x40`); see section 1 for the decode |
+| HQ revision | see section 1 (`hq_gepc` bits 23:16 for gfxinfo, status bits 31:23 for the PROMs) | 0 in both |
+| VC1 revision | internal register 5 low 3 bits via the VC1 ports; gfxinfo prints rev B for 2 | 2 |
 | monitor ID | port1 bit 0 and port2 bits 1:0 give the monitor code 0 to 7; code 6 selects 1024 x 768, others 1280 x 1024; gfxinfo "unknown, assuming 19 inch monitor" appears with these boards, so the mapping from code to cable is not needed | 0: 1280 x 1024 at 60 Hz |
 
 Byte position of the board revision: settled for every shipped program. The kernel (`Gr2Probe`), both PROMs and the diagnostic program (`gr2_boardvers`) all load a byte at the first byte of each word (the most significant byte position on this big-endian host). NetBSD masks the low bits of a word instead [public]. The model should return the value at the first byte of the word and, to satisfy NetBSD as well, replicate it in all four byte positions of a word read; whether the board does so is unknown. Established [binary] for the three programs.

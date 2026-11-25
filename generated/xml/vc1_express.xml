@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/vc1-express/registers.toml by defs-gen - do not edit, change the source -->
 <!-- defs-gen 3 -->
-<!-- input sha256 bdb968568ab6b51205c75e2c2446abd3a9e9233a34d6da8e3a16ac8b3520f8f4 -->
+<!-- input sha256 25734a17818e96cd0d8d228db9bbafb76b5aba73b4daabd22058b0bf5bc47127 -->
 <genxml unit="vc1_express" prefix="VC1X" title="VC1 video timing, cursor and display-ID controller on the Express board">
   <doc>The same LSI Logic part as the Indigo Entry board's VC1 (see the newport repository's VC1 page for shared facts) reached through a different port set: seven word-strided ports in the graphics window instead of the REX1 function selector. It runs video timing programs from an external SRAM, generates the hardware cursor, and produces a per-pixel display ID from run-length tables in the same SRAM. Offsets are from the graphics window base (physical 0x1f000000 on the Indigo); each port is the first byte of a 4-byte stride, the command and SRAM ports are half-words. Grades: established means read in full in the shipped Indigo driver archive or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver, [vendor-derived] a fact resting on the upstream headers only. Nothing was read on a board. Prose in devices/vc1-express/README.md.</doc>
   <struct name="COMMAND" size="2" grade="established" register="yes" offset="0x6c040" access="rw" reset="unknown">
@@ -14,7 +14,7 @@
     <doc>External SRAM data port. The SRAM is addressed by byte; each half-word transfer advances the address pair by two. Written from timing images and display-ID tables; read back by the dummy-ID builder and Gr2SetMonitor. [binary]</doc>
   </struct>
   <struct name="TESTREG" size="1" grade="established" register="yes" offset="0x6c04c" access="r" reset="unknown">
-    <doc>Revision read: after addrhi = 0 and addrlo = 5, the low three bits are stored as the VC1 revision. The value a real part returns is not recorded. [binary]</doc>
+    <doc>Revision read: after addrhi = 0 and addrlo = 5, the low three bits are stored as the VC1 revision. gfxinfo decodes 1 as A and 2 as B and every captured Indigo prints B, so the Indigo's part reads 2 (inferred from the decode and the captures; no direct read). [binary]</doc>
     <field name="revision" start="0" size="3" type="uint" grade="established"/>
   </struct>
   <struct name="ADDRLO" size="1" grade="established" register="yes" offset="0x6c050" access="rw" reset="unknown">

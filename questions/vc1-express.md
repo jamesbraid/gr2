@@ -24,4 +24,5 @@ loader; XMAP5 questions 3.
 
 ## 6. VC1 revision values and `testreg` semantics
 
-The value a real chip returns, and whether other addresses return other test data. Next: none from software.
+The Indigo's part reads 2 by the gfxinfo decode and the captures; whether other addresses return other test data is unknown. Next: none
+from software.

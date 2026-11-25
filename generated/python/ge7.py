@@ -1,6 +1,6 @@
 """generated from devices/ge7/registers.toml by defs-gen - do not edit, change the source
 defs-gen 3
-input sha256 4b24a0dac5a13b9f43b822999a4bd0e8cfedcb3e360d3db1c332e9bdb57d3ece
+input sha256 e30b0fdf775c51b8fdeab63c9fca6fbdcc7b0ebfdb6d0844c750cd3ef14767df
 GE7 geometry engines: host window and microcode load registers"""
 
 UNIT = 'ge7'
