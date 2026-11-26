@@ -10,7 +10,7 @@ binary here).
 
 ## 3. Monitor code meaning
 
-Which physical monitor each code 0 to 15 means. Next: Owner's Guide and monitor cable documents, `ide.IP20`.
+Which physical monitor each code 0 to 15 means. Partly answered by gfxinfo's own names for codes 0 to 7 (1 and 4 "19 inch", 2 and 5 "16 inch", 3 "20 inch", 6 "14 inch", 7 unknown; [host contract](../platforms/express/host-contract.md#monitor-codes-the-kernel-refusal-and-gfxinfos-names)); why two codes share a size, and codes 8 to 15, are open. Next: Owner's Guide and monitor cable documents, `ide.IP20`.
 
 ## 4. Missing timing files and 120 Hz stereo
 

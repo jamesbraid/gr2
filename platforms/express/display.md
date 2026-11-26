@@ -47,7 +47,7 @@ Bt457 access in the shipped objects is revision independent). Established by rea
 | Board revision below 4 | monitor code 0 to 7 from `port1` bit 0 and `port2` bits 1:0 |
 | Board revision 4 and up | monitor code 0 to 15 from `port0` bits 7:4 |
 | Code 1 or 9 | built-in 72 Hz 1280 by 1024 timing (byte-identical to `72hz.u`), 72 Hz clock bytes |
-| Code 6 or 14 | no built-in timing, no clock load: a timing file must be loaded by `Gr2SetMonitor`; the probe reports 1024 by 768 for code 6 |
+| Code 6 or 14 | no built-in timing, no clock load: a timing file must be loaded by `Gr2SetMonitor`; the probe reports 1024 by 768 for code 6, and the IRIX kernel's probe then returns failure for 6 ([host contract](host-contract.md#monitor-codes-the-kernel-refusal-and-gfxinfos-names)) |
 | Any other code | built-in 60 Hz 1280 by 1024 timing (byte-identical to `60hz.u`) |
 
 Which cable or monitor each code means is unknown. [public] TR lists the monitors supported (72, 60, 30 Hz at 1280 by 1024 and 1024 by 768,

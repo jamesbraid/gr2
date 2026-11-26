@@ -158,7 +158,7 @@ Register answers a probe needs, for board revision 2. Established [binary] for w
 | GE revision (+0x683f4 after a store of 0) | bits 7:5; gfxinfo prints GE7 rev B for field value 2 | 2 << 5 (`0x40`); see section 1 for the decode |
 | HQ revision | see section 1 (`hq_gepc` bits 23:16 for gfxinfo, status bits 31:23 for the PROMs) | 0 in both |
 | VC1 revision | internal register 5 low 3 bits via the VC1 ports; gfxinfo prints rev B for 2 | 2 |
-| monitor ID | port1 bit 0 and port2 bits 1:0 give the monitor code 0 to 7; code 6 selects 1024 x 768, others 1280 x 1024; gfxinfo "unknown, assuming 19 inch monitor" appears with these boards, so the mapping from code to cable is not needed | 0: 1280 x 1024 at 60 Hz |
+| monitor ID | port1 bit 0 and port2 bits 1:0 give the monitor code 0 to 7; code 6 selects 1024 x 768 and **the IRIX kernel refuses the board** ([below](#monitor-codes-the-kernel-refusal-and-gfxinfos-names)), others 1280 x 1024; gfxinfo prints a name per code from its own table (below) | 0: 1280 x 1024 at 60 Hz; avoid 6 |
 
 Per product, for the four ports (revision 2, monitor code bits `m0` = port1 bit 0 and `m21` = port2 bits 1:0; the monitor code 0 default is 60 Hz 1280 by 1024, and the diagnostic's text for code 15 is "default 1280x1024@60hz monitor presumed"):
 
@@ -193,6 +193,22 @@ Absent GE slots (question 6). The engine probe (`_Gr2ProbeGEs`, IRIX 5.3 `gr2_in
 Byte lane of a narrow probe read. Every narrow access the shipped code makes to the board ports is a byte at the first byte of the word, the most significant lane on this big-endian host: the kernel's `Gr2Probe` (`lbu` at `+0x6c000`, `+0x6c004`, `+0x6c008`, `+0x6c00c`), the PROM probe, the diagnostic program's `gr2_boardvers` (`lbu` at the same four offsets), `Gr2ProbeVC1` (`lbu` at `+0x6c04c`, `sb` at `+0x6c050` and `+0x6c054`) and the VC1 `sysctl` byte. Established [binary]. The GE revision is a word load of `+0x683f4` masked to its low byte, a different register. NetBSD reads the board ports as words and masks the low bits [public]; the two cannot both be right unless the gate array drives every lane alike. The model returns the value in the first byte and replicates it in the other three bytes of a word read, which satisfies both readers; a byte load must never come from any other lane. Which the hardware does is unknown, and no shipped program distinguishes them.
 
 Byte position of the board revision: settled for every shipped program. The kernel (`Gr2Probe`), both PROMs and the diagnostic program (`gr2_boardvers`) all load a byte at the first byte of each word (the most significant byte position on this big-endian host). NetBSD masks the low bits of a word instead [public]. The model should return the value at the first byte of the word and, to satisfy NetBSD as well, replicate it in all four byte positions of a word read; whether the board does so is unknown. Established [binary] for the three programs.
+
+#### Monitor codes: the kernel refusal and gfxinfo's names
+
+**The kernel rejects monitor code 6.** `Gr2Probe` (IRIX 5.3 `gr2_init.o` `0x10000234`; IRIX 6.5 `gr2_init.o` `Gr2Probe` at `0x16c`) ends by testing the decoded monitor code: for 6 it stores the
+1024 x 768 geometry in the board record and **returns 0**, for any other code it stores 1280 x 1024 and returns 1 (5.3 `0x100004b8` to `0x100004ec`; the 6.5 tail sets 768 at `0x414` and returns zero there).
+`gr2_earlyinit` (`gr2.o` `0x100005e0`) skips a board whose probe returns 0 (`0x10000658`) before it resets the board, starts the clock (the next store to `+0x6c000`, the clock
+selector, is in `Gr2StartClock`) or initialises anything, so the kernel touches the board no more after reading its ports and `hq_gepc`, never registers it, and the user level reports "no graphics boards". Established
+[binary] for both releases. The PROM does not refuse: 4.0.5D sets 1024 x 768 for code 6 and carries on (`0xbfc0e8dc` to `0xbfc0e90c`), and the PROM library's source comment at the same place says the configuration is unsupported
+([source] `stand/arcs/lib/libsk/graphics/EXPRESS/gr2_init.c`, `Gr2InitInfo`). Neither the PROM library nor the kernel has a timing set or a clock program for 6 or 14 (they load nothing; `Gr2StartClock` writes no clock
+selector for 6), so the refusal fits "a monitor the driver ships no timing for". The vendor's own reason is not stated; that code 6 is the 14 inch monitor of the next table is gfxinfo's naming, not an explanation.
+**The model's code 6 therefore behaves as the hardware driver does: the 5.3 and 6.5 kernels will not use the board, and `gfxinfo` says there is none.** Keep it as a refusal case, not a working 1024 x 768 mode.
+
+**gfxinfo names per monitor code** ([binary] IRIX 5.3 `usr/gfx/gfxinit`, sha256 `524c7500...91e54`, `gr2_info` `0x40a810`, jump table at data offset `0x2b60`, branches `0x40ad54` to `0x40adf4`; the 5.3 disc's `gfxinit`
+is what `gfxinfo` runs): code 0 `unidentified (0x0) monitor`; **1 and 4 both `19" monitor`; 2 and 5 both `16" monitor`**; 3 `20" monitor`; 6 `14" monitor` (unreachable on this board, see above); 7 `unknown, assuming 19" monitor`;
+a record value of `0x82` (the Indy Elan flat-panel marker, not this board) `flat-panel monitor`. So the string table has eight slots indexed by the low three bits, and two pairs of codes print the same name
+(the two codes of a pair are the same size; the PROM library's source comment at its code 1 case names a Mitsubishi 19 inch monitor or a Sony 19 inch that runs at 72 Hz only [source], so code 1 is the 72 Hz 19 inch and code 4 plausibly a 60 Hz 19 inch, inferred; no source says why 2 and 5 pair). The model's matrix run printed exactly these strings.
 
 ## 5. Board outputs to INT2
 
