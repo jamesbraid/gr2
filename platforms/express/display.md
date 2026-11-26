@@ -69,7 +69,8 @@ cursor hot spot is software's (the driver subtracts it before writing the VC1 po
    indexing by page, direct RGB, buffer bit (inferred fields).
 4. **Bt457 x3**: address register, 256-entry palette, control registers (read mask, command), overlay entries; the read mask zero must blank
    the output.
-5. **Retrace interrupt**: one pulse per frame on INT2 local 1 bit 7 (GIO line 2) while video is enabled; the driver clears it by pulsing the
+5. **Retrace interrupt**: one pulse per frame on INT2 local 1 bit 7 (GIO line 2) while video is enabled, with INT2 VME status bit 0 high for the blanking
+   interval of each frame (the 4.0.5G PROM hangs if it never changes); the driver clears the latch by pulsing the
    INT2 port register bit 3 (the chips repository's `platforms/ip20/interrupts.md`, local 1 bit 7).
 6. **Genlock and the NTSC/PAL adjust files**: `Gr2AdjGenlock` reprograms the clock and reloads SRAM from `adjntsc.bin` and `adjpal.bin`
    and sets `sysctl` bit 6; not decoded here, so not modelled (explicitly unsupported).

@@ -206,13 +206,18 @@ What enables it, in three layers:
    rests on the source comments [source], so inferred as a hardware statement. Bit 1 is set together with bit 0 in the same two
    places (`0x3`) and is read as the timing-generator or video-output disable: inferred, no code writes it alone.
 3. **The latch.** The pulse is a latch in INT2 local 1 bit 7 that stays set until the host pulses INT2 port bit 3 low and high
-   (`0xbfb801df`); the live vertical status can also be read at bit 0 of `0xbfb801d3`, which `Gr2RetraceHandler` polls up to ten times
-   at 1 microsecond (routing in the chips repository's `platforms/ip20/interrupts.md`; [host contract section 5](../../platforms/express/host-contract.md#5-board-outputs-to-int2)).
+   (`0xbfb801df`); the live vertical status is bit 0 of `0xbfb801d3`, which **reads 1 during vertical blanking and 0 while lines are scanned out**
+   ([source] the diagnostics' comments, [binary] the kernel handler and both PROMs; the evidence and the numbers are on the chips repository's
+   `devices/int2` page, section "Vertical-blanking status in VME status bit 0"). `Gr2RetraceHandler` polls it up to ten times at 1 microsecond for a 1 before it
+   touches XMAP5, and the 4.0.5G PROM's power-on test spins on it without a bound (0, then 1), so it must change every frame (routing in the chips repository's
+   `platforms/ip20/interrupts.md`; [host contract section 5](../../platforms/express/host-contract.md#5-board-outputs-to-int2)). Whether it still toggles while `sysctl` bit 0 is
+   set is unknown (the PROM waits were not traced for the `sysctl` value they run under).
 
 The PROM leaves `sysctl` at `0x3c` (bit 0 clear) but does not unmask the INT2 bit, so the latch sets every frame and nothing is taken.
 
 For a QEMU model: while `sysctl` bit 0 is clear (and the timing generator runs), set the INT2 local 1 bit 7 latch once per frame at
-the start of vertical retrace; clear it only on the INT2 port bit 3 pulse; let the INT2 mask decide whether the CPU is interrupted.
+the start of vertical retrace and, in the same instant, raise INT2 VME status bit 0 for the blanking interval; clear the latch only on the INT2 port bit 3 pulse;
+let the INT2 mask decide whether the CPU is interrupted.
 A qtest can write `sysctl = 1`, confirm no latch sets across a frame, write `0x0c`, and confirm it sets again.
 
 ## Status

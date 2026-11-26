@@ -260,7 +260,7 @@ The 6.5 hashes are on a second copy (the mirror's `6.5-base` tree), whose `IP20b
 3. Console tokens and microcode download windows per [pipeline.md](pipeline.md) and [devices/ge7](../../devices/ge7/README.md); built-in console images load and verify; unstall and GE program counter writes accepted.
 4. Finish-flag ports: store sets flag from bit 0; set flags after queued commands retire (kernel monitor change, image read, DMA, context tokens 481 to 484 and 496).
 5. DMA: GIO slave at `gedma`, board commands for pixel transfer, completion flag 2 (and flag 1 for the PROM and diagnostic path).
-6. Retrace on GIO line 2, INT2 port byte pulse clears; `status` bit 0 of INT2 status byte `0xbfb801d3`.
+6. Retrace on GIO line 2, INT2 port byte pulse clears; INT2 VME status byte `0xbfb801d3` bit 0 reads 1 during vertical blanking and 0 otherwise, every frame, in virtual time: the 4.0.5G PROM's power-on test spins on it with no bound ([retrace interrupt](../../devices/vc1-express/README.md#retrace-interrupt)).
 7. Graphics reset: clear all state above.
 
 ## 10. Boot sequence: what the kernel writes, in order
