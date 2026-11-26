@@ -69,3 +69,22 @@ A second release, read from the reader's copy of the IRIX 5.3 install disc image
 Extracted `IP20boot/gr2.a` members (SHA-256): `gr2.o` `da844b3379668da55ed294808e129ec752425c67e2d09d8732032ae6d13ec96c`, `gr2_dma.o` `80552ab4810c043f21c6d525bb68650331188f1a2804c877dd056e65ae8d6a1d`, `gr2_init.o` `c5e7c94e0b9383c5436332565c2afb78267a77d55ac7c38de2cf37110df36ae4`, `gr2_retrace.o` `1d2e17832e1271e3f33e060c89d3b5a381bd8c8b1766f3b13aa02758c7611b55`, `gr2_tport.o` `7c105ec69a2c857e1ec1f1086bc5e39bc038f1b5376bdecd05b966e43daadd0a`, `gr2_tpucode.o` `b839231a7b74ccb9ca640a114e551cbab595136e5b0ae20048465942364c0b48`. The IP20 `ide` carries the same four diagnostic and console images as the 5.2 `ide.IP20` above (hash-equal as images). The 6.5 and 5.3 microcode differ; [microcode.md](../platforms/express/microcode.md#the-irix-53-images) records how.
 
 How the files were taken from the disc: the disk label's partition 7 (type 5) is EFS (block size 512, superblock magic `0x72959`); a small EFS reader written for the purpose walked it. The `.sw` archives follow the records-in-archive-order scheme the chips page describes: a record's size is the `.idb` entry's `cmpsize`, or `size` when `cmpsize` is `0`, and a `cmpsize` that differs from `size` marks compress-format data (`gzip -dc` reads it). Read that way `eoe1.sw` and `x_eoe.sw` each end exactly at the end of the file. The three hashes of the disc, `eoe1.sw` and `eoe1.idb` equal the ones the chips repository records, so the two extractions agree. Every hash in the sections above (the 6.5 images, the diagnostic program, both PROMs) was re-computed on the working copies before the round: all equal.
+
+## IRIX 6.2 install disc (round 10)
+
+A third release, read from the reader's copy of the IRIX 6.2 install disc (part 1 of 2: the same SGI disk label and EFS layout as the 5.3 disc; the `.idb` lines carry no archive offsets, so the records were walked in archive order as for 5.3). All are [binary] sources; nothing is committed. The disc carries the same Express file set as 5.3 for the R3000 and R4000 Indigo (`IP12GR2` libraries, `IP20boot/gr2.a`, `gfxinit`, the two microcode images) and the developer headers `usr/include/sys/gr2.h`, `gr2_if.h` and `gr2hw.h` in its `eoe` product (the 5.3 disc ships the same three names).
+
+| Item | SHA-256 |
+|---|---|
+| Disc image `IRIX 6.2 (Part 1 of 2).iso` (573054976 bytes) | `525e068e82781b2c12ee6b58de11420f824741c3161db8a7c94808029bbe1928` |
+| `usr/gfx/ucode/hq2.bin` | `1d673e741395eb89a003ef6a6fc9d849d609d882413a398908a09f622708345d` |
+| `usr/gfx/ucode/ge7.bin` | `6495c4b453e663d7c910162f02c132931b47669c5d83ec7f180377cd237a9b96` |
+| `usr/gfx/arch/IP12GR2/libGLcore.so` (o32, MIPS-II, `.mdebug` present) | `cad1893b193102ce50807d144505027ad1c1592f0a2397d24c0bd551a9af4cac` |
+| `usr/gfx/arch/IP12GR2/libgl.so` (IrisGL) | `9cf5b099edd364bfa1c030b5bd8fe04227831c916912401fdb907a1ef58fb575` |
+| `usr/gfx/arch/IP12GR2/libGL.so` | `a7a611701ad4848cacc36981f70b5a7f90c1f65d132eed833238958a0af184e4` |
+| `usr/cpu/sysgen/IP20boot/gr2.a` | `16224ff403ff8cdca63a138dac64edeca2de4891ca6537917147aeeef715c6c6` |
+| `usr/gfx/gfxinit` | `d22be7d8229f740a36dd6d04981c922c767141258efe4cbcdcbffa8f295d2024` |
+| `usr/lib/X11/dyDDX/gr2.so` | `e2d80631a491e717cdf0359e0d7a17a0385333cd510bda9223077faec08b4265` |
+| `usr/include/sys/gr2.h`, `gr2_if.h`, `gr2hw.h` | `c4d73ee567f6f64c9761f6f2bf73f88a1b1e64102181ad18cad77a93570efc92`, `02cc486fc8d3b301cbcfc7ed95f09a221cc98ac0ac06d71a78055aa37977cd0c`, `03beebf61df9b82bd896d41eec4f49bbc5a4a9977493398a0659f0b2070568d9` |
+
+The 5.3 disc's copies of the same three headers are `52e421a019c86b13f851025090f4edc8114dd3e178184bece60f0899b86d36a9`, `02cc486fc8d3b301cbcfc7ed95f09a221cc98ac0ac06d71a78055aa37977cd0c` (equal to 6.2) and `ab18cd5781856c2006b6449fe59c99e5bb40d1bfffc489fb24c687c62897933d`. The 6.2 and 5.3 microcode images differ from each other and from the 6.5 pair; for the one slot compared across all three see [pipeline.md](../platforms/express/pipeline.md#slot-261-the-raster-position-token).
