@@ -42,3 +42,7 @@ Only the IRIX 6.5 base-set `hq2.bin` and `ge7.bin` are held. Next: IRIX 5.x and 
 The kernel's gfxinfo path reads `hq_gepc` bits 23:16 (0 = HQ2, 1 = HQ2.1), the PROMs and the diagnostic program read status bits 31:23, and
 both give 0 on every Indigo ([host contract section 1](../platforms/express/host-contract.md#the-hq2-revision-prom-or-kernel)). Nothing
 in the Indigo model depends on the answer. Next: a board that reads HQ2.1, which the Indy and Indigo2 boards are.
+
+## 8. What is the HQ2 FIFO drain rate?
+
+Nothing shipped or published states it. Routes tried: the Elan technical report (clock rates only), the shipped `sys/gr2hw.h` (depth and watermark constants), the kernel's and the PROM's timeouts (software budgets), the IRIX diagnostic's delays (`time_delay`, `diag_finish`) and the HQ2 slot code (a few words to a few dozen per command). Next: cycle counts of the GE7 routines behind the common tokens (`tools/ge7-step.py`), which give a floor per command but not the HQ2 front end's own pacing. A model's drain rate is an approximation until then.
