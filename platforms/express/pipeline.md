@@ -293,7 +293,7 @@ Slot 261 is not texture or pixel-transfer state. The GL cores of all three relea
 | Release | Host stores to `+0x42414` | HQ2 slot 261 code | GE7 start |
 |---|---|---|---|
 | IRIX 5.3 | none: the o32 GL core's `RasterPos` entry points make no store (they call the software raster position code and stop). The microcode still has the slot | one operand read, no other loads | 24459 |
-| IRIX 6.2 | one word, the value 0, after the software code has set the position. All 24 `__glexpim_RasterPos` forms; also `__glExpPassRasterPosData` and `__glExpGetMachineState` | no operand read; four loads from the HQ2 attribute store (`0xd3`, `0xf4`, `0x115`, `0x136`) | 1374 |
+| IRIX 6.2 | one word, the value 0, after the software code has set the position. All 24 `__glexpim_RasterPos` forms; also `__glExpPassRasterPosData` and `MakeCurrent` (one word 0 in each) | no operand read; four loads from the HQ2 attribute store (`0xd3`, `0xf4`, `0x115`, `0x136`) | 1374 |
 | IRIX 6.5 (o32 and n32) | four words: the x coordinate to `+0x42414`, then y, z and w on the data port `+0x4277c` (a 2-component form sends z = 0 and w = 1, converting integer and double inputs to float first). All 24 forms | four slot reads (`slot16` to `slot19`), then the same four attribute loads | 24366 |
 
 Word counts: established [binary] for the host stores (every `RasterPos` entry point read in the 6.2 o32 build, the 6.5 n32 assembly and the 6.5 o32 build; a constant-tracking scan of the whole 5.3 o32 core finds no store to slot 261 outside two struct-field false positives). Established [binary] for the HQ2 code of each image.
