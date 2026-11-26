@@ -178,7 +178,7 @@ engine count. They differ in how the engine count is found, which is the only pl
 
 - **4.0.5D (070-8116-004) cannot tell an XZ from an Elan.** Its engine probe (`0xbfc0eb90` to `0xbfc0ec9c`) stores the five words `0x1f1f1f1f`, `0x2e2e2e2e`, `0x3d3d3d3d`,
   `0x4c4c4c4c` and `0x5b5b5b5b` at **GE slot 1 only** (`+0x68400`, `+0x6847c`, `+0x684fc`, `+0x6857c`, `+0x685fc`), reads them back, and records an engine count of **4 if all five
-  match, else 1** (`0xbfc0ec74` and `0xbfc0ec90` store it in record byte `0x36`). Slot 1 answers on an XZ (slots 0 and 1) as well as on an Elan, so both count as 4. The naming code (`0xbfc0f7a0`):
+  match, else 1** (`0xbfc0ec74` and `0xbfc0ec90` store it in record byte `0x36`). Slot 1 answers on an XZ (slots 0 and 1) as well as on an Elan, so both count as 4. The naming code is in the function that starts at `0xbfc0f764` (the plane, engine and Z tests run at `0xbfc0f838` to `0xbfc0f8d8`; `0xbfc0f7a0` is only its prologue):
   24 planes and 4 engines "-Elan"; 24 planes and 1 engine "-XS24"; fewer planes and 4 engines "-XSM"; fewer planes and 1 engine "-XS"; then " with Z-buffer" when the Z flag is set and the count is not 4 (an Elan never
   carries it). The image holds no "-XZ" string. So under 4.0.5D an XZ prints "GR2-Elan" and an XS24 prints "GR2-XS24 with Z-buffer"; the model's run agrees.
 - **4.0.5G (070-8116-005) can.** Its probe (`0xbfc1190c` to `0xbfc11a10`) runs the same five-word test on slots 1 to 7 and keeps the highest slot that answers plus one, as the kernel does. The name
@@ -201,7 +201,7 @@ Byte position of the board revision: settled for every shipped program. The kern
 **The kernel rejects monitor code 6.** `Gr2Probe` (IRIX 5.3 `gr2_init.o` `0x10000234`; IRIX 6.5 `gr2_init.o` `Gr2Probe` at `0x16c`) ends by testing the decoded monitor code: for 6 it stores the
 1024 x 768 geometry in the board record and **returns 0**, for any other code it stores 1280 x 1024 and returns 1 (5.3 `0x100004b8` to `0x100004ec`; the 6.5 tail sets 768 at `0x414` and returns zero there).
 `gr2_earlyinit` (`gr2.o` `0x100005e0`) skips a board whose probe returns 0 (`0x10000658`) before it resets the board, starts the clock (the next store to `+0x6c000`, the clock
-selector, is in `Gr2StartClock`) or initialises anything, so the kernel touches the board no more after reading its ports and `hq_gepc`, never registers it, and the user level reports "no graphics boards". Established
+selector, is in `Gr2StartClock`) or initialises anything, so the kernel touches the board no more after `Gr2Probe` itself has read the ports, run the engine probe's stores and loads on GE slots 1 to 7, read `hq_gepc` and read the GE revision word (storing 0 to it first), never registers it, and the user level reports "no graphics boards". Established
 [binary] for both releases. The PROM does not refuse: 4.0.5D sets 1024 x 768 for code 6 and carries on (`0xbfc0e8dc` to `0xbfc0e90c`), and the PROM library's source comment at the same place says the configuration is unsupported
 ([source] `stand/arcs/lib/libsk/graphics/EXPRESS/gr2_init.c`, `Gr2InitInfo`). Neither the PROM library nor the kernel has a timing set or a clock program for 6 or 14 (they load nothing; `Gr2StartClock` writes no clock
 selector for 6), so the refusal fits "a monitor the driver ships no timing for". The vendor's own reason is not stated; that code 6 is the 14 inch monitor of the next table is gfxinfo's naming, not an explanation.
