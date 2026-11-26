@@ -88,3 +88,5 @@ A third release, read from the reader's copy of the IRIX 6.2 install disc (part 
 | `usr/include/sys/gr2.h`, `gr2_if.h`, `gr2hw.h` | `c4d73ee567f6f64c9761f6f2bf73f88a1b1e64102181ad18cad77a93570efc92`, `02cc486fc8d3b301cbcfc7ed95f09a221cc98ac0ac06d71a78055aa37977cd0c`, `03beebf61df9b82bd896d41eec4f49bbc5a4a9977493398a0659f0b2070568d9` |
 
 The 5.3 disc's copies of the same three headers are `52e421a019c86b13f851025090f4edc8114dd3e178184bece60f0899b86d36a9`, `02cc486fc8d3b301cbcfc7ed95f09a221cc98ac0ac06d71a78055aa37977cd0c` (equal to 6.2) and `ab18cd5781856c2006b6449fe59c99e5bb40d1bfffc489fb24c687c62897933d`. The 6.2 and 5.3 microcode images differ from each other and from the 6.5 pair; for the one slot compared across all three see [pipeline.md](../platforms/express/pipeline.md#slot-261-the-raster-position-token).
+
+Where the names of the QEMU `sgi-gr2` crate come from, family by family, is in [name-provenance.md](name-provenance.md); it reads the shipped headers listed above.
