@@ -227,7 +227,7 @@ names with their `__glExp` prefix dropped; `im:` and `le:` are the immediate-mod
 | `+0x423f4` | 253 | EndPolygon | 1 | 3074 |
 | `+0x42408` | 258 | LoadLightSource | 0 | 16408 |
 | `+0x42410` | 260 | Clear | 1 | 25115 |
-| `+0x42414` | 261 | im:RasterPos2dv, im:RasterPos2fv, im:RasterPos2d ... | 1 | 24366 |
+| `+0x42414` | 261 | im:RasterPos2dv, im:RasterPos2fv, im:RasterPos2d ... (all 24 `RasterPos` forms) | 1, then 3 on the data port in 6.5; 1 in 6.2 ([slot 261](#slot-261-the-raster-position-token)) | 24366 (6.5), 1374 (6.2) |
 | `+0x42418` | 262 | PassRasterPosData | 1 | 1361 |
 | `+0x4241c` | 263 | GetRasterPosData | 1 | 1374 |
 | `+0x42420` | 264 | PassFrontFace | 1 | 2209 |
@@ -285,6 +285,20 @@ from the function names for the reading of `+0x42044` as dither. **Pixels:** rea
 `+0x422f0` and `+0x422f4`, then poll a status bit at `+0x6c040` before reading the result from shared RAM at `+0x12088`; the GL core never
 reads the framebuffer through a host window. [binary] `ReadColor` (colour index build). The poll reads `+0x6c040`, which NetBSD names the VC1
 command port: unresolved, see [questions/re3.md](../../questions/re3.md).
+
+### Slot 261: the raster position token
+
+Slot 261 is not texture or pixel-transfer state. The GL cores of all three releases use it only for raster-position work (`glRasterPos` and the state save and restore around it), and what the board keeps from it is the colour that `glBitmap` and `glDrawPixels` later draw in. How many words it takes depends on the release of the microcode image the host loaded, because the operand count is whatever the HQ2 slot code reads. [binary] `libGLcore.so`, `hq2.bin` and `ge7.bin` of each release (hashes in [binaries.md](../../references/binaries.md)); the HQ2 walk is `tools/ucode-decode.py hq2 IMG 261`.
+
+| Release | Host stores to `+0x42414` | HQ2 slot 261 code | GE7 start |
+|---|---|---|---|
+| IRIX 5.3 | none: the o32 GL core's `RasterPos` entry points make no store (they call the software raster position code and stop). The microcode still has the slot | one operand read, no other loads | 24459 |
+| IRIX 6.2 | one word, the value 0, after the software code has set the position. All 24 `__glexpim_RasterPos` forms; also `__glExpPassRasterPosData` and `__glExpGetMachineState` | no operand read; four loads from the HQ2 attribute store (`0xd3`, `0xf4`, `0x115`, `0x136`) | 1374 |
+| IRIX 6.5 (o32 and n32) | four words: the x coordinate to `+0x42414`, then y, z and w on the data port `+0x4277c` (a 2-component form sends z = 0 and w = 1, converting integer and double inputs to float first). All 24 forms | four slot reads (`slot16` to `slot19`), then the same four attribute loads | 24366 |
+
+Word counts: established [binary] for the host stores (every `RasterPos` entry point read in the 6.2 o32 build, the 6.5 n32 assembly and the 6.5 o32 build; a constant-tracking scan of the whole 5.3 o32 core finds no store to slot 261 outside two struct-field false positives). Established [binary] for the HQ2 code of each image.
+
+What the routines do: the four attribute loads are four values of the board's current colour (inferred from the 6.5 caller: it latches the colour at the position). In 6.2 the GE7 routine at 1374 stores four words to shared words `0x147`, `0x148`, `0x149` and `0x8d` (the stepper's run with no inputs, `tools/ge7-step.py run`; the values come from the loads, inferred), and the read-back token 263 (GE7 1384 in 6.2) stores four words to the mailbox words `0x4022` to `0x4024` and `0x8d`, which `__glExpGetRasterPosData` reads as floats at `+0x12088` after polling bit 0 of `+0x6c040` (established [binary] for the host's reads, inferred for the routine's data flow). So the visible effect of 261 is "latch the current colour as the raster colour"; in 6.5 it also carries the object-space position, which the GE transforms. A model that executes no microcode must, for 261, consume exactly the words the loaded image reads (one in 6.2, four in 6.5), latch the current colour, and answer 263 with it. Whether the one word's value matters is not shown: the 6.2 host always stores 0 and the HQ2 code has no read for it.
 
 The Indy and Indigo2 Express GL core stores the same offsets in the same order: [ip22-slot-comparison.md](ip22-slot-comparison.md).
 
