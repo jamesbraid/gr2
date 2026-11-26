@@ -176,8 +176,8 @@ colours are three entries in the XMAP5s, where is **unknown** ([xmap5](../xmap5/
 **Where a mode smaller than 1280 by 1024 sits: unknown.** What the code shows: width and height come from the timing file (a 1024-wide
 file is recorded as 1025) or from monitor code 6 (1024 by 768, [clock](../clock/README.md)); the kernel moves the display-ID frame table
 for a short screen so that it ends at SRAM `0x1300`, the same end as a 1024-line table (`0x1300 - 2 * height` start); and the y register
-carries the `height - 1024` term above, clamped at zero. That clamp means a 768-line screen's cursor y register stops following the
-pointer in the top 256 lines, which cannot be what the hardware does, so the sign or the origin of the pointer y that reaches the
+carries the `pointer y + height - 1024` term above, clamped at zero. For a 768-line screen the term is zero until pointer y reaches 256, so
+the cursor y register stops following the pointer in the top 256 lines, which cannot be what the hardware does, so the sign or the origin of the pointer y that reaches the
 driver is not what this page assumes. Which screen lines the picture occupies in the 1024-line frame (top, bottom or centre) and which
 way the pointer y runs are **unknown**. A model that supports only the 1280 by 1024 modes is unaffected. What would settle it: the
 frame table and line programs of `iris3k.u` or `presenter.u` against `60hz.u` (the line-program encoding is itself unknown,
@@ -194,7 +194,7 @@ What enables it, in three layers:
 
 1. **INT2 mask.** `gr2_init` (`gr2.o` `0x10000774`) calls `setgiovector(2, 2, gr2_retr_intr, 0)`: GIO line 2, slot 2. The kernel's
    `setgiovector` (`kernel.o` `0x100053c0`) installs the shared line handler with `setlclvector(0xf, ...)`, which unmasks INT2 local 1
-   bit 7. No GR2 code writes the INT2 mask itself. Established [binary]. `Gr2Start` re-points the same line at `Gr2RetraceInterrupt`
+   bit 7. No GR2 code writes the local 1 mask (`0xbfb801cf`); the only INT2 mask byte it touches is the local 0 mask the FIFO handler toggles. Established [binary]. `Gr2Start` re-points the same line at `Gr2RetraceInterrupt`
    (`gr2.o` `0x1000011c`) without touching the mask.
 2. **VC1 `sysctl` bit 0.** The shipped values are 1 at the start of init, 3 while `Gr2SetMonitor` loads tables (restored with `& ~0x43`
    afterwards), `0x0c` at the end of the kernel's init and `0x3c` at the end of the PROM's. Every final value has bit 0 clear, and every
