@@ -140,6 +140,24 @@ file or monitor code and generate frames at the nominal rate (approximation; nee
 - Entry encoding `(x << 5) | id`: [binary] the builder shifts entries right by 5 and compares with the width; so a line table is
   `count`, then `count` half-words, each a start x (11 bits) and a 5-bit display ID, which feeds mode table entry `id` of every XMAP5.
   Established. [public] TR: 32 window styles.
+- **How a line's run list ends, and the last line's four zero entries (established as the software contract; the chip's own rule is unknown).**
+  A line table is its count word and then exactly that many entries, each a start x and a display ID (`(x << 5) | id`), left to right; on every line but the last
+  the count is the number of real runs and nothing follows them that the chip is told to read. **The last screen line is special.** Every shipped writer
+  gives the last line's table four extra entries, all zero (x 0, ID 0), and counts them: count = real entries + 4. The PROM library's own init builds the pair
+  `[1, 0]` for the lines and `[5, 0, 0, 0, 0, 0]` for the last one under a comment that blames a VC1 bug and asks for four dummy IDs ([source] `stand/arcs/lib/libsk/graphics/EXPRESS/gr2_init.c`,
+  `Gr2RegisterInit`); the diagnostic's table builder copies the last line's runs, adds 4 to the count and appends four zero pairs ([source] `stand/arcs/ide/fforward/graphics/EXPRESS/db.c`,
+  `gr2_setdid` and the low-resolution table code); the kernel does it in `_Gr2CreateDummyDID` ([binary] IRIX 5.3 `IP20boot/gr2.a` `gr2.o` `0x10002c50`, count store `0x10002d74` to `0x10002d78`,
+  zero fill `0x10002d54` to `0x10002d70`); and the 5.3 X server does it for line 1023 (observed in a model run of the guest: `[5, 0x0003, 0, 0, 0, 0]` with no window at the
+  bottom edge and `[7, 0x0003, 0x45c6, 0x8e43, 0, 0, 0, 0]` with one, the three real runs being x 0 ID 3, x 558 ID 6 and x 1138 ID 3). So **the count on the last line includes the four
+  zero entries; on other lines it does not.** The vendor's reason is only the comment (a VC1 bug); the mechanism is unknown.
+  What the chip does with those four entries is not read from anything. The software says three things about them: they are counted, so the chip reads them; they are
+  zero, so x does not rise; and the kernel's builder, when it reads a table back to extend it, **cuts the run list before the first entry after the first whose x is 0 or is not below the screen width**
+  (`_Gr2CreateDummyDID` `0x10002cf4` to `0x10002d44`), i.e. it treats an entry whose x does not increase as the end of the real runs. A decoder that applied the four
+  zeros as runs "from x 0, ID 0" would blank the last line from pixel 0, which no shipped software intends.
+  **What the model must do:** read a line's entries up to the count, but stop at the first entry (after the first) whose x is not greater than the previous entry's x (or is at or past the width), and
+  let the last real run's ID continue to the end of the line; a table `[5, 0x0003, 0, 0, 0, 0]` reads as ID 3 across the whole line. That stop rule is an approximation of the chip (inferred from the
+  kernel's scan and the trailers, not measured); it is discriminated by the table above and by `[7, 0x0003, 0x45c6, 0x8e43, 0, 0, 0, 0]`, which must read ID 3, then 6 from x 558, then 3 from x 1138 to the end.
+
 - Register `0x44` (`0xff04` for 1280 wide) splits the 1280 columns into five-pixel groups; NPIX columns 1276 to 1279 reuse the previous
   group's ID ([vendor-derived] reading of the constant; the arithmetic `(w-1)/5, (w-1)%5` is [binary]).
 
