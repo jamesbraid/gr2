@@ -46,3 +46,7 @@ in the Indigo model depends on the answer. Next: a board that reads HQ2.1, which
 ## 8. What is the HQ2 FIFO drain rate?
 
 Nothing shipped or published states it. Routes tried: the Elan technical report (clock rates only), the shipped `sys/gr2hw.h` (depth and watermark constants), the kernel's and the PROM's timeouts (software budgets), the IRIX diagnostic's delays (`time_delay`, `diag_finish`) and the HQ2 slot code (a few words to a few dozen per command). Next: cycle counts of the GE7 routines behind the common tokens (`tools/ge7-step.py`), which give a floor per command but not the HQ2 front end's own pacing. A model's drain rate is an approximation until then.
+
+## 9. Does a present board bus-error on unmapped offsets inside its 4 MiB window?
+
+No software read for this work touches the padding of the window or anything above `+0x6d000`; the only accesses to unnamed space are the engine probe's, which do not fault. Routes tried: the shipped `sys/gr2hw.h` layout (5.3, 6.2), the kernel archive, the PROM, the GL core, the X driver and the diagnostic's RAM tests (offsets listed), the IRIX source's graphics diagnostics. Next: the schematic's GIO address decode (`GR-4_Schematic.pdf`, HQ2 sheets) for the chip-select terms, and a captured bus error on a probe of such an offset if one is ever published.
