@@ -51,6 +51,8 @@ Moved by the review: ten names are case or prefix variants of shipped or publish
 
 Generic exception: `BUS_BUSY` is the iris core's own bus-status name, used by every iris device, not a name the GR2 crate took from any source. It is left out of both lists, and an audit should not flag it.
 
+Applied: the iris GR2 engine series renames the 194 names in [gr2-crate-renames.txt](gr2-crate-renames.txt) and keeps `BUS_BUSY` (iris `c3577cf76` on `qemu/integration`, tag `qemu-pin-20261126a-engines`).
+
 ## Reading it
 
 Tally of the 472 names: 23 are shipped developer header names by exact match and 33 more (`HQ_`, `VC1_`, `XMAP_`) are upper-cased member names of structs in `sys/gr2hw.h`; 10 more are case or prefix variants of shipped or published names (listed above); 19 are shipped binary symbols (IrisGL function names); 1 is a published name by exact match (`HQ2_MYSTERY`; five `VC1_` names overlap with NetBSD); 195 are source-only; 191 are crate-own, including 34 constants with no prefix. A QEMU page can cite the shipped, binary-symbol and published classes. The source-only families, `HQ2_2D_*`, `REG_*`, `RWMODE_*`, `IR_*`, `GE_CX_*` and 66 of the `T_` names, name registers and tokens that only the vendor-derived headers or the IRIX source tree name; a QEMU manual page must not cite them, and the crate's use of them is the question the owner of the crate has to decide. For the token names there is a way out that rests on shipped evidence: the GL cores' own function names (`__glexpim_RasterPos2f`, `PassLineStipple`, `LoadLightPath` and the others in [pipeline.md](../platforms/express/pipeline.md)) name every token the GL cores send, and the IrisGL symbols name 19 of the `T_IRIS_*` ones.
