@@ -38,8 +38,8 @@ Binaries read (SHA-256 in [references/binaries.md](../../references/binaries.md)
 | Variant | GE7 count | Grade and source |
 |---|---|---|
 | Indigo Elan | 4 | established [public] Elan TR 1, 4.2; consistent with the GR4 sheet names above |
-| Indigo XZ | 2 | inferred: a third-party parts list names a two-engine board; no binary or manual states it |
-| Indigo XS, XS24 | 1 | inferred: same parts list; the TR gives no XS count |
+| Indigo XZ | 2 | established as a report: `gfxinfo` and `hinv` captures print "2 GEs", and the inventory decode of the kernel's engine count agrees ([host contract section 4](../../platforms/express/host-contract.md#4-probe-answers-per-indigo-variant)); the parts list names a two-engine board too |
+| Indigo XS, XS24 | 1 | XS24: established as a report, `gfxinfo` captures print "1 GE". XS: established from the kernel's one-engine flag and the inventory code, which print plain "-XS" only for one engine without the 24-plane flag, and from `hinv` captures; no `gfxinfo` capture of an XS is held ([survey](../../platforms/express/README.md#the-family)) |
 | any board | 1, 2, 4 or 8 | established [binary]: the kernel counts engines by probe (below) and branches on 1, 2, 4 and 8 in `gr2_init` (`gr2.o` `0x778`); the diagnostic program reports a count of 8 for a revision 4 or later board by comparing the stored count with 8 (`print_hinv`, `ide.IP20` `0x8852f470` onward). That an eight-engine Indigo board shipped is unknown. |
 
 The engine count reaches the HQ2 through the `NUMGE` register (`+0x6a044`): the driver writes the count, or the count with bit 4
@@ -203,9 +203,9 @@ the microcode writes are **unknown**; see [questions/ge7.md](../../questions/ge7
 
 ## Summary of grades
 
-**Established**: probe, load registers and masks, record format, image sizes, revision register location. **Inferred**: engine
-counts other than Elan, work distribution, constants block roles, dispatch-to-entry rule, page structure, microword commit order.
-**Unknown**: microword field layout, per-engine RAM size, absent-slot behaviour, what `+0x683f8` to `+0x683ff` do.
+**Established**: probe, load registers and masks, record format, image sizes, revision register location, engine counts of the shipped Indigo boards. **Inferred**: engine
+work distribution, constants block roles, dispatch-to-entry rule, page structure, microword commit order.
+**Unknown**: whether an eight-engine Indigo board shipped, microword field layout, per-engine RAM size, absent-slot behaviour, what `+0x683f8` to `+0x683ff` do.
 
 ## Review (2026-11-23)
 
