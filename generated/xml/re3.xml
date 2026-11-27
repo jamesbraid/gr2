@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/re3/registers.toml by defs-gen - do not edit, change the source -->
-<!-- defs-gen 3 -->
+<!-- defs-gen 4 -->
 <!-- input sha256 e559fb7a2c82246cdc738e1fe92d4bcc43e2ea7556f489b4fc11622933bb8317 -->
 <genxml unit="re3" prefix="RE3" title="RE3 raster engine: host-visible register banks" from="NetBSD sgimips public driver memory map comment">
   <doc>Host window of the RE3 raster engine in the Express graphics slot. Only the three banks that a public driver comment names are listed; their contents are unknown. Provenance tags in item text: [public] published document or public driver, [binary] shipped binary, [vendor-derived] upstream headers (none used). See the unit README.</doc>

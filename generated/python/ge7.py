@@ -1,5 +1,5 @@
 """generated from devices/ge7/registers.toml by defs-gen - do not edit, change the source
-defs-gen 3
+defs-gen 4
 input sha256 e30b0fdf775c51b8fdeab63c9fca6fbdcc7b0ebfdb6d0844c750cd3ef14767df
 GE7 geometry engines: host window and microcode load registers"""
 

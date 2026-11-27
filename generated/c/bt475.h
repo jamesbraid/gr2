@@ -1,6 +1,6 @@
 /* generated from devices/bt475/registers.toml by defs-gen - do not edit, change
  * the source */
-/* defs-gen 3 */
+/* defs-gen 4 */
 /* input sha256 e092e289cdf7071aaa43ac066a8157c9ebaf1861cc18de50147bf970a5c6e882 */
 /* Brooktree Bt475 and Bt477 RAMDAC: datasheet port map only, no Express use
  * found */

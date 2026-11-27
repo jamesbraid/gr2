@@ -1,5 +1,5 @@
 <!-- generated from devices/bt457/registers.toml by defs-gen - do not edit, change the source -->
-<!-- defs-gen 3 -->
+<!-- defs-gen 4 -->
 <!-- input sha256 e70d1735c70ebfb40a10bdbfae82173a37248264f8277909d1c208d56f73f0dc -->
 
 # Brooktree Bt457 RAMDAC as wired on the Express board (three chips, one per colour)

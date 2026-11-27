@@ -1,5 +1,5 @@
 {
- "generator": "defs-gen 3",
+ "generator": "defs-gen 4",
  "input_sha256": "467273ff471ddf2134ff68f52c6be88c8ce534408f7b0b63cc8677a1cd2e2738",
  "schema": "defs-flat/1",
  "source": "devices/clock/registers.toml",

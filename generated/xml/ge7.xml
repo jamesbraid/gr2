@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/ge7/registers.toml by defs-gen - do not edit, change the source -->
-<!-- defs-gen 3 -->
+<!-- defs-gen 4 -->
 <!-- input sha256 e30b0fdf775c51b8fdeab63c9fca6fbdcc7b0ebfdb6d0844c750cd3ef14767df -->
 <genxml unit="ge7" prefix="GE7" title="GE7 geometry engines: host window and microcode load registers">
   <doc>Host-visible window of the GE7 geometry engines in the Express graphics slot. Provenance tags in item text: [public] published document or public driver, [binary] shipped IRIX or PROM binary (a software expectation), [vendor-derived] upstream headers (none used here). Routine names, addresses and cross-references are in the unit README.</doc>

@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/vc1-express/registers.toml by defs-gen - do not edit, change the source -->
-<!-- defs-gen 3 -->
+<!-- defs-gen 4 -->
 <!-- input sha256 25734a17818e96cd0d8d228db9bbafb76b5aba73b4daabd22058b0bf5bc47127 -->
 <genxml unit="vc1_express" prefix="VC1X" title="VC1 video timing, cursor and display-ID controller on the Express board">
   <doc>The same LSI Logic part as the Indigo Entry board's VC1 (see the newport repository's VC1 page for shared facts) reached through a different port set: seven word-strided ports in the graphics window instead of the REX1 function selector. It runs video timing programs from an external SRAM, generates the hardware cursor, and produces a per-pixel display ID from run-length tables in the same SRAM. Offsets are from the graphics window base (physical 0x1f000000 on the Indigo); each port is the first byte of a 4-byte stride, the command and SRAM ports are half-words. Grades: established means read in full in the shipped Indigo driver archive or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver, [vendor-derived] a fact resting on the upstream headers only. Nothing was read on a board. Prose in devices/vc1-express/README.md.</doc>
