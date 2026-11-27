@@ -47,7 +47,7 @@ here, so none is given except the constant probe word. Per-register qtest discri
 | `+0x6a074` | `INTR` (ide: "Intr bit (cleared by host)") | not touched by the IP20 driver or PROMs; the diagnostic program can write it | inferred role as a host-cleared interrupt bit; which interrupt it raises unknown |
 | `+0x6a078` | `UNSTALL` | `Gr2TpSetup` writes 0 after the microcode loads | established that a 0 is written; the name's meaning is NetBSD's |
 | `+0x6a07c` | probe word (`MYSTERY`) | read in `Gr2Probe` after `badaddr`; must equal `0xdeadbeef` | established (also the PROM probe, via the chips gio page) |
-| `+0x6a080` | `REFRESH` | write `16` | established value; NetBSD's name |
+| `+0x6a080` | `REFRESH` | write `16` | established value; NetBSD's name. Inferred role: the refresh interval of the GE7 microcode DRAM that HQ2 drives (GR4 board schematic sheets 7, 9, 10, [vendor-derived]; [host contract section 11](../../platforms/express/host-contract.md#11-across-a-little-endian-restart)); `registers.toml` still says effect unknown |
 | `+0x6a100` | `FIN3` (NetBSD) | not touched by any shipped program | unknown |
 | `+0x6b000` | Finish Flag 3 write port (ide) | write 0 to clear status bit 0 before a command; `Gr2PcxSwap` restores the saved bit of the incoming context here; the X server clears it before image reads and writes | established [binary] |
 

@@ -50,3 +50,11 @@ Nothing shipped or published states it. Routes tried: the Elan technical report 
 ## 9. Does a present board bus-error on unmapped offsets inside its 4 MiB window?
 
 No software read for this work touches the padding of the window or anything above `+0x6d000`; the only accesses to unnamed space are the engine probe's, which do not fault. Routes tried: the shipped `sys/gr2hw.h` layout (5.3, 6.2), the kernel archive, the PROM, the GL core, the X driver and the diagnostic's RAM tests (offsets listed), the IRIX source's graphics diagnostics. Next: the schematic's GIO address decode (`GR-4_Schematic.pdf`, HQ2 sheets) for the chip-select terms, and a captured bus error on a probe of such an offset if one is ever published.
+
+## 10. What does the graphics reset keep, and does HQ2 refresh the GE7 microcode DRAM?
+
+[Host contract section 11](../platforms/express/host-contract.md#11-across-a-little-endian-restart): the PROM's byte-order flip asserts the MC graphics reset, and no shipped code shows what a reset leaves in the HQ2 and GE7 microstores, the shared RAM or the finish flags. The GR4 board schematic (sheets 7 to 10) shows HQ2 driving a DRAM microstore for the GE7s and a GE7 `REFRESH` pin on the stall net, so the `refresh` register is probably that interval (inferred). Routes tried: PROM 4.0.5D and 4.0.5G flip routines, MC specification sections 2.9 and 5.1, the PROM graphics library, `gr2.a`, GR4 schematic sheets 7 to 10. Next: the Indigo base board schematic (the part list names the same RAMs by count only), the MC's reset-domain list for the warm restart, a model of HQ2's reset state.
+
+## 11. Does the GR2 board's byte-lane decode follow the CPU's byte order?
+
+[Host contract section 12](../platforms/express/host-contract.md#12-a-little-endian-cpu-on-the-gio32-bus): word accesses carry the same value for both byte orders; byte and half-word ports (board configuration, clock, XMAP5, Bt457, VC1) depend on whether the board decodes the byte address and count or only the word, which no source states. Routes tried: GIO specification chapters 2 and 4, MC specification, shipped `sys/mc.h`, the Express code in the IRIX source (no little-endian variant). Next: the GR4 schematic's port sheet, the 5.3 and 6.2 `sys/gr2hw.h` for a `_MIPSEL` variant, the MC graphics DMA descriptor's little bit.
