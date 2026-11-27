@@ -6,7 +6,7 @@ Copied by the reader from their own IRIX 6.5 base media (June 1998 set) into the
 |---|---|---|
 | `usr/cpu/sysgen/IP20boot/gr2.a` | `c768b3a4889dd50e8e78c065fdddb7ebca2d9536eb39de315511d2a90906128c` | The Indigo (IP20) GR2 kernel driver archive. Members, each also hashed below: `gr2.o`, `gr2_dma.o`, `gr2_init.o`, `gr2_retrace.o`, `gr2_tport.o`, `gr2_tpucode.o`. No Corona I2C member. |
 | `usr/cpu/sysgen/IP20boot/gr2stubs.a` | `be1eab53bf45fece3ab0f05a21c165aaa3c9c74fdabb8606f49d9a5a4c706b01` | Stub archive for kernels without the board. Not read. |
-| `usr/cpu/sysgen/IP20boot/gfx.o` | `4295be87a76062f37fd32b04348e1b9667c2629da48308ccb0ad80bab72ee3e2` | Common graphics layer the driver registers with. Not read. |
+| `usr/cpu/sysgen/IP20boot/gfx.o` | `4295be87a76062f37fd32b04348e1b9667c2629da48308ccb0ad80bab72ee3e2` | Common graphics layer the driver registers with. Read only for the `gfxioctl` dispatch of `GFX_INITIALIZE`, `GFX_START` and `GFX_DOWNLOAD` to the board's function table (`0x2ff8` to `0x3068`, `0x30f0`, `0x31fc`); the rest is not read. |
 | `usr/cpu/sysgen/IP20boot/rrm.o` | `9cfafdd10870873454d4df20163c350a768c61f3e4a8ae2ad6223573cd2554b4` | Rendering resource manager. Not read. |
 | `var/sysgen/master.d/gr2` | `b2286d035b8c1d6cf20e86b57c10ac9695829cad8c6a4d3bdeea78ae54a5726c` | Driver configuration: prefix `gr2_`, depends on `gfx`. |
 | `usr/gfx/ucode/hq2.bin` | `0c1fbe18d1b451ee32fb81afa4dd85aa86beeee2c5f7fc8b2e33e79e4375fc94` | HQ2 microcode image, 58682 bytes. |
