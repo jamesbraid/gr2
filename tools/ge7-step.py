@@ -10,7 +10,7 @@
   ge7-step.py run IMG START [--slot N=V,..] [--steps N] [--bus V] [--unknown-lines low|high]
                                                            data-flow run of one engine: RAM0 input slots, the image's constants block,
                                                            branches resolved from the decoded flags; prints RE writes and shared stores.
-                                                           A branch on a flag line no known answer fixes stops the run unless --unknown-lines
+                                                           A branch on a flag line no known answer fixes stops the run with an error unless --unknown-lines
                                                            assumes the line low or high
   ge7-step.py selftest IDE [PROM [GE7 [HQ2 [PROM4.0.5G [GE7-5.3 [HQ2-5.3 [IDE-IP12 [IDE-5.3 [GR2_TPUCODE.O]]]]]]]]
                                                            regression: the diagnostic known answers, and with the 4.0.5D PROM the console tokens,
@@ -124,7 +124,7 @@ def mult(op, a, b):
     return r, dict(mzero=r & 0x7fffffff == 0 if op == 1 else r == 0, mneg=bool(r >> 31))
 
 # BRCOND -> the line a conditional branch tests, as far as the known answers fix it (microcode.md, "Flags and conditions"). The lines
-# are active low except 0x62: a branch (conditions 3, 4, 7, 8) is taken when the line is high. Others raise KeyError.
+# are active low except 0x62: a branch (conditions 3, 4, 7, 8) is taken when the line is high. Others stop a run that branches on them.
 LINES = {0x62: lambda f: f['eq'], 0x64: lambda f: not f['zero'], 0x63: lambda f: not f['neg'], 0x6b: lambda f: not f['pas'],
          0x68: lambda f: not f['mneg'], 0x69: lambda f: not f['mzero']}
 
@@ -153,11 +153,11 @@ class Engine:
         low bit and six mantissa bits (bits 23:17). The value sits in bits 22:16; the other bits are not fixed by any known answer."""
         return (SEED[rb >> 16 & 0x7f] if sel == 4 else SQRT[rb >> 17 & 0x7f]) << 16
 
-    UNKNOWN = None                                 # value of a flag line no known answer fixes: None raises, True or False assumes it
+    UNKNOWN = None                                 # value of a flag line no known answer fixes: None stops the run, True or False assumes it
 
     def line(self, brc, flags):
         if brc in LINES: return LINES[brc](flags)
-        if self.UNKNOWN is None: raise KeyError(brc)
+        if self.UNKNOWN is None: sys.exit('ge7-step: a branch tests flag line %#x, which no known answer fixes; rerun with --unknown-lines low or high' % brc)
         return self.UNKNOWN
 
     def src(self, d, sel, side):
