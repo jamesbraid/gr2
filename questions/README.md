@@ -19,5 +19,6 @@ the XMAP5 window address, and the byte lane question, which is display.md 1.
 ## Indigo2 Extreme and XZ
 
 Which Express-family boards the Indigo2 carries, and with what chip counts, is unknown: the IP20 driver handles eight geometry engines and
-the GL core names `-Extreme`, but no Indigo2 object has been read. Next: the Indigo2 kernel objects and `IP22GR2NG1` GL library, plus
-the Elan TR sections not yet read.
+the GL core names `-Extreme`, but the IP22 kernel objects ([ip22-startup.md](../platforms/express/ip22-startup.md)) count engines with the
+same probe and name no board. Next: a `gfxinfo` or `hinv` capture from an Indy or Indigo2 with Express graphics, and the Elan TR sections
+not yet read.

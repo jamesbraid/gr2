@@ -34,7 +34,7 @@ host connection with a graphics FIFO inside the HQ2.
 | Indigo XS24 | Indigo | one | 24-bit | optional 24-bit | One GE7 established by the same decode and by `gfxinfo` captures ("1 GE, 1 RE, 24 bitplanes"). |
 | Indigo XZ | Indigo | two | 24-bit | not stated by the TR; the inventory appends " missing Z" when it is absent, and the `gfxinfo` XZ capture shows one | Two GE7: established by `gfxinfo` captures ("2 GEs") and the inventory decode; the parts list (GR2-2 board) agrees. The TR predates XZ. |
 | Indigo Elan | Indigo | four | 24-bit | standard 24-bit, 4 stencil planes | Established, Elan TR section 1 and 4.2 ("four geometry engines"). |
-| Extreme, XZ, Elan on Indigo2 | Indigo2 | unknown | unknown | unknown | **Unknown.** The driver names `-XS`, `-XZ`, `-Elan` and `-Extreme` as renderer-name suffixes (see below). Topology is not transferable from Indigo. |
+| Extreme, XZ, Elan on Indigo2 | Indigo2 | unknown | unknown | unknown | **Unknown.** The driver names `-XS`, `-XZ`, `-Elan` and `-Extreme` as renderer-name suffixes (see below). Topology is not transferable from Indigo. How the IP22 kernel finds, resets and clocks the board is read in [ip22-startup.md](ip22-startup.md), which also covers the Indy. |
 
 Board-name suffix strings: `-XS`, `-XZ` and `-Elan` sit together in the n32 GL core for the Indigo GR2
 (`usr/gfx/arch/IP12GR232/libGLcore.so`, near file offset `0x112028`); `-Extreme` is a separate string in the same file (`0x10b068`).

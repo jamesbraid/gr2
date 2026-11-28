@@ -63,9 +63,10 @@ it is the same on both platforms:
 ## Microcode
 
 Neither platform ships its own microcode in the base set: `usr/gfx/ucode` holds one `hq2.bin` and one `ge7.bin`, and they are the Indigo's
-(hashes above). The kernel's built-in console image `gr2_tpucode.o` is byte-identical in the `IP20boot` and `IP22boot` copies of
-`gr2.a` (SHA-256 `04930f710d1f1278771857d35e15fed789922506bb831abcea9e79d01aaa0667`). The PROM-embedded images of an Indy or
-Indigo2 were not read; no IP22 PROM was in scope.
+(hashes above). The console images in the kernel's `gr2_tpucode.o` are identical in the `IP20boot` and `IP22boot` copies of `gr2.a`; the
+objects themselves are not, and the object hash this page used to give (`04930f71...`) does not reproduce on any held copy. The Indy and
+Indigo2 PROMs carry another console pair, which has `RECTCOPY`. Both pairs, with offsets and hashes, are in
+[console-microcode-ip22.md](console-microcode-ip22.md).
 
 ## What does differ
 
@@ -80,6 +81,9 @@ Indigo2 were not read; no IP22 PROM was in scope.
 
 ## Kernel gr2.a and the +0x6c1c0 window
 
+The window's purpose (an I2C controller for the flat-panel adapter), its access sequence and the rest of the IP22 start-up are in
+[ip22-startup.md](ip22-startup.md); this section is the scan that first found the access.
+
 Only `gr2_corona_i2c.o` in the IP22 kernel `gr2.a` (SHA-256 `637b6487...`) reaches `+0x6c1c0` to `+0x6c1fc`, and only through
 an index: `lui 0x70000`, plus an index register, minus a 16-bit displacement. So the address is `0x6c1c0` plus the index, not a
 fixed offset. `gr2_i2cProbe` stores `0x00`, `0x55` and `0xaa` at `0x6c1e0` plus the index and reads back `0x55` and `0xaa` to
@@ -90,6 +94,6 @@ first argument) and its callers are outside the archive and were not checked.
 
 ## Open
 
-- The IP22 PROM images and the Indy and Indigo2 board registers are not covered; a different GE count or board revision on IP22 would
-  show in the host contract, not in the GL token set.
+- The IP22 PROM images are covered by [console-microcode-ip22.md](console-microcode-ip22.md) and the kernel's probe by
+  [ip22-startup.md](ip22-startup.md); which board revision, GE count and monitor code a real Indy or Indigo2 board reads is still unknown.
 - The `+0x420f4` to `+0x42114` stores the Indigo review reports were not reproduced by this scan on either platform; the question is open on both.

@@ -92,3 +92,18 @@ A third release, read from the reader's copy of the IRIX 6.2 install disc (part 
 The 5.3 disc's copies of the same three headers are `52e421a019c86b13f851025090f4edc8114dd3e178184bece60f0899b86d36a9`, `02cc486fc8d3b301cbcfc7ed95f09a221cc98ac0ac06d71a78055aa37977cd0c` (equal to 6.2) and `ab18cd5781856c2006b6449fe59c99e5bb40d1bfffc489fb24c687c62897933d`. The 6.2 and 5.3 microcode images differ from each other and from the 6.5 pair; for the one slot compared across all three see [pipeline.md](../platforms/express/pipeline.md#slot-261-the-raster-position-token).
 
 Where the names of the QEMU `sgi-gr2` crate come from, family by family, is in [name-provenance.md](name-provenance.md); it reads the shipped headers listed above.
+
+## IRIX 6.5 base set, IP22 kernel objects and the Indy and Indigo2 PROMs (start-up pass)
+
+Read for [ip22-startup.md](../platforms/express/ip22-startup.md) and [console-microcode-ip22.md](../platforms/express/console-microcode-ip22.md). Install paths are the 6.5 base set's. The 6.5 base `IP20boot/gr2.a` hashes as in the table at the top of this page. Nothing here is committed.
+
+| Install path | SHA-256 | Used for |
+|---|---|---|
+| `usr/cpu/sysgen/IP22boot/gr2.a` | `19ef07c204ce1fc3c73d3f12783adb1824d48b8ee9af28538914fedf33b6f228` | The Indy and Indigo2 driver archive: `gr2.o`, `gr2_corona_i2c.o`, `gr2_dma.o`, `gr2_init.o`, `gr2_retrace.o`, `gr2_tport.o`, `gr2_tpucode.o` (member hashes in the start-up page). |
+| `usr/cpu/sysgen/IP22boot/kernel.o` | `633902b92f5f7d01fceea7905962344d4053e026dcc8dbce6593b64ce1612c7c` | `setgiovector` only. |
+| `usr/cpu/sysgen/IP26boot/gr2.a`, `IP28boot/gr2.a` | `d3e04881336eb5efc014fdc32b130eabe7d84b6f966de18453478951af1531b4`, `659d7fb3e842d542c73fc40e8918898aeb55fd972927fe9f140388ab760cd72a` | Console pair identity only. |
+| `sbin/stand/ide.IP20`, `ide.IP22`, `ide.IP28` | `5ede622efa1b55d199218ff2cf10fb4556289288125b0c0e627bbbd424a4fea0`, `e077461f1bcaa35bdbc1982881376c9344cb10d960d6ebd41da673cda8640a46`, `70839b6967047253a61be5396f8a724ad46458bda3e4552659f9113bab69381a` | Console pair identity only (each carries the PROM pair). |
+| `usr/include/sys/IP22.h`, `IP20.h`, `hpc3.h`, `mc.h` | not hashed | Register addresses, bit and vector names. |
+| 6.5.22 `usr/cpu/sysgen/IP22boot/gr2.a` | `6e4dde1ca2371aaaf44d06475201b2937831a23b0e4dc761c3565bd2f8980aa2` | Console pair identity only. |
+
+The IP22 archive here is not the one the slot comparison page hashed (`80707bc8...`); that was another copy of the 6.5 set. The PROM images and their cut offsets are in the console-microcode page.

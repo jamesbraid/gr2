@@ -41,7 +41,7 @@ Only the IRIX 6.5 base-set `hq2.bin` and `ge7.bin` are held. Next: IRIX 5.x and 
 
 The kernel's gfxinfo path reads `hq_gepc` bits 23:16 (0 = HQ2, 1 = HQ2.1), the PROMs and the diagnostic program read status bits 31:23, and
 both give 0 on every Indigo ([host contract section 1](../platforms/express/host-contract.md#the-hq2-revision-prom-or-kernel)). Nothing
-in the Indigo model depends on the answer. Next: a board that reads HQ2.1, which the Indy and Indigo2 boards are.
+in the Indigo model depends on the answer. The IP22 kernel reads the same register and never branches on it ([ip22-startup.md](../platforms/express/ip22-startup.md#hq21-and-gio64)). Next: a board that reads HQ2.1, which the Indy and Indigo2 boards are.
 
 ## 8. What is the HQ2 FIFO drain rate?
 

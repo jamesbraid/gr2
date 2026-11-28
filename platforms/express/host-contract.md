@@ -299,6 +299,8 @@ The 6.5 hashes are on a second copy (the mirror's `6.5-base` tree), whose `IP20b
 
 ## 10. Boot sequence: what the kernel writes, in order
 
+The Indy and Indigo2 kernels run the same sequence with the differences listed in [ip22-startup.md](ip22-startup.md): two board slots, a per-host reset and retrace-latch clear, a first-board rule for the clock selector, a flat-panel I2C probe, and the same console class table.
+
 The R4000 Indigo kernel's start-up and microcode-load sequence, read from the IRIX 5.3 `IP20boot/gr2.a` (`gr2.o`, `gr2_init.o`, `gr2_tport.o`, `gr2_tpucode.o`; o32 objects) [binary]; each function named below was read in full. The 6.5 objects were compared at `_Gr2HQ2RegInit` (same six stores, same values), `Gr2Start` (same stores) and `gr2_earlyinit` (same order; 6.5 additionally refuses the reuse path when the ready word is 2, which the 5.3 code reaches the same way, because its test is `== 1`). Everything else below that is common to the two is established for 5.3 and **inferred** for 6.5. Offsets are from the graphics window (`0x1f000000`); "register" names are those of [devices/hq2](../../devices/hq2/README.md). The kernel never writes an RE3 or a GE7 register directly: the only GE7 accesses are the probe, the microstore loader and the two program-counter ports; RE3 is written by the microcode alone (the `INIT` token's routine, [devices/re3](../../devices/re3/README.md)). Established [binary] for the absence in these objects.
 
 ### A. Per board, at kernel start-up (`gr2_earlyinit`, `gr2.o`)
