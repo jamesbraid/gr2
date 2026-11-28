@@ -2,7 +2,7 @@
 
 Where a driver that has to put text on an Indy or Indigo2 Express board before the full microcode loads can get its HQ2 and GE7 console images, which of the two sources has the `RECTCOPY` token, and how to cut each out. Written for a Windows NT display driver design that must carry the images itself. The start-up around the images is in [ip22-startup.md](ip22-startup.md); the image format, loaders and token set are in [microcode.md](microcode.md#the-console-tokens) and [host-contract.md](host-contract.md#c-console-images-gr2tpsetup-gr2_tportso-and-gr2_tpucodeo).
 
-Ratings: **established** is a fact read from a held file with a tool (hash, offset, size, record count, byte value). **Software expectation** is what shipped code does with the hardware. **Inferred** and **unknown** as in [AGENTS.md](../../AGENTS.md). Source classes: [binary] shipped IRIX 6.5 base-set objects and the held PROM images. Nothing was run on a board.
+Ratings: as in [AGENTS.md](../../AGENTS.md), **established** is a fact read from a held file with a tool (hash, offset, size, record count, byte value), including what shipped code does. **Inferred** is a reasoned reading, with the reasoning, and includes a claim about hardware behaviour that rests only on what software does. **Unknown** is what the sources leave open. Source classes: [binary] shipped IRIX 6.5 base-set objects and the held PROM images. Nothing was run on a board.
 
 ## Answer
 
@@ -12,7 +12,7 @@ Ratings: **established** is a fact read from a held file with a tool (hash, offs
 | Is there a pair in the kernel? | Yes: `gr2_tpucode.o` in `IP22boot/gr2.a` (and `IP20boot`, `IP26boot`, `IP28boot`). HQ2 image 3,552 bytes, 129 records; GE7 image 9,142 bytes, 264 records. The image bytes are identical in all four archives and in the 6.5.22 `IP22boot` archive, though the object files differ. | established |
 | Does the kernel pair carry `RECTCOPY` (slot 409)? | **No.** Its HQ2 image has no first-level word for slot 409, and its GE7 image lacks the 44-word routine that the PROM pair starts for slot 409. | established |
 | Does the PROM pair carry it? | **Yes.** Slot 409 jumps to HQ2 address 629, reads eight operand words and starts GE7 at 208 (the routine occupies GE7 addresses 208 to 251). | established |
-| Which should a driver use? | The PROM pair if it needs `RECTCOPY` (hardware scroll). The kernel pair has seven drawing tokens and no copy, so a scroll must be redrawn. Neither pair is the full image, which also lacks 409. | software expectation (the kernel text port, `gr2_tport.o`, has no store to `+0x40664` in the IP20 or IP22 archive; the PROM text port sends 409, [microcode.md](microcode.md#the-console-tokens)) |
+| Which should a driver use? | The PROM pair if it needs `RECTCOPY` (hardware scroll). The kernel pair has seven drawing tokens and no copy, so a scroll must be redrawn. Neither pair is the full image, which also lacks 409. | established (the kernel text port, `gr2_tport.o`, has no store to `+0x40664` in the IP20 or IP22 archive; the PROM text port sends 409, [microcode.md](microcode.md#the-console-tokens)) |
 
 ## The kernel pair
 
@@ -77,7 +77,7 @@ The pair is a later build than the Indigo PROM's. The Indigo's 4.0.5D PROM (`070
 
 ### Where the CPU sees the file
 
-The first word of each PROM is a jump into `0x1fc003c0`, so the part's first 512 KiB sits at physical `0x1fc00000` and file offset `X` is at `0x1fc00000 + X` (`0xbfc00000 + X` in KSEG1). That is the layout the Indigo PROM notes use. A search of the four held IP22 and IP24 PROMs for a stored pointer or a `lui`/`ori` pair that names either image found none, so how the PROM's own text port reaches the images (a different address window, a runtime-computed pointer) was not read. Software expectation for the mapping of the file at reset; **unknown** whether the PROM code addresses the images through that window.
+The first word of each PROM is a jump into `0x1fc003c0`, so the part's first 512 KiB sits at physical `0x1fc00000` and file offset `X` is at `0x1fc00000 + X` (`0xbfc00000 + X` in KSEG1). That is the layout the Indigo PROM notes use. A search of the four held IP22 and IP24 PROMs for a stored pointer or a `lui`/`ori` pair that names either image found none, so how the PROM's own text port reaches the images (a different address window, a runtime-computed pointer) was not read. Inferred for the mapping of the file at reset; **unknown** whether the PROM code addresses the images through that window.
 
 ### `RECTCOPY` in the PROM pair
 
