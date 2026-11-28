@@ -4,7 +4,7 @@ What the five XMAP5 chips do between the VC1 and the DACs, where the host reache
 driver write. Registers and grades are in [registers.toml](registers.toml). Labels follow [AGENTS.md](../../AGENTS.md):
 **established**, **inferred**, **unknown**. Every fact also carries a source class: **[public]** (published datasheets and the
 Elan Graphics Technical Report, the public NetBSD `grtwo.c` and `grtworeg.h`), **[binary]** (shipped IRIX 6.5 `gr2.a` members
-`gr2_init.o`, `gr2.o`, `gr2_retrace.o`, `gr2_tport.o`, PROM 4.0.5D `070-8116-004` and 4.0.5G `070-8116-005`), or
+`gr2_init.o`, `gr2.o`, `gr2_retrace.o`, `gr2_tport.o`, PROM 4.0.5D `070-8116-004` and 4.0.5G `070-8116-005`), **[source]** (the IRIX 6.5.7 diagnostic program's XMAP5 test, `irix-6.5.7/stand/arcs/ide/fforward/graphics/EXPRESS/xmaptest1.c` and `xmap.h` in the IRIX source tree; first-rank evidence under [AGENTS.md](../../AGENTS.md)), or
 **[vendor-derived]** (the upstream `XMAP5.h`, generated from vendor source: a hypothesis only, never the sole support of an
 established fact, not cited from QEMU pages). Offsets are from the graphics window base (physical `0x1f000000` on the
 Indigo). Nothing was read on a board.
@@ -18,7 +18,7 @@ highest precedence and a three-entry, 24-bit cursor colour table; each chip is 1
 in colour-index mode a pixel indexes a 12-bit-in, 24-bit-out map (4096 colours simultaneously visible). Five chips because the
 board has five parallel pixel pipes whose output the Bt457 DACs multiplex 5:1 (see [Bt457](../bt457/README.md)); which pixel
 column goes to which chip is **inferred** (x modulo 5; the VC1's width divider is by five, see
-[VC1](../vc1-express/README.md#internal-registers)).
+[VC1](../vc1-express/README.md#timing-image-format)).
 
 Chip count per variant: five is established for the Elan ([public] TR; the board schematic of the Indy XZ set, `VB-3_Schematic.pdf`,
 shows XMAP LUT channels A to E, but that is a different host and board, so it only corroborates the part count). The IP20 driver
@@ -126,7 +126,7 @@ field names and from which values the diagnostic pairs, so a role says **inferre
 | 26:24 | pixel mode | 0 and 1 four-bit, 2 and 3 eight-bit, 4 and 5 twelve-bit (bank 0 and 1), 6 sixteen-bit, 7 twenty-four-bit | Established [source] codes. The low bit is the bank: `expValidateMode` sets or clears bit 24 from two flag bits of the request record (`0x5ef53114` to `0x5ef53128`, `0x5ef531c8`: flag bit 1 present, bit 2 chooses the bank), the same bank the retrace handler flips |
 | 23:20 | overlay enables | four bits | Established [source] field; the X server ORs `0xf00000` whenever bit 8 is clear (`0x5ef531bc`). Which overlay plane each bit enables is inferred |
 | 19:18 | alternate video | 0 off, 1 over, 2 under, 3 replace | Established [source] field and codes; zero in every word the diagnostic composes and in everything shipped read here, so what the XMAP does with it is unknown |
-| 17:16 | pixel data format | 0 colour index, 1 direct RGB, 2 colour-index multimode, 3 blackout | Established [source] codes. The diagnostic pairs RGB with 24, 16, 12 and 8-bit and four-bit pixel modes, colour index with 12, 8 and four-bit, and multimode with the two four-bit modes only |
+| 17:16 | pixel data format | 0 colour index, 1 direct RGB, 2 colour-index multimode, 3 blackout | Established [source] codes for 0 to 2; 3 (blackout) is inferred, as the only source for it is a header constant's name. The diagnostic pairs RGB with 24, 16, 12 and 8-bit and four-bit pixel modes, colour index with 12, 8 and four-bit, and multimode with the two four-bit modes only |
 | 15:14 | popup pixel, popup override | one bit each | Names only [source]; inferred, nothing read sets them |
 | 13:9 | auxiliary page | five bits | Established [source] field; the X server ORs `0x800` into every word, which is page 4 (`0x5ef53100`) |
 | 8 | underlay enable | one bit | Established [source] field; the X server tests it (`0x5ef53108`) |

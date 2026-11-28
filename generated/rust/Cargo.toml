@@ -1,7 +1,7 @@
 # generated from devices/ and formats/ by defs-gen - do not edit, change the source
 # SPDX-License-Identifier: BSD-3-Clause
 # defs-gen 5
-# input sha256 6df7eb5863784552e4a7473a663c9f6caa469d79d3b6c73b67c527c0a3711d3a
+# input sha256 d515568320fd933018428550ded321396ec3e885e7c8c02336754267b4cdd3d3
 [package]
 name = "gr2-defs"
 version = "0.1.0"

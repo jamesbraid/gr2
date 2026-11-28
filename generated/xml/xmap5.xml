@@ -2,7 +2,7 @@
 <!-- generated from devices/xmap5/registers.toml by defs-gen - do not edit, change the source -->
 <!-- SPDX-License-Identifier: BSD-3-Clause -->
 <!-- defs-gen 5 -->
-<!-- input sha256 6396c45c31f5677aa6472288571ce1b4f20590c64e4f4e0ac42d11174353cf35 -->
+<!-- input sha256 a3ae4415635c74b4ea2e6ed3456ce65a38f3c1efd9e9288d8614427fef7f9c11 -->
 <genxml unit="xmap5" prefix="XMAP5" title="XMAP5 multimode colour mapper (five per Express board)">
   <doc>Per-pixel window-mode and colour-index mapper between the VC1 and the DACs. Five identical chips each handle one pixel in five; software addresses chip 0 to 4 through five 32-byte windows and all five at once through a broadcast window one step after chip 4 (addresses in the README), with the same eight-register layout in each window. Offsets here are within one window. Each register is one byte (the mode port is a word) on a 4-byte stride; a big-endian CPU addresses the first byte of the stride, so the data sits in the most significant lane. Grades: established means read in full in the shipped Indigo driver archive or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver, [vendor-derived] a fact that rests on the upstream headers and never supports an established grade. Nothing was read on a board. Prose in devices/xmap5/README.md.</doc>
   <struct name="MISC" size="1" grade="inferred" register="yes" offset="0x0" access="w" reset="unknown">
@@ -42,7 +42,8 @@
     <field name="popup_flags" start="14" size="2" type="uint" grade="inferred"/>
     <field name="aux_page" start="9" size="5" type="uint" grade="established"/>
     <field name="underlay_enable" start="8" size="1" type="uint" grade="established"/>
-    <field name="popup_mode" start="0" size="8" type="uint" grade="inferred"/>
+    <field name="popup_mode" start="5" size="2" type="uint" grade="inferred"/>
+    <field name="popup_page" start="0" size="5" type="uint" grade="inferred"/>
   </struct>
   <constant name="BOOT_MODE_WORD_DID0" value="0x82000000" grade="established"/>
   <constant name="CHIP_COUNT" value="0x5" grade="established"/>

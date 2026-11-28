@@ -24,11 +24,12 @@ pix_page = { bits = [31, 27], grade = "established", doc = "Pixel page: CLUT pag
 pix_mode = { bits = [26, 24], grade = "established", doc = "Pixel mode: 0 and 1 four-bit bank 0 and 1, 2 and 3 eight-bit, 4 and 5 twelve-bit, 6 sixteen-bit, 7 twenty-four-bit. [source] codes; the low bit is the bank, which the X server flips for the second buffer of a double-buffered window ([binary])." }
 overlay_enable = { bits = [23, 20], grade = "established", doc = "Overlay enables, four bits. [source] field; [binary] the X server sets all four (0xf00000) when underlay (bit 8) is clear. Which plane each bit enables is inferred." }
 alt_video = { bits = [19, 18], grade = "established", doc = "Alternate video mode: 0 off, 1 over, 2 under, 3 replace. [source] field and codes; the diagnostic defines the field but writes it zero in every word it composes, and no shipped X driver code read here sets it." }
-pd_mode = { bits = [17, 16], grade = "established", doc = "Pixel data format: 0 colour index, 1 direct RGB, 2 colour-index multimode (the diagnostic pairs it with the two four-bit pixel modes only), 3 blackout. [source] field and codes." }
+pd_mode = { bits = [17, 16], grade = "established", doc = "Pixel data format: 0 colour index, 1 direct RGB, 2 colour-index multimode (the diagnostic pairs it with the two four-bit pixel modes only), 3 blackout. [source] field and codes for 0 to 2; 3 is inferred, as the only source for it is a header constant's name." }
 popup_flags = { bits = [15, 14], grade = "inferred", doc = "Two popup bits named for a popup pixel (bit 15) and a popup override (bit 14). [source] field names only; nothing read sets them." }
 aux_page = { bits = [13, 9], grade = "established", doc = "Auxiliary colour page, five bits. [source] field; [binary] the X server always ORs 0x800, which is page 4." }
 underlay_enable = { bits = [8, 8], grade = "established", doc = "Underlay enable. [source] field; [binary] the X server forces the four overlay enables on when this bit is clear. The diagnostic header also defines a popup field that spans bits 8:7; it overlaps this bit and the diagnostic never uses it, so that field is inferred to belong to a different view of the word." }
-popup_mode = { bits = [7, 0], grade = "inferred", doc = "Popup page in bits 4:0 and popup mode in bits 6:5 (codes off, eight-bit, four-bit bank 0 and 1). [source] field names and codes; the diagnostic writes the page and never the mode, and no shipped code read sets either." }
+popup_mode = { bits = [6, 5], grade = "inferred", doc = "Popup mode in bits 6:5 (codes off, eight-bit, four-bit bank 0 and 1). [source] field names and codes; the diagnostic never sets a mode, and no shipped code read sets one." }
+popup_page = { bits = [4, 0], grade = "inferred", doc = "Popup page in bits 4:0, five bits. [source] field name; the diagnostic writes a page in its mode words, and no shipped code read sets one." }
 
 [registers.misc]
 offset = 0x00

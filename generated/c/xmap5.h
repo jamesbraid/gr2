@@ -2,7 +2,7 @@
  * the source */
 /* SPDX-License-Identifier: BSD-3-Clause */
 /* defs-gen 5 */
-/* input sha256 6396c45c31f5677aa6472288571ce1b4f20590c64e4f4e0ac42d11174353cf35 */
+/* input sha256 a3ae4415635c74b4ea2e6ed3456ce65a38f3c1efd9e9288d8614427fef7f9c11 */
 /* XMAP5 multimode colour mapper (five per Express board) */
 #ifndef XMAP5_GEN_H
 #define XMAP5_GEN_H
@@ -139,9 +139,12 @@
 #define XMAP5_MODE_WORD_UNDERLAY_ENABLE_SHIFT        8 /* established */
 #define XMAP5_MODE_WORD_UNDERLAY_ENABLE_MASK         0x1u
 #define XMAP5_MODE_WORD_UNDERLAY_ENABLE_INPLACE (XMAP5_MODE_WORD_UNDERLAY_ENABLE_MASK << XMAP5_MODE_WORD_UNDERLAY_ENABLE_SHIFT)
-#define XMAP5_MODE_WORD_POPUP_MODE_SHIFT             0 /* inferred */
-#define XMAP5_MODE_WORD_POPUP_MODE_MASK              0xffu
+#define XMAP5_MODE_WORD_POPUP_MODE_SHIFT             5 /* inferred */
+#define XMAP5_MODE_WORD_POPUP_MODE_MASK              0x3u
 #define XMAP5_MODE_WORD_POPUP_MODE_INPLACE (XMAP5_MODE_WORD_POPUP_MODE_MASK << XMAP5_MODE_WORD_POPUP_MODE_SHIFT)
+#define XMAP5_MODE_WORD_POPUP_PAGE_SHIFT             0 /* inferred */
+#define XMAP5_MODE_WORD_POPUP_PAGE_MASK              0x1fu
+#define XMAP5_MODE_WORD_POPUP_PAGE_INPLACE (XMAP5_MODE_WORD_POPUP_PAGE_MASK << XMAP5_MODE_WORD_POPUP_PAGE_SHIFT)
 
 /* established */
 #define XMAP5_BOOT_MODE_WORD_DID0                    0x82000000u

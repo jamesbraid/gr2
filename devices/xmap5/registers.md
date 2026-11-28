@@ -1,7 +1,7 @@
 <!-- generated from devices/xmap5/registers.toml by defs-gen - do not edit, change the source -->
 <!-- SPDX-License-Identifier: BSD-3-Clause -->
 <!-- defs-gen 5 -->
-<!-- input sha256 6396c45c31f5677aa6472288571ce1b4f20590c64e4f4e0ac42d11174353cf35 -->
+<!-- input sha256 a3ae4415635c74b4ea2e6ed3456ce65a38f3c1efd9e9288d8614427fef7f9c11 -->
 
 # XMAP5 multimode colour mapper (five per Express board)
 
@@ -78,11 +78,12 @@ Mode table word, one per display ID, written through the mode port at byte addre
 | 26:24 | `pix_mode` | established |  |  | Pixel mode: 0 and 1 four-bit bank 0 and 1, 2 and 3 eight-bit, 4 and 5 twelve-bit, 6 sixteen-bit, 7 twenty-four-bit. [source] codes; the low bit is the bank, which the X server flips for the second buffer of a double-buffered window ([binary]). |
 | 23:20 | `overlay_enable` | established |  |  | Overlay enables, four bits. [source] field; [binary] the X server sets all four (0xf00000) when underlay (bit 8) is clear. Which plane each bit enables is inferred. |
 | 19:18 | `alt_video` | established |  |  | Alternate video mode: 0 off, 1 over, 2 under, 3 replace. [source] field and codes; the diagnostic defines the field but writes it zero in every word it composes, and no shipped X driver code read here sets it. |
-| 17:16 | `pd_mode` | established |  |  | Pixel data format: 0 colour index, 1 direct RGB, 2 colour-index multimode (the diagnostic pairs it with the two four-bit pixel modes only), 3 blackout. [source] field and codes. |
+| 17:16 | `pd_mode` | established |  |  | Pixel data format: 0 colour index, 1 direct RGB, 2 colour-index multimode (the diagnostic pairs it with the two four-bit pixel modes only), 3 blackout. [source] field and codes for 0 to 2; 3 is inferred, as the only source for it is a header constant's name. |
 | 15:14 | `popup_flags` | inferred |  |  | Two popup bits named for a popup pixel (bit 15) and a popup override (bit 14). [source] field names only; nothing read sets them. |
 | 13:9 | `aux_page` | established |  |  | Auxiliary colour page, five bits. [source] field; [binary] the X server always ORs 0x800, which is page 4. |
 | 8 | `underlay_enable` | established |  |  | Underlay enable. [source] field; [binary] the X server forces the four overlay enables on when this bit is clear. The diagnostic header also defines a popup field that spans bits 8:7; it overlaps this bit and the diagnostic never uses it, so that field is inferred to belong to a different view of the word. |
-| 7:0 | `popup_mode` | inferred |  |  | Popup page in bits 4:0 and popup mode in bits 6:5 (codes off, eight-bit, four-bit bank 0 and 1). [source] field names and codes; the diagnostic writes the page and never the mode, and no shipped code read sets either. |
+| 6:5 | `popup_mode` | inferred |  |  | Popup mode in bits 6:5 (codes off, eight-bit, four-bit bank 0 and 1). [source] field names and codes; the diagnostic never sets a mode, and no shipped code read sets one. |
+| 4:0 | `popup_page` | inferred |  |  | Popup page in bits 4:0, five bits. [source] field name; the diagnostic writes a page in its mode words, and no shipped code read sets one. |
 
 ## Constants
 

@@ -1,7 +1,7 @@
 // @generated from devices/xmap5/registers.toml by defs-gen - do not edit, change the source
 // SPDX-License-Identifier: BSD-3-Clause
 // defs-gen 5
-// input sha256 6396c45c31f5677aa6472288571ce1b4f20590c64e4f4e0ac42d11174353cf35
+// input sha256 a3ae4415635c74b4ea2e6ed3456ce65a38f3c1efd9e9288d8614427fef7f9c11
 // XMAP5 multimode colour mapper (five per Express board)
 #![allow(dead_code)]
 #![allow(clippy::doc_markdown)]
@@ -160,9 +160,19 @@ pub mod mode_word {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod popup_mode { // bits 7:0, inferred
+    pub mod popup_mode { // bits 6:5, inferred
+        pub const SHIFT: u32 = 5;
+        pub const MASK: u32 = 0x3;
+        pub const fn get(v: u32) -> u32 {
+            (v >> SHIFT) & MASK
+        }
+        pub const fn set(v: u32, x: u32) -> u32 {
+            (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
+        }
+    }
+    pub mod popup_page { // bits 4:0, inferred
         pub const SHIFT: u32 = 0;
-        pub const MASK: u32 = 0xff;
+        pub const MASK: u32 = 0x1f;
         pub const fn get(v: u32) -> u32 {
             (v >> SHIFT) & MASK
         }
