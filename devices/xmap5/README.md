@@ -86,7 +86,10 @@ the pointer reads back advanced by one entry; the mode and misc increments are u
 - Bit 1 set means the FIFO has room for a burst: `_Gr2XMAPInit3` waits for it to be set before every 256-entry block of CLUT
   writes, giving up after 10000 microseconds and writing anyway. Established.
 - An idle chip therefore reads bit 0 clear and bit 1 set. A model that returns `0x02` always satisfies every shipped poll.
-- Bit 2 as an overflow flag, and a 512-word FIFO, are **[vendor-derived]** only.
+- **[source]** The diagnostic program's XMAP5 test names bit 0 "empty", bit 1 "half full" and bit 2 "overflow" and gives the FIFO a depth of 512. Its own
+  use of bit 0 (it waits while the bit is set) matches the kernel's "busy", so the name describes the clear state; the kernel's use of bit 1 (wait for it to be
+  set before a burst) is the opposite of the name "half full", so that bit is probably active low. No shipped program reads bit 2. Grade: names and depth
+  established as the diagnostic's; the sense of bits 1 and 2 inferred.
 
 NetBSD [public] never polls it; `grtwo_wait_gfifo` waits on the INT2 FIFO line instead.
 
@@ -112,24 +115,33 @@ after either path.
 
 ## Mode word
 
-One 32-bit word per display ID. Only the boot word is established: DID 0 = `0x82000000`. Everything else is graded **inferred**
-from three kinds of evidence, none of which alone fixes a field:
+One 32-bit word per display ID. The boot word for display ID 0 is `0x82000000`. Field boundaries and the value codes are **established** from the IRIX source:
+the diagnostic program's XMAP5 test (`stand/arcs/ide/fforward/graphics/EXPRESS`, its test file and the small header beside it)
+composes mode words from named fields, and the shipped X server and kernel agree with it where they touch the word. The roles are read from the
+field names and from which values the diagnostic pairs, so a role says **inferred** where the table below says so.
 
-- [binary] The text port's colours sit at CLUT index 4096 + n, and `0x82000000` has `0b10000` in bits 31:27: 16 pages of 256 entries
-  reach 4096. So bits 31:27 select the CLUT page for colour-index pixels (inferred).
-- [unverified: from an upstream decompilation of the shipped X server `gr2.so`, not re-checked against the object; do not cite as [binary]] the server builds
-  `page << 27 | 0x800 | base`, ORs `0xf00000` when bit 8 of the word is clear, and toggles `0x01000000` for the second buffer of a
-  double-buffered window. So bit 24 selects buffer 0 or 1, bits 23:20 are overlay enables, bit 8 is an underlay enable, `0x800` is
-  an auxiliary-colour page of 4 (bits 13:9). Inferred.
-- [vendor-derived] the upstream `XMAP5.h` names bits 26:24 the pixel mode (4, 8, 12, 16, 24 bits per pixel, banks 0 and 1),
-  bits 17:16 colour index versus direct RGB, bits 19:18 alternate video, bits 7:0 popup fields. Where this agrees with a [binary]
-  point above it is cited as agreement; the rest stays **unknown** in the TOML.
+| Bits | Field | Values | Grade and basis |
+|---|---|---|---|
+| 31:27 | pixel page | CLUT page (256 entries) read by colour-index pixels; 0 to 31 | Established [source] field, [binary] the boot word is page 16 and the text port's colours sit at CLUT index 4096 (`Gr2TpMapcolor`); the X server builds `page << 27` from a word of its hardware colormap record, the page number (`expValidateMode`, `gr2.so` `0x5ef52fe8`, the shift at `0x5ef530fc`; that the word is the page number is inferred from the use) |
+| 26:24 | pixel mode | 0 and 1 four-bit, 2 and 3 eight-bit, 4 and 5 twelve-bit (bank 0 and 1), 6 sixteen-bit, 7 twenty-four-bit | Established [source] codes. The low bit is the bank: `expValidateMode` sets or clears bit 24 from two flag bits of the request record (`0x5ef53114` to `0x5ef53128`, `0x5ef531c8`: flag bit 1 present, bit 2 chooses the bank), the same bank the retrace handler flips |
+| 23:20 | overlay enables | four bits | Established [source] field; the X server ORs `0xf00000` whenever bit 8 is clear (`0x5ef531bc`). Which overlay plane each bit enables is inferred |
+| 19:18 | alternate video | 0 off, 1 over, 2 under, 3 replace | Established [source] field and codes; zero in every word the diagnostic composes and in everything shipped read here, so what the XMAP does with it is unknown |
+| 17:16 | pixel data format | 0 colour index, 1 direct RGB, 2 colour-index multimode, 3 blackout | Established [source] codes. The diagnostic pairs RGB with 24, 16, 12 and 8-bit and four-bit pixel modes, colour index with 12, 8 and four-bit, and multimode with the two four-bit modes only |
+| 15:14 | popup pixel, popup override | one bit each | Names only [source]; inferred, nothing read sets them |
+| 13:9 | auxiliary page | five bits | Established [source] field; the X server ORs `0x800` into every word, which is page 4 (`0x5ef53100`) |
+| 8 | underlay enable | one bit | Established [source] field; the X server tests it (`0x5ef53108`) |
+| 6:5, 4:0 | popup mode, popup page | codes off, eight-bit, four-bit bank 0, four-bit bank 1; page of five bits | Names and codes only [source]; the diagnostic writes a page and never a mode. The header also defines a popup field at bits 8:7 that overlaps bit 8, so one of the two descriptions belongs to another view of the word: unknown which |
 
-[public] The TR says RGB mode sends 8 bits per colour to the DACs and colour-index mode indexes a 12-bit-in, 24-bit-out map; that
-the mode word is where that choice is made is inferred. A QEMU model should store all 32 words per chip and implement at least:
-CLUT page lookup (bits 31:27) for index modes, direct RGB passthrough, the buffer bit, overlay enables and the auxiliary-colour
-block at CLUT index `0x1c00 + 16 * aux_page`. That last location is **[vendor-derived]** only (the cursor colours at index `0x1c01`
-to `0x1c03` and the auxiliary block are not touched by any shipped IP20 object or PROM routine read here); questions/xmap5.md lists the next route.
+What this answers for a driver or model:
+
+- **Eight-bit colour index:** pixel mode 2 (bank 0) or 3 (bank 1), format 0, page in bits 31:27. The boot word is exactly this with page 16 and every other field zero (its low 24 bits are zero).
+- **Twenty-four-bit RGB:** pixel mode 7, format 1; the page is ignored for direct pixels (inferred: the diagnostic writes it zero for RGB). **Twelve-bit double-buffered RGB** is pixel mode 4 or 5 with format 1, the bank being the buffer; **twelve-bit colour index** is the same modes with format 0 and a page.
+- **Which CLUT page the default window reads:** whatever page its mode word names. The text port uses page 16 (index 4096 to 4103); the kernel's `Gr2TpMapcolor` writes `4096 + n`; the 4.0.5D PROM loads its two console colours at 3073 and 3074, which lie in page 12 (entries 1 and 2 of 3072 to 3327), not in the page 16 its own boot word selects: nothing read says what selects page 12, so which window those two colours serve is unknown.
+- **Cursor colours:** not in the mode word. The X server writes the cursor's colours as three ordinary colour-table entries at **CLUT indices `0x1c01`, `0x1c02` and `0x1c03`** (`expDisplayCursor`, `gr2.so` `0x5ef6115c`: it builds a three-entry write record, indices at `0x5ef612cc`, `0x5ef612d8` and `0x5ef612dc`, and the first two entries take the cursor's two colours; the third takes a further colour or zero). Established [binary] for the indices and the byte order of the record; that these entries are the XMAP's cursor colour table is inferred from the number and the TR's three-entry cursor table. The X server's pixel-read conversion (`expReadConvertPixels`, `0x5ef63574`) looks overlay pixels up at `0x1c00` ORed with the pixel and a page term (`0x5ef637a8`, `0x5ef637e4`, `0x5ef63818`; the term was not traced), so CLUT page 28 (`0x1c00` to `0x1cff`) holds the overlay and cursor colours; that agrees with the vendor-derived note that the auxiliary block sits at `0x1c00 + 16 * aux page`, which stays a hypothesis for the block's exact layout.
+- **Display IDs and clip IDs:** the per-pixel 5-bit display ID comes from the VC1's line tables and selects the mode-table entry ([VC1](../vc1-express/README.md#display-ids)); the XMAP5 mode word has no clip-ID field. Clip IDs are a separate four-bit plane set that the X server draws into with rectangle tokens ([x-server-tokens.md](../../platforms/express/x-server-tokens.md#clip-id-draw)), so the XMAP does not see them.
+- **Writing a window's word at run time:** the X server's `expValidateMode` assembles the word and asks the kernel to apply it (`ioctl` request 1017, `RRM_LOADDISPLAYMODE` in the shipped `sys/rrm.h`, with a five-word record: a context word, the X window id, the display ID, the mode word and the flags); `Gr2SetDisplayMode` writes `addrlo = ID << 2`, `addrhi = 0`, then the word; that the request reaches it through the resource manager is inferred (`rrm.o` is not read). A double-buffer swap rewrites the word for the window at the next retrace (below).
+
+The `misc` bytes: the same diagnostic names the first three blackout red, green and blue, the fourth a popup page value and the fifth a cursor value, and sizes the file at six bytes [source]. Init writes `0, 0, 0, 14, 0`, so it sets the popup page value to 14 and the cursor value to 0 where the diagnostic uses 0 and 15. Inferred roles; no shipped code reads them back.
 
 ## Double-buffer swap
 
@@ -142,7 +154,7 @@ therefore one mode-word write per window, applied at retrace.
 
 Per chip: 32 mode words, 8192 CLUT entries of 3 bytes, a misc register file, an address pointer with CLUT auto-increment, a status
 register that reads `0x02`. Broadcast writes fan out to all five chips. For scan-out the model needs the mode word interpretation
-(inferred) and the per-pixel display ID from the [VC1](../vc1-express/README.md). Discriminating qtests: (a) broadcast write of
+(the table above) and the per-pixel display ID from the [VC1](../vc1-express/README.md). Discriminating qtests: (a) broadcast write of
 `0x82000000` at address 0 then a per-chip read of nothing (no read path exists, so only the CLUT is observable through scan-out);
 (b) CLUT three-byte write increments the pointer; (c) status reads `0x02` idle.
 

@@ -2,7 +2,7 @@
  * the source */
 /* SPDX-License-Identifier: BSD-3-Clause */
 /* defs-gen 5 */
-/* input sha256 16b6070bb233d1af1da4ef209d70365aa464954f82eda820d7ca338b5819fb36 */
+/* input sha256 6396c45c31f5677aa6472288571ce1b4f20590c64e4f4e0ac42d11174353cf35 */
 /* XMAP5 multimode colour mapper (five per Express board) */
 #ifndef XMAP5_GEN_H
 #define XMAP5_GEN_H
@@ -12,11 +12,14 @@
 
 /*
  * Miscellaneous register file, written through one port after the address pair
- * is set to 0. Init writes 0, 0, 0, 14, 0 in order, so the port auto-increments
- * over five internal registers (inferred from five writes to one address).
- * Meaning of each is [vendor-derived] only: blackout red, green, blue; a
- * four-bit overlay and popup page value; a cursor index. Reads never occur in
- * shipped code.
+ * is set; the diagnostic sizes it at six bytes. Init writes 0, 0, 0, 14, 0
+ * after address 0, so the port auto-increments (inferred from five writes to
+ * one address). [source] The diagnostic program's XMAP5 test and its header
+ * name the first three bytes the blackout red, green and blue, the byte at
+ * address 3 a popup page value and the byte at address 4 a cursor value (its
+ * colour test sets address 3 and writes those two in turn); the sixth byte is
+ * unnamed. The init writes 14 at address 3 and 0 at address 4, while the
+ * diagnostic uses 0 and 15. Reads never occur in shipped code.
  */
 /* misc: w8, reset unknown */
 #define XMAP5_MISC_OFFSET                            0x0u /* inferred */
@@ -24,11 +27,13 @@
 /*
  * Mode table port. The target entry is chosen by addrlo (byte address 4 *
  * display ID, addrhi 0) before each write; init writes entry 0 and the retrace
- * and display-mode paths write one entry per call. Whether the address advances
- * by 4 after a write is not shown (the driver sets it before every write). A
- * qtest can discriminate: write 0x82000000 at address 0 through the broadcast
- * window and read nothing back (no read path); write through the broadcast
- * window and check all five chips were updated.
+ * and display-mode paths write one entry per call. The diagnostic program's
+ * mode-table test assumes a write advances the address by 4 (its own comment
+ * says to assume it); no shipped driver depends on it, since the driver sets
+ * the address before every write, so the advance is a software expectation and
+ * not shown by any shipped code. A qtest can discriminate: write 0x82000000 at
+ * address 0 through the broadcast window and read nothing back (no read path);
+ * write through the broadcast window and check all five chips were updated.
  */
 /* mode: w32, reset unknown */
 #define XMAP5_MODE_OFFSET                            0x4u /* established */
@@ -97,40 +102,44 @@
 
 /*
  * Mode table word, one per display ID, written through the mode port at byte
- * address 4 * ID. Bit meaning is inferred: [binary] two points tie it to
- * shipped code (the boot word 0x82000000 selects page 16 which is where the
- * text port's colours live; the shipped X server builds words as page << 27 |
- * 0x800 | base, forces 0xf00000 when bit 8 is clear, and toggles bit 24 for the
- * second buffer, read from an upstream decompilation not re-checked here); the
- * remaining fields rest on [vendor-derived] notes.
+ * address 4 * ID. Field boundaries are [source] the IRIX diagnostic program's
+ * XMAP5 test, which composes words from named fields (pixel mode, pixel page,
+ * data format, alternate video, overlay and underlay enables, auxiliary page,
+ * popup page, popup mode); they are cross-checked in [binary] by the boot word
+ * 0x82000000 (page 16, eight-bit bank 0, colour index: the text port's colours
+ * live at CLUT index 4096) and by the shipped X server, which builds words as
+ * page << 27 | 0x800 | base, forces 0xf00000 when bit 8 is clear and sets or
+ * clears bit 24 for the second buffer (disassembly of expValidateMode). The
+ * role of each field is read from its name and how the diagnostic pairs values,
+ * so the roles are inferred where a field says so.
  */
 /* word MODE_WORD: 32 bits */
-#define XMAP5_MODE_WORD_WIDTH                        32 /* inferred */
-#define XMAP5_MODE_WORD_PIX_PAGE_SHIFT               27 /* inferred */
+#define XMAP5_MODE_WORD_WIDTH                        32 /* established */
+#define XMAP5_MODE_WORD_PIX_PAGE_SHIFT               27 /* established */
 #define XMAP5_MODE_WORD_PIX_PAGE_MASK                0x1fu
 #define XMAP5_MODE_WORD_PIX_PAGE_INPLACE (XMAP5_MODE_WORD_PIX_PAGE_MASK << XMAP5_MODE_WORD_PIX_PAGE_SHIFT)
-#define XMAP5_MODE_WORD_PIX_MODE_SHIFT               24 /* inferred */
+#define XMAP5_MODE_WORD_PIX_MODE_SHIFT               24 /* established */
 #define XMAP5_MODE_WORD_PIX_MODE_MASK                0x7u
 #define XMAP5_MODE_WORD_PIX_MODE_INPLACE (XMAP5_MODE_WORD_PIX_MODE_MASK << XMAP5_MODE_WORD_PIX_MODE_SHIFT)
-#define XMAP5_MODE_WORD_OVERLAY_ENABLE_SHIFT         20 /* inferred */
+#define XMAP5_MODE_WORD_OVERLAY_ENABLE_SHIFT         20 /* established */
 #define XMAP5_MODE_WORD_OVERLAY_ENABLE_MASK          0xfu
 #define XMAP5_MODE_WORD_OVERLAY_ENABLE_INPLACE (XMAP5_MODE_WORD_OVERLAY_ENABLE_MASK << XMAP5_MODE_WORD_OVERLAY_ENABLE_SHIFT)
-#define XMAP5_MODE_WORD_ALT_VIDEO_SHIFT              18 /* unknown */
+#define XMAP5_MODE_WORD_ALT_VIDEO_SHIFT              18 /* established */
 #define XMAP5_MODE_WORD_ALT_VIDEO_MASK               0x3u
 #define XMAP5_MODE_WORD_ALT_VIDEO_INPLACE (XMAP5_MODE_WORD_ALT_VIDEO_MASK << XMAP5_MODE_WORD_ALT_VIDEO_SHIFT)
-#define XMAP5_MODE_WORD_PD_MODE_SHIFT                16 /* inferred */
+#define XMAP5_MODE_WORD_PD_MODE_SHIFT                16 /* established */
 #define XMAP5_MODE_WORD_PD_MODE_MASK                 0x3u
 #define XMAP5_MODE_WORD_PD_MODE_INPLACE (XMAP5_MODE_WORD_PD_MODE_MASK << XMAP5_MODE_WORD_PD_MODE_SHIFT)
-#define XMAP5_MODE_WORD_POPUP_FLAGS_SHIFT            14 /* unknown */
+#define XMAP5_MODE_WORD_POPUP_FLAGS_SHIFT            14 /* inferred */
 #define XMAP5_MODE_WORD_POPUP_FLAGS_MASK             0x3u
 #define XMAP5_MODE_WORD_POPUP_FLAGS_INPLACE (XMAP5_MODE_WORD_POPUP_FLAGS_MASK << XMAP5_MODE_WORD_POPUP_FLAGS_SHIFT)
-#define XMAP5_MODE_WORD_AUX_PAGE_SHIFT               9 /* inferred */
+#define XMAP5_MODE_WORD_AUX_PAGE_SHIFT               9 /* established */
 #define XMAP5_MODE_WORD_AUX_PAGE_MASK                0x1fu
 #define XMAP5_MODE_WORD_AUX_PAGE_INPLACE (XMAP5_MODE_WORD_AUX_PAGE_MASK << XMAP5_MODE_WORD_AUX_PAGE_SHIFT)
-#define XMAP5_MODE_WORD_UNDERLAY_ENABLE_SHIFT        8 /* inferred */
+#define XMAP5_MODE_WORD_UNDERLAY_ENABLE_SHIFT        8 /* established */
 #define XMAP5_MODE_WORD_UNDERLAY_ENABLE_MASK         0x1u
 #define XMAP5_MODE_WORD_UNDERLAY_ENABLE_INPLACE (XMAP5_MODE_WORD_UNDERLAY_ENABLE_MASK << XMAP5_MODE_WORD_UNDERLAY_ENABLE_SHIFT)
-#define XMAP5_MODE_WORD_POPUP_MODE_SHIFT             0 /* unknown */
+#define XMAP5_MODE_WORD_POPUP_MODE_SHIFT             0 /* inferred */
 #define XMAP5_MODE_WORD_POPUP_MODE_MASK              0xffu
 #define XMAP5_MODE_WORD_POPUP_MODE_INPLACE (XMAP5_MODE_WORD_POPUP_MODE_MASK << XMAP5_MODE_WORD_POPUP_MODE_SHIFT)
 

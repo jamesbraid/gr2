@@ -1,13 +1,13 @@
 // @generated from devices/xmap5/registers.toml by defs-gen - do not edit, change the source
 // SPDX-License-Identifier: BSD-3-Clause
 // defs-gen 5
-// input sha256 16b6070bb233d1af1da4ef209d70365aa464954f82eda820d7ca338b5819fb36
+// input sha256 6396c45c31f5677aa6472288571ce1b4f20590c64e4f4e0ac42d11174353cf35
 // XMAP5 multimode colour mapper (five per Express board)
 #![allow(dead_code)]
 #![allow(clippy::doc_markdown)]
 #![cfg_attr(rustfmt, rustfmt_skip)]
 
-/// Miscellaneous register file, written through one port after the address pair is set to 0. Init writes 0, 0, 0, 14, 0 in order, so the port auto-increm (inferred)
+/// Miscellaneous register file, written through one port after the address pair is set; the diagnostic sizes it at six bytes. Init writes 0, 0, 0, 14, 0  (inferred)
 pub mod misc {
     pub const WIDTH: u32 = 8;
     pub const OFFSET: u64 = 0x0;
@@ -77,10 +77,10 @@ pub mod fifostatus {
         }
     }
 }
-/// Mode table word, one per display ID, written through the mode port at byte address 4 * ID. Bit meaning is inferred: [binary] two points tie it to ship (inferred)
+/// Mode table word, one per display ID, written through the mode port at byte address 4 * ID. Field boundaries are [source] the IRIX diagnostic program's (established)
 pub mod mode_word {
     pub const WIDTH: u32 = 32;
-    pub mod pix_page { // bits 31:27, inferred
+    pub mod pix_page { // bits 31:27, established
         pub const SHIFT: u32 = 27;
         pub const MASK: u32 = 0x1f;
         pub const fn get(v: u32) -> u32 {
@@ -90,7 +90,7 @@ pub mod mode_word {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod pix_mode { // bits 26:24, inferred
+    pub mod pix_mode { // bits 26:24, established
         pub const SHIFT: u32 = 24;
         pub const MASK: u32 = 0x7;
         pub const fn get(v: u32) -> u32 {
@@ -100,7 +100,7 @@ pub mod mode_word {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod overlay_enable { // bits 23:20, inferred
+    pub mod overlay_enable { // bits 23:20, established
         pub const SHIFT: u32 = 20;
         pub const MASK: u32 = 0xf;
         pub const fn get(v: u32) -> u32 {
@@ -110,7 +110,7 @@ pub mod mode_word {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod alt_video { // bits 19:18, unknown
+    pub mod alt_video { // bits 19:18, established
         pub const SHIFT: u32 = 18;
         pub const MASK: u32 = 0x3;
         pub const fn get(v: u32) -> u32 {
@@ -120,7 +120,7 @@ pub mod mode_word {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod pd_mode { // bits 17:16, inferred
+    pub mod pd_mode { // bits 17:16, established
         pub const SHIFT: u32 = 16;
         pub const MASK: u32 = 0x3;
         pub const fn get(v: u32) -> u32 {
@@ -130,7 +130,7 @@ pub mod mode_word {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod popup_flags { // bits 15:14, unknown
+    pub mod popup_flags { // bits 15:14, inferred
         pub const SHIFT: u32 = 14;
         pub const MASK: u32 = 0x3;
         pub const fn get(v: u32) -> u32 {
@@ -140,7 +140,7 @@ pub mod mode_word {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod aux_page { // bits 13:9, inferred
+    pub mod aux_page { // bits 13:9, established
         pub const SHIFT: u32 = 9;
         pub const MASK: u32 = 0x1f;
         pub const fn get(v: u32) -> u32 {
@@ -150,7 +150,7 @@ pub mod mode_word {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod underlay_enable { // bits 8:8, inferred
+    pub mod underlay_enable { // bits 8:8, established
         pub const SHIFT: u32 = 8;
         pub const MASK: u32 = 0x1;
         pub const fn get(v: u32) -> u32 {
@@ -160,7 +160,7 @@ pub mod mode_word {
             (v & !(MASK << SHIFT)) | ((x & MASK) << SHIFT)
         }
     }
-    pub mod popup_mode { // bits 7:0, unknown
+    pub mod popup_mode { // bits 7:0, inferred
         pub const SHIFT: u32 = 0;
         pub const MASK: u32 = 0xff;
         pub const fn get(v: u32) -> u32 {

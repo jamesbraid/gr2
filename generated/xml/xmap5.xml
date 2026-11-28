@@ -2,14 +2,14 @@
 <!-- generated from devices/xmap5/registers.toml by defs-gen - do not edit, change the source -->
 <!-- SPDX-License-Identifier: BSD-3-Clause -->
 <!-- defs-gen 5 -->
-<!-- input sha256 16b6070bb233d1af1da4ef209d70365aa464954f82eda820d7ca338b5819fb36 -->
+<!-- input sha256 6396c45c31f5677aa6472288571ce1b4f20590c64e4f4e0ac42d11174353cf35 -->
 <genxml unit="xmap5" prefix="XMAP5" title="XMAP5 multimode colour mapper (five per Express board)">
   <doc>Per-pixel window-mode and colour-index mapper between the VC1 and the DACs. Five identical chips each handle one pixel in five; software addresses chip 0 to 4 through five 32-byte windows and all five at once through a broadcast window one step after chip 4 (addresses in the README), with the same eight-register layout in each window. Offsets here are within one window. Each register is one byte (the mode port is a word) on a 4-byte stride; a big-endian CPU addresses the first byte of the stride, so the data sits in the most significant lane. Grades: established means read in full in the shipped Indigo driver archive or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver, [vendor-derived] a fact that rests on the upstream headers and never supports an established grade. Nothing was read on a board. Prose in devices/xmap5/README.md.</doc>
   <struct name="MISC" size="1" grade="inferred" register="yes" offset="0x0" access="w" reset="unknown">
-    <doc>Miscellaneous register file, written through one port after the address pair is set to 0. Init writes 0, 0, 0, 14, 0 in order, so the port auto-increments over five internal registers (inferred from five writes to one address). Meaning of each is [vendor-derived] only: blackout red, green, blue; a four-bit overlay and popup page value; a cursor index. Reads never occur in shipped code.</doc>
+    <doc>Miscellaneous register file, written through one port after the address pair is set; the diagnostic sizes it at six bytes. Init writes 0, 0, 0, 14, 0 after address 0, so the port auto-increments (inferred from five writes to one address). [source] The diagnostic program's XMAP5 test and its header name the first three bytes the blackout red, green and blue, the byte at address 3 a popup page value and the byte at address 4 a cursor value (its colour test sets address 3 and writes those two in turn); the sixth byte is unnamed. The init writes 14 at address 3 and 0 at address 4, while the diagnostic uses 0 and 15. Reads never occur in shipped code.</doc>
   </struct>
   <struct name="MODE" size="4" grade="established" register="yes" offset="0x4" access="w" reset="unknown">
-    <doc>Mode table port. The target entry is chosen by addrlo (byte address 4 * display ID, addrhi 0) before each write; init writes entry 0 and the retrace and display-mode paths write one entry per call. Whether the address advances by 4 after a write is not shown (the driver sets it before every write). A qtest can discriminate: write 0x82000000 at address 0 through the broadcast window and read nothing back (no read path); write through the broadcast window and check all five chips were updated.</doc>
+    <doc>Mode table port. The target entry is chosen by addrlo (byte address 4 * display ID, addrhi 0) before each write; init writes entry 0 and the retrace and display-mode paths write one entry per call. The diagnostic program's mode-table test assumes a write advances the address by 4 (its own comment says to assume it); no shipped driver depends on it, since the driver sets the address before every write, so the advance is a software expectation and not shown by any shipped code. A qtest can discriminate: write 0x82000000 at address 0 through the broadcast window and read nothing back (no read path); write through the broadcast window and check all five chips were updated.</doc>
   </struct>
   <struct name="CLUT" size="1" grade="established" register="yes" offset="0x8" access="w" reset="unknown">
     <doc>Colour table data port. Entry n is selected by addrhi = (n &gt;&gt; 8) &amp; 0x1f and addrlo = n &amp; 0xff; three byte writes (red, green, blue) store one entry and the address then advances to the next entry (the init clear writes 7936 entries from address 256 without resetting the address). [binary] Writes while the status busy bit is set are avoided by the callers. A qtest can discriminate: set address 4096, write three bytes, set address 4096 again, write three more and check entry 4097 was not touched.</doc>
@@ -32,17 +32,17 @@
     <field name="room" start="1" size="1" type="uint" grade="established"/>
     <field name="busy" start="0" size="1" type="uint" grade="established"/>
   </struct>
-  <struct name="MODE_WORD" size="4" grade="inferred">
-    <doc>Mode table word, one per display ID, written through the mode port at byte address 4 * ID. Bit meaning is inferred: [binary] two points tie it to shipped code (the boot word 0x82000000 selects page 16 which is where the text port's colours live; the shipped X server builds words as page &lt;&lt; 27 | 0x800 | base, forces 0xf00000 when bit 8 is clear, and toggles bit 24 for the second buffer, read from an upstream decompilation not re-checked here); the remaining fields rest on [vendor-derived] notes.</doc>
-    <field name="pix_page" start="27" size="5" type="uint" grade="inferred"/>
-    <field name="pix_mode" start="24" size="3" type="uint" grade="inferred"/>
-    <field name="overlay_enable" start="20" size="4" type="uint" grade="inferred"/>
-    <field name="alt_video" start="18" size="2" type="uint" grade="unknown"/>
-    <field name="pd_mode" start="16" size="2" type="uint" grade="inferred"/>
-    <field name="popup_flags" start="14" size="2" type="uint" grade="unknown"/>
-    <field name="aux_page" start="9" size="5" type="uint" grade="inferred"/>
-    <field name="underlay_enable" start="8" size="1" type="uint" grade="inferred"/>
-    <field name="popup_mode" start="0" size="8" type="uint" grade="unknown"/>
+  <struct name="MODE_WORD" size="4" grade="established">
+    <doc>Mode table word, one per display ID, written through the mode port at byte address 4 * ID. Field boundaries are [source] the IRIX diagnostic program's XMAP5 test, which composes words from named fields (pixel mode, pixel page, data format, alternate video, overlay and underlay enables, auxiliary page, popup page, popup mode); they are cross-checked in [binary] by the boot word 0x82000000 (page 16, eight-bit bank 0, colour index: the text port's colours live at CLUT index 4096) and by the shipped X server, which builds words as page &lt;&lt; 27 | 0x800 | base, forces 0xf00000 when bit 8 is clear and sets or clears bit 24 for the second buffer (disassembly of expValidateMode). The role of each field is read from its name and how the diagnostic pairs values, so the roles are inferred where a field says so.</doc>
+    <field name="pix_page" start="27" size="5" type="uint" grade="established"/>
+    <field name="pix_mode" start="24" size="3" type="uint" grade="established"/>
+    <field name="overlay_enable" start="20" size="4" type="uint" grade="established"/>
+    <field name="alt_video" start="18" size="2" type="uint" grade="established"/>
+    <field name="pd_mode" start="16" size="2" type="uint" grade="established"/>
+    <field name="popup_flags" start="14" size="2" type="uint" grade="inferred"/>
+    <field name="aux_page" start="9" size="5" type="uint" grade="established"/>
+    <field name="underlay_enable" start="8" size="1" type="uint" grade="established"/>
+    <field name="popup_mode" start="0" size="8" type="uint" grade="inferred"/>
   </struct>
   <constant name="BOOT_MODE_WORD_DID0" value="0x82000000" grade="established"/>
   <constant name="CHIP_COUNT" value="0x5" grade="established"/>

@@ -1,7 +1,7 @@
 {
  "license": "BSD-3-Clause",
  "generator": "defs-gen 5",
- "input_sha256": "16b6070bb233d1af1da4ef209d70365aa464954f82eda820d7ca338b5819fb36",
+ "input_sha256": "6396c45c31f5677aa6472288571ce1b4f20590c64e4f4e0ac42d11174353cf35",
  "schema": "defs-flat/1",
  "source": "devices/xmap5/registers.toml",
  "profile": "public",
@@ -139,7 +139,7 @@
    "kind": "word",
    "name": "MODE_WORD",
    "width": 32,
-   "grade": "inferred"
+   "grade": "established"
   },
   {
    "unit": "xmap5",
@@ -147,7 +147,7 @@
    "name": "MODE_WORD.pix_page",
    "hi": 31,
    "lo": 27,
-   "grade": "inferred"
+   "grade": "established"
   },
   {
    "unit": "xmap5",
@@ -155,7 +155,7 @@
    "name": "MODE_WORD.pix_mode",
    "hi": 26,
    "lo": 24,
-   "grade": "inferred"
+   "grade": "established"
   },
   {
    "unit": "xmap5",
@@ -163,7 +163,7 @@
    "name": "MODE_WORD.overlay_enable",
    "hi": 23,
    "lo": 20,
-   "grade": "inferred"
+   "grade": "established"
   },
   {
    "unit": "xmap5",
@@ -171,7 +171,7 @@
    "name": "MODE_WORD.alt_video",
    "hi": 19,
    "lo": 18,
-   "grade": "unknown"
+   "grade": "established"
   },
   {
    "unit": "xmap5",
@@ -179,7 +179,7 @@
    "name": "MODE_WORD.pd_mode",
    "hi": 17,
    "lo": 16,
-   "grade": "inferred"
+   "grade": "established"
   },
   {
    "unit": "xmap5",
@@ -187,7 +187,7 @@
    "name": "MODE_WORD.popup_flags",
    "hi": 15,
    "lo": 14,
-   "grade": "unknown"
+   "grade": "inferred"
   },
   {
    "unit": "xmap5",
@@ -195,7 +195,7 @@
    "name": "MODE_WORD.aux_page",
    "hi": 13,
    "lo": 9,
-   "grade": "inferred"
+   "grade": "established"
   },
   {
    "unit": "xmap5",
@@ -203,7 +203,7 @@
    "name": "MODE_WORD.underlay_enable",
    "hi": 8,
    "lo": 8,
-   "grade": "inferred"
+   "grade": "established"
   },
   {
    "unit": "xmap5",
@@ -211,7 +211,7 @@
    "name": "MODE_WORD.popup_mode",
    "hi": 7,
    "lo": 0,
-   "grade": "unknown"
+   "grade": "inferred"
   },
   {
    "unit": "xmap5",

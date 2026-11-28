@@ -1,12 +1,12 @@
 """generated from devices/xmap5/registers.toml by defs-gen - do not edit, change the source
 SPDX-License-Identifier: BSD-3-Clause
 defs-gen 5
-input sha256 16b6070bb233d1af1da4ef209d70365aa464954f82eda820d7ca338b5819fb36
+input sha256 6396c45c31f5677aa6472288571ce1b4f20590c64e4f4e0ac42d11174353cf35
 XMAP5 multimode colour mapper (five per Express board)"""
 
 UNIT = 'xmap5'
 REGISTERS = {'misc': {'offset': 0, 'access': 'w', 'width': 8, 'count': 1, 'stride': 1, 'space': None, 'reset': 'unknown', 'grade': 'inferred'}, 'mode': {'offset': 4, 'access': 'w', 'width': 32, 'count': 1, 'stride': 4, 'space': None, 'reset': 'unknown', 'grade': 'established'}, 'clut': {'offset': 8, 'access': 'w', 'width': 8, 'count': 1, 'stride': 1, 'space': None, 'reset': 'unknown', 'grade': 'established'}, 'crc': {'offset': 12, 'access': 'rw', 'width': 8, 'count': 1, 'stride': 1, 'space': None, 'reset': 'unknown', 'grade': 'unknown'}, 'addrlo': {'offset': 16, 'access': 'rw', 'width': 8, 'count': 1, 'stride': 1, 'space': None, 'reset': 'unknown', 'grade': 'established'}, 'addrhi': {'offset': 20, 'access': 'rw', 'width': 8, 'count': 1, 'stride': 1, 'space': None, 'reset': 'unknown', 'grade': 'established'}, 'bytecount': {'offset': 24, 'access': 'rw', 'width': 8, 'count': 1, 'stride': 1, 'space': None, 'reset': 'unknown', 'grade': 'unknown'}, 'fifostatus': {'offset': 28, 'access': 'r', 'width': 8, 'count': 1, 'stride': 1, 'space': None, 'reset': 'unknown', 'grade': 'established'}}
-WORDS = {'MODE_WORD': {'width': 32, 'grade': 'inferred'}}
+WORDS = {'MODE_WORD': {'width': 32, 'grade': 'established'}}
 FIELDS = {'misc': {}, 'mode': {}, 'clut': {}, 'crc': {}, 'addrlo': {}, 'addrhi': {}, 'bytecount': {}, 'fifostatus': {'overflow': (2, 2), 'room': (1, 1), 'busy': (0, 0)}, 'MODE_WORD': {'pix_page': (31, 27), 'pix_mode': (26, 24), 'overlay_enable': (23, 20), 'alt_video': (19, 18), 'pd_mode': (17, 16), 'popup_flags': (15, 14), 'aux_page': (13, 9), 'underlay_enable': (8, 8), 'popup_mode': (7, 0)}}
 ENUMS = {}
 FIELD_ENUM = {}
