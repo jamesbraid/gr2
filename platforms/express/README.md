@@ -86,7 +86,7 @@ inverted byte at base `+0x6c000`; zero means no board. The same two facts, re-re
 
 The register reads in `Gr2Probe` are byte loads at `+0x6c000`, `+0x6c004`, `+0x6c008`, `+0x6c00c`, so the data sits in the most significant
 byte lane of each word on this big-endian host, while NetBSD masks low bits of a word read. Which is right is a question for
-the hardware contract: see [questions](../../questions/README.md). For a little-endian CPU see [host contract section 12](host-contract.md#12-a-little-endian-cpu-on-the-gio32-bus).
+the hardware contract: see [questions](../../questions/README.md). For a little-endian CPU see [host contract section 12](host-contract.md#12-a-little-endian-cpu-on-the-gio32-bus). The Indy XZ and Elan board schematics were read for the port lanes and do not settle it ([what the port sheets show](host-contract.md#what-the-vb-3-and-gr-4-port-sheets-show)).
 
 The 2D tokens the X server sends (rectangles, spans, copies, image transfers, clip IDs) are in [x-server-tokens.md](x-server-tokens.md); the GL stream is in [icd-sequences.md](icd-sequences.md).
 
