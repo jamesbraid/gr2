@@ -134,7 +134,7 @@ names with their `__glExp` prefix dropped; `im:` and `le:` are the immediate-mod
 
 | Offset | Slot | GL functions | Operand words | GE routine |
 |---|---|---|---|---|
-| `+0x42000` | 0 | SwapToPipe4 (see Review: the base address, not a stored token) | 0 | 30 |
+| `+0x42000` | 0 | none stored; the window base, not a token (see Review). GE7 30 is the RE3 reset set, not a buffer swap ([arithmetic](arithmetic.md#set-up-and-the-hand-off)) | 0 | 30 |
 | `+0x4200c` | 3 | SetPixWritemask | 0 | 1607 |
 | `+0x42010` | 4 | MakeCurrent | 1 | 1628 |
 | `+0x42018` | 6 | Flush, MakeCurrent | 1 | 2797 |
