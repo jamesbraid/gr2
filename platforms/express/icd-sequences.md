@@ -4,11 +4,11 @@ What the shipped IRIX OpenGL core writes to the Express board for a fresh contex
 
 ## Sources and grades
 
-- **GL core.** `usr/gfx/arch/IP12GR232/libGLcore.so` of the IRIX 6.5 base set (n32, SHA-256 `8dd07de07edd28b6fa0680e72026ba34847bb488f0ccbab1b0cc045c5e6fc741`, DWARF kept). Addresses below are its virtual addresses. The committed listing under `libglcore/asm/EXPRESS` and the m2c output under `libglcore/decomp/EXPRESS` are from this file: the function addresses and the instruction words checked here (`MakeCurrent`, `SwapBuffers`, `Finish`, `GetBoardInfo` and the slot sequences of the state, lighting, clear and pixel routines) agree with it. Both listings misname calls made through an offset from a global-table entry (`addiu t9` after a table load shows as the nearest symbol, and m2c drops some of them), so every call target below was read from the machine code, and the store counts were taken with [tools/gl-fifo-stores.py](../../tools/gl-fifo-stores.py) over the same file.
+- **GL core.** `usr/gfx/arch/IP12GR232/libGLcore.so` of the IRIX 6.5 base set (n32, SHA-256 `8dd07de07edd28b6fa0680e72026ba34847bb488f0ccbab1b0cc045c5e6fc741`, DWARF kept). Addresses below are its virtual addresses. The committed listing under `libglcore/asm/EXPRESS` and the m2c output under `libglcore/decomp/EXPRESS` are from this file: the function addresses and the instruction words checked here (`MakeCurrent`, `SwapBuffers`, `Finish`, `GetBoardInfo` and the slot sequences of the state, lighting, clear and pixel routines) agree with it. Both listings misname calls made through an offset from a global-table entry. The committed listing has `bal __glExpIoctl` for the `GetBoardInfo` call in `MakeCurrent` (step 4 below), whose target is `GetBoardInfo` at 0x0da58604, reached as `t9` = the word at gp-0x7fe8 (0x0da60000) plus -31228; m2c drops some of them. So every call target below was read from the machine code, and the store counts were taken with [tools/gl-fifo-stores.py](../../tools/gl-fifo-stores.py) over the same file.
 - **Kernel.** `gr2.o` and `gr2_retrace.o` of the committed IP12 disassembly (`gr2_kernel/disasm`), offsets are `.text` offsets in those objects; the IP20 archive readings in [host-contract.md](host-contract.md) agree on every slot number used here. `rrm.o` and `gfx.o` are not read; their roles come from the shipped headers `sys/gfx.h` and `sys/rrm.h` (the board function table and the `RRM_*` request numbers).
 - **Microcode pair.** The 6.5 `hq2.bin` and `ge7.bin`. The 5.3 and 6.2 images take different operand counts for some slots ([pipeline.md](pipeline.md#slot-261-the-raster-position-token)); do not mix a core with another release's images.
 
-Grades as in [AGENTS.md](../../AGENTS.md): **established** is a store, call or constant read at the address given; **inferred** is a role or an order reasoned from the code; **unknown** says what would settle it. Everything is what software sends. Nothing here is a hardware measurement.
+Grades as in [AGENTS.md](../../AGENTS.md): **established** only for what was read in full (a whole function body or table, or a whole passage); a reading built from call lists, register-store summaries or a name is **inferred**; **unknown** says what would settle it. Everything is what software sends. Nothing here is a hardware measurement.
 
 Notation. Offsets are relative to the board window; the FIFO is `+0x40000` to `+0x5ffff`. `[+0x42018] <- 0` is one 32-bit store. `[+0x48608] <- r, g, b` is three consecutive stores to the same address (what the immediate-mode entry points do for a colour, normal or vertex). `D` is the data port `+0x4277c` (slot 479). The core addresses the window with absolute low addresses (`lui 4; ori 0x2018`, base register zero), so the process has the board mapped at virtual address 0 (established); that the kernel's `Gr2MapGfx` does it is inferred.
 
@@ -33,15 +33,15 @@ Notation. Offsets are relative to the board window; the FIFO is `+0x40000` to `+
 | 7 | `InitBuffers`: builds the colour, depth and stencil buffer method tables; no store to the window | 0x0da59844 | established |
 | 8 | `__glMakeCurrentBuffers` (it leaves the displayed-buffer index at context +0x7b48), then `[+0x42018] <- 0` and `[+0x4279c] <- that index` | 0x0da59b3c to 0x0da59b60 | established; the pair's meaning: unknown (slot 6 is also what `Flush` writes, slot 487 is what a swap writes) |
 | 9 | `InitFnPtrs`: installs the immediate-mode, display-list and picking procedure tables; no store to the window | 0x0da5958c | established |
-| 10 | `__glFindWindowSize`, then `__glExpUpdateViewport`: `[+0x420ec] <- 1.0f`; `D <- x, x+w-1, y, y+h-1, zScale, zCenter` (floats; viewport rectangle and the depth-range scale and centre) | 0x0da589f0 | established stores; word roles: inferred |
-| 11 | `__glExpPassMachineState`: `[+0x4a608] <- r, g, b, a` (RGB; colour index sends `[+0x4e3f8] <- index`); `[+0x42434] <- nx, ny, nz`; `[+0x42414] <- valid flag`, then `D <-` window x, y, z, eye z, clip w, and four colour floats each multiplied by 0.99609375 (255/256); `[+0x423d8] <- edge flag` | 0x0da5912c, 0x0da65070 | established |
-| 12 | `__glExpInitPrimDispatchState` (no store); `__glExpInitLighting`: `[+0x42214] <- 7.0f, 1.0f`, then `<- 2.0f, 0.0f` (RGB; colour index adds the material block first), then `__glExpUpdateLightingState`: `[+0x42200] <- 4.0f, -1.0f, 10.0f, 0.0f` and the two full material blocks (section 2.2), then `__glExpValidateColorMaterial`: `[+0x42204] <- 0, 0, 0` | 0x0da60764, 0x0da5f37c, 0x0da5f1c0, 0x0da5ed44 | established stores; meaning of the (code, argument) float pairs: unknown |
+| 10 | `__glFindWindowSize`, then `__glExpUpdateViewport`: `[+0x420ec] <- 1.0f`; `D <- x, x+w-1, y, y+h-1, zScale, zCenter` (floats; viewport rectangle and the depth-range scale and centre) | 0x0da589f0 | inferred stores; word roles: inferred |
+| 11 | `__glExpPassMachineState`: `[+0x4a608] <- r, g, b, a` (RGB; colour index sends `[+0x4e3f8] <- index`); `[+0x42434] <- nx, ny, nz`; `[+0x42414] <- valid flag`, then `D <-` window x, y, z, eye z, clip w, and four colour floats each multiplied by 0.99609375 (255/256); `[+0x423d8] <- edge flag` | 0x0da5912c, 0x0da65070 | inferred |
+| 12 | `__glExpInitPrimDispatchState` (no store); `__glExpInitLighting`: `[+0x42214] <- 7.0f, 1.0f`, then `<- 2.0f, 0.0f` (RGB; colour index adds the material block first), then `__glExpUpdateLightingState`: `[+0x42200] <- 4.0f, -1.0f, 10.0f, 0.0f` and the two full material blocks ([lighting and material](#22-lighting-and-material)), then `__glExpValidateColorMaterial`: `[+0x42204] <- 0, 0, 0` | 0x0da60764, 0x0da5f37c, 0x0da5f1c0, 0x0da5ed44 | inferred stores; meaning of the (code, argument) float pairs: unknown |
 | 13 | `__glExpInitPixelState` (no store the tracking finds), then the context's validate procedure (offset 0x2e10, the generic validator), which reaches `__glExpPickAllProcs` (installed at +0x2e64 by `InitFnPtrs`); that calls `__glExpValidateLighting` when the lighting dirty bits (0x21) are set | 0x0da645e8, 0x0da61800, 0x0da59e6c | established that each is called; the generic validator was not read, so the chain between them is inferred |
 | 14 | `__glContextSetColorScales`, `__glExpLoadPrimDispatchVectors` (software) | 0x0da59ba8 | established |
-| 15 | If the context's hardware-state flag (+0x7b4c) is 0: `__glExpUpdateHardwareState`, the full state send of section 2.1, which sets the flag to 1 | 0x0da58f08 | established |
+| 15 | If the context's hardware-state flag (+0x7b4c) is 0: `__glExpUpdateHardwareState`, the [full state send](#21-what-the-full-send-contains), which sets the flag to 1 | 0x0da58f08 | established |
 | 16 | `gcState := (gcState \| 3) & ~4` | 0x0da59c28 | established |
 
-Before step 1 the board has to be running: the PROM or kernel console images replaced by the full pair, `GFX_START` done ([host-contract.md](host-contract.md#13-what-a-driver-loads-in-order-and-who-loads-what), steps 5 to 8). Nothing in the core writes the microstore, the HQ2 registers or the RE3 registers (established, [pipeline.md](pipeline.md)); the only host-visible register the core touches outside the FIFO is the read-back status `+0x6c040` and its acknowledge `+0x6d000` (sections 4 to 6).
+Before step 1 the board has to be running: the PROM or kernel console images replaced by the full pair, `GFX_START` done ([host-contract.md](host-contract.md#13-what-a-driver-loads-in-order-and-who-loads-what), steps 5 to 8). Nothing in the core writes the microstore, the HQ2 registers or the RE3 registers (established, [pipeline.md](pipeline.md)); the only host-visible register the core touches outside the FIFO is the read-back status `+0x6c040` and its acknowledge `+0x6d000` (see [swap, flush and finish](#4-swap-flush-and-finish) through [the context switch](#6-what-the-board-expects-across-a-context-switch)).
 
 A second make-current of a context that already has `gcState` 3 skips steps 2 to 4, 6, 7, 9, 11 to 13 and 15. It repeats step 5, then `[+0x42018] <- 0`, `[+0x4279c] <- displayed-buffer index` and the viewport block of step 10 (established, 0x0da59b24 to 0x0da59b98 and the branch at 0x0da59bbc). So a context switch inside one process resends the buffer selection and the viewport and nothing else.
 
@@ -53,24 +53,24 @@ A second make-current of a context that already has `gcState` 3 skips steps 2 to
 
 | Routine | Stores | Grade |
 |---|---|---|
-| `PassDrawBuffer`: `SetPixWritemask`, `SetReadSource` | with aux buffers `[+0x4200c] <- mask; [+0x4242c] <- 0, 0`, otherwise `[+0x4200c] <- 0; [+0x4242c] <- front mask, back mask`; `[+0x42428] <- 4 words` | established; mask packing for 4, 8, 12, 16 and 24-bit colour is in `SetPixWritemask` (0x0da58b58) |
-| `EnableDither` | `[+0x42044] <- 0 or 1` | established; role inferred |
-| `PassBlendFunc`, `EnableBlendFunc`, `PassLogicOp`, `EnableLogicOp` | `[+0x42098] <- mode; [+0x42094] <- 3 words`; `[+0x42068] <- logic op` (3, copy, when off) | established count; factor codes: unknown ([arithmetic.md](arithmetic.md#mode-word-fields)) |
-| `PassColorMask`, `PassIndexMask` | `SetPixWritemask` again | established |
-| `PassColor`, `PassIndex`, `PassNormal`, `PassRasterPosData`, `PassEdgeFlag` | the same words as step 11 of section 1.2 | established |
-| `PassDepthFunc`, `PassDepthMask`, `EnableDepthTest` | `[+0x42090] <- func & 7`; `[+0x42028] <- depth mask or 0`; `[+0x42050] <- 1 or 0` (1 only with a board Z buffer and the test enabled), then the mask word again | established |
-| `EnableFog`, `PassFog` | `[+0x4209c] <- 0 or 1`; `[+0x420a0] <-` 18 words | established count; layout: unknown |
-| `PassShadeModel` | `[+0x4204c] <- 1` (smooth) or `0` (flat) | established |
-| `UpdateLightingState` | `[+0x42200] <- 4.0f, -1.0f, 10.0f, 0.0f`, then both material blocks (2.2) and the colour-material word | established |
-| `PassLineWidth`, `PassLineStipple`, `EnableLineStipple`, `EnableLineSmooth`, `EnablePointSmooth` | slots 23, 22 and 24, 34, 33 | established |
-| `PassCullFace`, `EnableCullFace`, `PassFrontFace`, `EnablePolygonStipple`, `PassPolygonMode`, `PassPolygonOffset` | `[+0x4206c] <- front cull, [+0x42070] <- back cull`; `[+0x42420] <- 1 (CCW) or 0`; `[+0x42078] <- 0` or the stipple at `+0x4207c`; `[+0x42388] <- 1 fill, 2 point, 3 line`; `[+0x42390] <- factor, units * depth scale` (both 0.0f when off) | established |
+| `PassDrawBuffer`: `SetPixWritemask`, `SetReadSource` | with aux buffers `[+0x4200c] <- mask; [+0x4242c] <- 0, 0`, otherwise `[+0x4200c] <- 0; [+0x4242c] <- front mask, back mask`; `[+0x42428] <- 4 words` | inferred; mask packing for 4, 8, 12, 16 and 24-bit colour is in `SetPixWritemask` (0x0da58b58) |
+| `EnableDither` | `[+0x42044] <- 0 or 1` | inferred; role inferred |
+| `PassBlendFunc`, `EnableBlendFunc`, `PassLogicOp`, `EnableLogicOp` | `[+0x42098] <- mode; [+0x42094] <- 3 words`; `[+0x42068] <- logic op` (3, copy, when off) | inferred count; factor codes: unknown ([arithmetic.md](arithmetic.md#mode-word-fields)) |
+| `PassColorMask`, `PassIndexMask` | `SetPixWritemask` again | inferred |
+| `PassColor`, `PassIndex`, `PassNormal`, `PassRasterPosData`, `PassEdgeFlag` | the same words as step 11 of [the first make-current](#12-first-make-current) | inferred |
+| `PassDepthFunc`, `PassDepthMask`, `EnableDepthTest` | `[+0x42090] <- func & 7`; `[+0x42028] <- depth mask or 0`; `[+0x42050] <- 1 or 0` (1 only with a board Z buffer and the test enabled), then the mask word again | inferred |
+| `EnableFog`, `PassFog` | `[+0x4209c] <- 0 or 1`; `[+0x420a0] <-` 18 words | inferred count; layout: unknown |
+| `PassShadeModel` | `[+0x4204c] <- 1` (smooth) or `0` (flat) | inferred |
+| `UpdateLightingState` | `[+0x42200] <- 4.0f, -1.0f, 10.0f, 0.0f`, then both material blocks ([lighting and material](#22-lighting-and-material)) and the colour-material word | inferred |
+| `PassLineWidth`, `PassLineStipple`, `EnableLineStipple`, `EnableLineSmooth`, `EnablePointSmooth` | slots 23, 22 and 24, 34, 33 | inferred |
+| `PassCullFace`, `EnableCullFace`, `PassFrontFace`, `EnablePolygonStipple`, `PassPolygonMode`, `PassPolygonOffset` | `[+0x4206c] <- front cull, [+0x42070] <- back cull`; `[+0x42420] <- 1 (CCW) or 0`; `[+0x42078] <- 0` or the stipple at `+0x4207c`; `[+0x42388] <- 1 fill, 2 point, 3 line`; `[+0x42390] <- factor, units * depth scale` (both 0.0f when off) | inferred |
 | two indirect calls through the context, at +0x3178 (after `PassPolygonOffset`) and +0x2e8c (before `PassStencilMode`) | not resolved | unknown |
-| `PassStencilMode`, `EnableStencilTest`, `PassStencilMask` | slots 15, 15, 16 (8, 7 and 2 words) | established count |
-| `UpdateMatrixState` | `[+0x420dc] <-` 16 modelview floats, `[+0x420e0] <-` 16 projection floats, `[+0x420e8] <-` 16 texture floats | established |
-| `EnableClipPlanes`, `PassClipPlanes`, `EnableNormalize` | `[+0x420b8] <- 2 words`, `[+0x420bc] <- 5 words` per plane; `[+0x4238c] <- 0 or 1` and `[+0x42208] <- 0 or 1` | established |
+| `PassStencilMode`, `EnableStencilTest`, `PassStencilMask` | slots 15, 15, 16 (8, 7 and 2 words) | inferred count |
+| `UpdateMatrixState` | `[+0x420dc] <-` 16 modelview floats, `[+0x420e0] <-` 16 projection floats, `[+0x420e8] <-` 16 texture floats | inferred |
+| `EnableClipPlanes`, `PassClipPlanes`, `EnableNormalize` | `[+0x420b8] <- 2 words`, `[+0x420bc] <- 5 words` per plane; `[+0x4238c] <- 0 or 1` and `[+0x42208] <- 0 or 1` | inferred |
 | one more indirect call through the context at +0x2e90, then the hardware-state flag := 1 | not resolved | unknown |
 
-`UpdateMatrixState` does not send the normal matrix (`+0x420e4`, nine floats); only `__glExpPassMatrix` does, when the modelview matrix changes (section 2.3). Whether a fresh context needs it before its first lit primitive, or the microcode derives it, is unknown.
+`UpdateMatrixState` does not send the normal matrix (`+0x420e4`, nine floats); only `__glExpPassMatrix` does, when the modelview matrix changes ([what a lit triangle changes after that](#23-what-a-lit-triangle-changes-after-that)). Whether a fresh context needs it before its first lit primitive, or the microcode derives it, is unknown.
 
 ### 2.2 Lighting and material
 
@@ -93,20 +93,20 @@ then `[+0x4220c] <- 0.0f`. A specular exponent change builds a lookup table in m
 
 Established: the addresses and the stores. Unknown: what the pair codes (3.0 to 10.0, 18 to 23, 31) select.
 
-A spot light, once per context, also asks the kernel for a 0x400-byte saved-state buffer: `ioctl(fd, 0x3aa7, {4})` at 0x0da5e930 (`Gr2AllocCXData`, section 7). Established.
+A spot light, once per context, also asks the kernel for a 0x400-byte saved-state buffer: `ioctl(fd, 0x3aa7, {4})` at 0x0da5e930 (`Gr2AllocCXData`, [the kernel side](#62-in-the-kernel)). Established.
 
 ### 2.3 What a lit triangle changes after that
 
 | GL call | Sent | Where | Grade |
 |---|---|---|---|
 | `glShadeModel(GL_SMOOTH or GL_FLAT)` | `[+0x4204c] <- 1 or 0`; the arithmetic note puts the flat flag in RE3 mode word `0x63` bit 15 | `__glExpPassShadeModel` 0x0da671c4 | established; effect: inferred |
-| `glEnable/glDisable(GL_LIGHTING)`, `glEnable(GL_LIGHTn)`, `glLight*` | no store from the enable routine (`__glExpEnableLighting` only frees lookup tables); the next validate sends 2.2 | 0x0da61800 | established for the enable routine, inferred for the rest |
+| `glEnable/glDisable(GL_LIGHTING)`, `glEnable(GL_LIGHTn)`, `glLight*` | no store from the enable routine (`__glExpEnableLighting` only frees lookup tables); the next validate sends [the material blocks](#22-lighting-and-material) | 0x0da61800 | established for the enable routine, inferred for the rest |
 | `glMaterial*`, `glColorMaterial` | `ValidateMaterial` for the changed property bits and `ValidateColorMaterial` | 0x0da5e990 | established |
 | `glLightModel*` | `LoadLightPath` and `LoadAmbientSum` | 0x0da5e460 | inferred (call sites) |
 | `glMatrixMode`, `glLoadMatrix`, `glMultMatrix`, `glTranslate`, `glRotate`, `glScale`, `glFrustum`, `glOrtho` | `__glExpPassMatrix` (0x0da6c064): modelview `[+0x420dc] <-` 16, then (after recomputing the inverse transpose if stale) `[+0x420e4] <-` 9 floats; projection `[+0x420e0] <-` 16 floats and, with clip planes on, the clip planes again; texture `[+0x420e8] <-` 16 | | established |
-| `glViewport`, `glDepthRange`, `glScissor` | the viewport block of 1.2 step 10; scissor `[+0x420f0] <- x0; D <- y0, x1, y1` (0 to 0x7ff when off) | 0x0da589f0, 0x0da58af0 | established |
+| `glViewport`, `glDepthRange`, `glScissor` | the viewport block of [step 10 of the first make-current](#12-first-make-current); scissor `[+0x420f0] <- x0; D <- y0, x1, y1` (0 to 0x7ff when off) | 0x0da589f0, 0x0da58af0 | established |
 | `glEnable(GL_NORMALIZE)` | `[+0x4238c], [+0x42208] <- 1` | 0x0da6be7c | established |
-| depth test, cull, polygon mode, blend | the routines of 2.1 | | established |
+| depth test, cull, polygon mode, blend | the [full state send](#21-what-the-full-send-contains) routines | | established |
 
 ### 2.4 The primitive
 
@@ -131,7 +131,7 @@ A spot light, once per context, also asks the kernel for a 0x400-byte saved-stat
 3. Stencil (`Clear` 0x0da6adbc): `[+0x42284] <- value; D <- second word`.
 4. Depth alone (`Clear` 0x0da5a578): `[+0x42044] <- 0` when dither is on, `[+0x5c280] <- 0; D <- clear depth scaled by the depth range, 0`, then `[+0x42044] <- 1`.
 
-Colour index uses the `+0xe410` forms (`[+0x4e410]`, `[+0x5e280]`). All established from the routines' stores; the meaning of the dither bracket (the board must not dither a clear) is inferred. There is no completion wait: the clear is ordered by the FIFO.
+Colour index uses the `+0xe410` forms (`[+0x4e410]`, `[+0x5e280]`). Inferred from the routines' stores; the meaning of the dither bracket (the board must not dither a clear) is inferred. There is no completion wait: the clear is ordered by the FIFO.
 
 ## 4. Swap, flush and finish
 
@@ -170,13 +170,13 @@ Established stores and loop shape (the m2c reading of the loops is partial; the 
 
 ### 6.1 In the GL core
 
-`LoseCurrent` (0x0da59508) stores nothing to the window. It returns early without detaching when the context is not in `GL_RENDER` mode or is inside `glBegin`; otherwise it calls `__glLoseCurrentBuffers`, saves the begin-mode word and clears the current-context pointer. The core therefore never saves or restores board state itself; the next `MakeCurrent` resends only 1.2 step 5, the buffer pair and the viewport (established). A driver that makes two contexts current in turn on one board must rely on the board's own saved context, not resend.
+`LoseCurrent` (0x0da59508) stores nothing to the window. It returns early without detaching when the context is not in `GL_RENDER` mode or is inside `glBegin`; otherwise it calls `__glLoseCurrentBuffers`, saves the begin-mode word and clears the current-context pointer. The core therefore never saves or restores board state itself; the next `MakeCurrent` resends only [step 5 of the first make-current](#12-first-make-current), the buffer pair and the viewport (established). A driver that makes two contexts current in turn on one board must rely on the board's own saved context, not resend.
 
 ### 6.2 In the kernel
 
-The kernel never copies board state. It queues dump and load commands and DMAs the result with the MC. Facts below are from `Gr2PcxSwap` (`gr2.o` `.text` 0x275c to about 0x3200) and `_Gr2CXSaveRestore` (0x253c); host-contract section 2 holds the IP20 reading and the token numbers.
+The kernel never copies board state. It queues dump and load commands and DMAs the result with the MC. Facts below are from `Gr2PcxSwap` (`gr2.o` `.text` 0x275c to about 0x3200) and `_Gr2CXSaveRestore` (0x253c); [the host contract](host-contract.md#2-context-save-and-swap-_gr2cxsaverestore-gr2pcxswap) holds the IP20 reading and the token numbers.
 
-1. A render node (`Gr2CreateDDRN`) gets a 0x74-byte record with the context type and size class (0 or 2, from the node's group; the size class changes through private request 0x3aa3, `Gr2ChangeCXSize`, which invalidates the node's mapping). Extra save buffers are added with private request 0x3aa7 (`Gr2AllocCXData`): bit 1 of the mask gives a 0x12c0-byte buffer, bit 2 a 0x400-byte one, bit 3 another 0x400. The one sender in the GL core is the spot-light path of 2.2 (mask 4).
+1. A render node (`Gr2CreateDDRN`) gets a 0x74-byte record with the context type and size class (0 or 2, from the node's group; the size class changes through private request 0x3aa3, `Gr2ChangeCXSize`, which invalidates the node's mapping). Extra save buffers are added with private request 0x3aa7 (`Gr2AllocCXData`): bit 1 of the mask gives a 0x12c0-byte buffer, bit 2 a 0x400-byte one, bit 3 another 0x400. The one sender in the GL core is the spot-light path of [lighting and material](#22-lighting-and-material) (mask 4).
 2. Switch: take the graphics lock (`gfx_waitc_on`); save the outgoing context: its finish-flag bit (status bit 0) into its record, then for each valid buffer (record flags, bits 0 to 3) `_Gr2CXSaveRestore` with token 483 and the buffer number: `dmasync` := 2, `fin2` := 0, token, DMA board to memory, wait for status bit 1 (1,000,000 us limit; failure prints a timeout and calls `gr2_error`).
 3. Load the incoming context: `fin2` := 0; `[+0x407c0] <- render-node index`; `D <- context type, size class`; wait for status bit 1 (`.text` 0x27e8 to 0x2800); per valid buffer token 484 and the DMA the other way; then the per-window set-up when the window changed: `[+0x40794] <-` window box, `D <-` the clip rectangle words, `[+0x40780] <-` flag, `[+0x40798] <-` flag; and a store to `+0x40004` (slot 1) at `.text` 0x30b8, at the exit of the clip-rectangle loop, value not tracked (the IP20 objects in [pipeline.md](pipeline.md) show no sender for slot 1; this IP12 object does).
 4. Restore the saved finish-flag bit to `finish3`; drop the lock.
