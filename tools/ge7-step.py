@@ -7,9 +7,11 @@
   ge7-step.py step IMG START [--take A,B,..] [--limit N]   walk from START; one line per branch, RE3 write, immediate or stall
   ge7-step.py paths IMG FROM TO --avoid A,B,..             every taken/not-taken assignment of the cond 1-8 branches that
                                                            reaches TO from FROM without executing an --avoid word
-  ge7-step.py run IMG START [--slot N=V,..] [--steps N] [--bus V]
+  ge7-step.py run IMG START [--slot N=V,..] [--steps N] [--bus V] [--unknown-lines low|high]
                                                            data-flow run of one engine: RAM0 input slots, the image's constants block,
-                                                           branches resolved from the decoded flags; prints RE writes and shared stores
+                                                           branches resolved from the decoded flags; prints RE writes and shared stores.
+                                                           A branch on a flag line no known answer fixes stops the run unless --unknown-lines
+                                                           assumes the line low or high
   ge7-step.py selftest IDE [PROM [GE7 [HQ2 [PROM4.0.5G [GE7-5.3 [HQ2-5.3 [IDE-IP12 [IDE-5.3 [GR2_TPUCODE.O]]]]]]]]
                                                            regression: the diagnostic known answers, and with the 4.0.5D PROM the console tokens,
                                                            with the full ge7.bin the statistics over all words, with the full hq2.bin the routine starts,
@@ -151,6 +153,13 @@ class Engine:
         low bit and six mantissa bits (bits 23:17). The value sits in bits 22:16; the other bits are not fixed by any known answer."""
         return (SEED[rb >> 16 & 0x7f] if sel == 4 else SQRT[rb >> 17 & 0x7f]) << 16
 
+    UNKNOWN = None                                 # value of a flag line no known answer fixes: None raises, True or False assumes it
+
+    def line(self, brc, flags):
+        if brc in LINES: return LINES[brc](flags)
+        if self.UNKNOWN is None: raise KeyError(brc)
+        return self.UNKNOWN
+
     def src(self, d, sel, side):
         h = self.hist
         return {0: lambda: self.ram0.get(d['ram0'], 0), 1: lambda: self.ram1.get(d['ram1'], 0),
@@ -190,7 +199,7 @@ class Engine:
             if stalled: return
             c = d['cond']
             if c == 10 and not d['tgt']: stalled = True
-            take = c in (1, 5) or (c in (3, 4, 7, 8) and (force[a] if force else len(h) > 2 and LINES[d['brc']](h[-3][1])))
+            take = c in (1, 5) or (c in (3, 4, 7, 8) and (force[a] if force and a in force else len(h) > 2 and self.line(d['brc'], h[-3][1])))
             a = d['tgt'] if 1 <= c <= 8 and take else a + 1
 
 def ints(s): return {int(x, 0) for x in s.split(',') if x}
@@ -323,6 +332,23 @@ def selftest(ide, prom=None, full=None, hq=None, promg=None, full53=None, hq53=N
         c11 = [w for w in F.values() if dec(w)['cond'] == 11]
         check('full ge7.bin: %d of %d cond 11 words write RE3 address 0x5f (the flush)' % (sum(dec(w)['re'] == 0x5f for w in c11), len(c11)),
               len(c11) == 14 and sum(dec(w)['re'] == 0x5f for w in c11) == 13)
+        # State tokens write RE3 mode words by read-modify-write (arithmetic.md, mode-word fields); probed on a zero state.
+        KF, fb = constants(full.read_bytes()), Engine.UNKNOWN
+        Engine.UNKNOWN = False
+        def re_of(start, slots):
+            e = Engine(F, KF, slots, 0); e.run(start, 200); return {a: v for _, a, v in e.re}
+        want = [(1607, {0: 5}, 0x62, 5), (1655, {0: 5}, 0x63, 5), (1662, {0: 1}, 0x63, 1 << 19), (2736, {0: 1}, 0x63, 1 << 21), (2720, {1: 5, 2: 3}, 0x63, 5 << 4 | 3 << 7),
+                (1736, {0: 5}, 0x65, 5), (1713, {0: 1}, 0x65, 1 << 10), (2169, {0: 5}, 0x61, 5),
+                (2137, dict(enumerate((1, 5, 3, 9, 3, 2, 1))), 0x66, 1 << 23 | 5 | 3 << 4 | 9 << 7 | 3 << 11 | 2 << 14 | 1 << 17)]
+        got = [re_of(a, sl).get(r) for a, sl, r, _ in want]
+        check('full ge7.bin: state tokens write RE3 mode word fields (logic op, blend, dither, depth, stencil) at the documented bit positions (%d of %d)'
+              % (sum(g == w[3] for g, w in zip(got, want)), len(want)), got == [w[3] for w in want])
+        # Clear (25322) multiplies the host colour by state word 0xfc before writing RE3 0x40 to 0x42.
+        e = Engine(F, KF, {3: f2b(0.5), 4: f2b(0.25), 5: f2b(0.5)}, 0); e.state[0xfc] = f2b(2.0 ** 19); e.run(25368, 16)
+        out = {a: v for _, a, v in e.re}
+        check('full ge7.bin: Clear writes colour 0.5, 0.25, 0.5 x 2^19 as 128, 64, 128 left-shifted 11 (%s)' % [hex(out.get(a, 0)) for a in (0x40, 0x41, 0x42)],
+              [out.get(a) for a in (0x40, 0x41, 0x42)] == [128 << 11, 64 << 11, 128 << 11])
+        Engine.UNKNOWN = fb
         # The control field says how C0[15:0] is used. 0x3f: an index into the constants block (253 entries in use); 0x31: a small shared-RAM
         # address; 0x32 and 0x33: a wide shared-RAM address (below 0x8000 words = 128 KiB), never with a condition; 0x34: a one-hot code.
         f3f = [dec(w)['tgt'] for w in F.values() if dec(w)['ctl'] == 0x3f and dec(w)['tgt']]
@@ -655,6 +681,7 @@ def main():
     M = load(open(a[0], 'rb').read())
     opt = lambda k, dflt='': a[a.index(k) + 1] if k in a else dflt
     if cmd == 'run':
+        if opt('--unknown-lines'): Engine.UNKNOWN = opt('--unknown-lines') == 'high'
         e = Engine(M, constants(open(a[0], 'rb').read()), {int(k, 0): int(v, 0) for k, v in (x.split('=') for x in opt('--slot').split(',') if x)}, int(opt('--bus', '0'), 0))
         e.run(int(a[1]), int(opt('--steps', 400)))
         for w, ad, v in e.re: print('%d re %#04x %#010x' % (w, ad, v))
