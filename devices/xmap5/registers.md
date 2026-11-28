@@ -1,5 +1,6 @@
 <!-- generated from devices/xmap5/registers.toml by defs-gen - do not edit, change the source -->
-<!-- defs-gen 4 -->
+<!-- SPDX-License-Identifier: BSD-3-Clause -->
+<!-- defs-gen 5 -->
 <!-- input sha256 16b6070bb233d1af1da4ef209d70365aa464954f82eda820d7ca338b5819fb36 -->
 
 # XMAP5 multimode colour mapper (five per Express board)

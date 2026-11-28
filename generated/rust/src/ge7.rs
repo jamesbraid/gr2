@@ -1,5 +1,6 @@
 // @generated from devices/ge7/registers.toml by defs-gen - do not edit, change the source
-// defs-gen 4
+// SPDX-License-Identifier: BSD-3-Clause
+// defs-gen 5
 // input sha256 e30b0fdf775c51b8fdeab63c9fca6fbdcc7b0ebfdb6d0844c750cd3ef14767df
 // GE7 geometry engines: host window and microcode load registers
 #![allow(dead_code)]

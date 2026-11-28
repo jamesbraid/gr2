@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/xmap5/registers.toml by defs-gen - do not edit, change the source -->
-<!-- defs-gen 4 -->
+<!-- SPDX-License-Identifier: BSD-3-Clause -->
+<!-- defs-gen 5 -->
 <!-- input sha256 16b6070bb233d1af1da4ef209d70365aa464954f82eda820d7ca338b5819fb36 -->
 <genxml unit="xmap5" prefix="XMAP5" title="XMAP5 multimode colour mapper (five per Express board)">
   <doc>Per-pixel window-mode and colour-index mapper between the VC1 and the DACs. Five identical chips each handle one pixel in five; software addresses chip 0 to 4 through five 32-byte windows and all five at once through a broadcast window one step after chip 4 (addresses in the README), with the same eight-register layout in each window. Offsets here are within one window. Each register is one byte (the mode port is a word) on a 4-byte stride; a big-endian CPU addresses the first byte of the stride, so the data sits in the most significant lane. Grades: established means read in full in the shipped Indigo driver archive or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver, [vendor-derived] a fact that rests on the upstream headers and never supports an established grade. Nothing was read on a board. Prose in devices/xmap5/README.md.</doc>

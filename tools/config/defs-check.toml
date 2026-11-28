@@ -1,6 +1,9 @@
 [project]
 name = "gr2"
 
+[gen]
+rust_crate = "gr2-defs"
+
 [checks]
 address_bits = 20
 max_reg_offset = 0xfffff

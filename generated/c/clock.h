@@ -1,6 +1,7 @@
 /* generated from devices/clock/registers.toml by defs-gen - do not edit, change
  * the source */
-/* defs-gen 4 */
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* defs-gen 5 */
 /* input sha256 467273ff471ddf2134ff68f52c6be88c8ce534408f7b0b63cc8677a1cd2e2738 */
 /* Express board configuration ports and pixel clock control */
 #ifndef GR2_CLK_GEN_H

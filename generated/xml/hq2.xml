@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/hq2/registers.toml by defs-gen - do not edit, change the source -->
-<!-- defs-gen 4 -->
+<!-- SPDX-License-Identifier: BSD-3-Clause -->
+<!-- defs-gen 5 -->
 <!-- input sha256 cba5637da661ab8b8f3e475b328cfed1722aba88cfb3d1a80e1228cd43c13f30 -->
 <genxml unit="hq2" prefix="HQ2" title="HQ2 command engine: FIFO window, microstore and host registers">
   <doc>Host-visible window of the HQ2 command engine in the Express graphics slot (physical 0x1f000000 on the Indigo): the FIFO window, the microstore load window and the register page with the finish-flag clear at the finish3 register. Provenance tags in item text: [public] published document or public driver, [binary] shipped IRIX, PROM or diagnostic-program binary (a software expectation, with the routine named), [vendor-derived] upstream headers (none supports any fact here). Register names marked ide are the names the shipped diagnostic program prints; names marked NetBSD are the public driver's. Grades: established means read in full in a shipped binary or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. Nothing was read on a board and no reset value is stated by any source, so none is given except where noted. Prose in devices/hq2/README.md.</doc>

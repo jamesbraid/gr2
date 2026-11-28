@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <!-- generated from devices/clock/registers.toml by defs-gen - do not edit, change the source -->
-<!-- defs-gen 4 -->
+<!-- SPDX-License-Identifier: BSD-3-Clause -->
+<!-- defs-gen 5 -->
 <!-- input sha256 467273ff471ddf2134ff68f52c6be88c8ce534408f7b0b63cc8677a1cd2e2738 -->
 <genxml unit="clock" prefix="GR2_CLK" title="Express board configuration ports and pixel clock control">
   <doc>The first ports of the display back end form one byte-wide gate-array block that the Indigo boot PROM and kernel driver read to learn the board revision, backend revision, memory slots, Z buffer, colour depth and monitor code, and write to select and load the pixel clock. The read and write sides of a port share one address. Offsets are from the graphics window base (physical 0x1f000000 on the Indigo) and name the byte a big-endian CPU addresses: every port is one byte at the first byte of a 4-byte stride (the most significant lane of the word), and every shipped access is a byte load or store. Grades: established means read in full in the shipped driver or PROM, or stated by a published document; inferred means a reasoned reading; unknown means nothing shipped settles it. [binary] marks a software expectation from a shipped binary, [public] a published document or public driver. Nothing was read on a board. Prose in devices/clock/README.md.</doc>
