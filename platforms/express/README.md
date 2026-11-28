@@ -88,6 +88,8 @@ The register reads in `Gr2Probe` are byte loads at `+0x6c000`, `+0x6c004`, `+0x6
 byte lane of each word on this big-endian host, while NetBSD masks low bits of a word read. Which is right is a question for
 the hardware contract: see [questions](../../questions/README.md). For a little-endian CPU see [host contract section 12](host-contract.md#12-a-little-endian-cpu-on-the-gio32-bus).
 
+The 2D tokens the X server sends (rectangles, spans, copies, image transfers, clip IDs) are in [x-server-tokens.md](x-server-tokens.md); the GL stream is in [icd-sequences.md](icd-sequences.md).
+
 Before probing, the kernel pulses the MC graphics reset (`Gr2Reset`, `gr2_init.o` `0x0`): clear bit 10 of the MC's control
 register 0 at `0xbfa00004`, wait 10 microseconds, set it (established; the polarity is the MC page's, where a set bit releases reset).
 The PROM does the same in its graphics check.

@@ -332,7 +332,7 @@ in window and solid-fill code), `+0x404dc`, `+0x404e0`, `+0x404e4`, `+0x404e8`, 
 `+0x40500`, `+0x40510`, `+0x40514`, `+0x4052c`, `+0x40530` (the two most used), `+0x40540`, `+0x40544`, `+0x40550`, `+0x40558`, `+0x40568`,
 `+0x40588`, `+0x4058c`, `+0x40590`, and `+0x407a8`; data goes to `+0x4077c`. Their GE routine starts are the range 31835 to 35514 in
 `hq2.bin` (the X server has its own routines rather than the GL core's). Established [binary] for the offsets (the token names
-are unknown). Operand layouts are not catalogued here.
+are unknown). Operand layouts of the rectangle, span, point, line, copy, image and clip-ID tokens are in [x-server-tokens.md](x-server-tokens.md); the rest are not catalogued.
 
 ## What a model needs
 
@@ -343,7 +343,7 @@ are unknown). Operand layouts are not catalogued here.
   required: the images are fixed and the effect of nine tokens is described here. A model that wants to execute them needs the GE7
   and HQ2 instruction sets, which are unknown.
 - **IRIX X.** Everything above plus the X server's FIFO tokens (about 30, unnamed), VC1 cursor and window-ID handling, XMAP5 modes, and
-  pixel DMA through the MC. The tokens' operand layouts are partly readable from `gr2.so` and not yet catalogued.
+  pixel DMA through the MC. The tokens' operand layouts for 2D drawing, copies and images are in [x-server-tokens.md](x-server-tokens.md); stipples, tiles and glyph blits are not yet catalogued.
 - **GL.** The 131 token addresses above with their operand layouts for lighting, matrices, primitives and pixel transfer, plus the **GE7 and
   RE3 behaviour behind them**: the results the engines produce for transform, clip, lighting, setup and rasterisation. Without a
   decoded instruction set the only route is a behavioural reimplementation of each routine, validated against the GL

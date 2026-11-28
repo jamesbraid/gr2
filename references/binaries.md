@@ -19,7 +19,7 @@ Copied by the reader from their own IRIX 6.5 base media (June 1998 set) into the
 | `usr/gfx/arch/IP12GR232/libGLcore.so` | `b6731da1b4422e1ea1e8fbe841af2e05989d4c3022d9c8b8143a53187f67de9a` | GL core, n32 build; the FIFO token addresses in the pipeline page are read from it, and (round 8) `__glExpPassCullFace`, `__glExpPassFrontFace` and `__glExpGetRasterPosData`. |
 | `usr/gfx/arch/IP12GR2*/libGL.so`, `libgl.so` | see media inventory | GL and IrisGL clients. Not read. |
 | `usr/gfx/arch/IP12GR2/libgl.so` (IrisGL, o32) | `3f6928efc56cd734970b8d7b0ed138bb8ef84bf8ca479a4533d9f80d97bf3de8` | Read for the FIFO stores of the pipeline page's token table (no store to slot 303). |
-| `usr/lib/X11/dyDDX/gr2.so` (Indigo; `.dynsym` names `expDrawPoints`, `expPolyPoint` and `expZeroPolyArc`) | `eb5aa0c91259fd1d7186e146f0b62ae172b1bfa609ed0c60debd6bd54dd10fa2` | The X driver; read for the senders of slot 303. |
+| `usr/lib/X11/dyDDX/gr2.so` (Indigo; `.dynsym` names `expDrawPoints`, `expPolyPoint` and `expZeroPolyArc`) | `eb5aa0c91259fd1d7186e146f0b62ae172b1bfa609ed0c60debd6bd54dd10fa2` | The X driver; read for the senders of slot 303, and for the rectangle, span, point, copy, image, clip-ID, cursor-colour and mode-word functions behind [x-server-tokens.md](../platforms/express/x-server-tokens.md) and [devices/xmap5](../devices/xmap5/README.md#mode-word). |
 
 Extracted `gr2.a` members (SHA-256):
 
