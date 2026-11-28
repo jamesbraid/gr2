@@ -26,7 +26,7 @@ program (threshold names and values only). The same section's [FIFO rules](../pl
 
 ## 4. Which microcode routine sets which finish flag, and what 481 to 484, 496 save
 
-Needs the HQ2 instruction set. Next: decode the routines reached from slots 481 to 484 and 496 in `hq2.bin`.
+Needs the HQ2 instruction set. The kernel's side of the operands is read ([host contract](../platforms/express/host-contract.md#what-the-context-operands-are)); what the board saves, and what the size classes change, is not. Next: decode the routines reached from slots 481 to 484 and 496 in `hq2.bin`.
 
 ## 5. Per-variant probe register values
 
