@@ -108,6 +108,8 @@ Grades: the values are observed in the images and the delay and constants-block 
 | `0x60`, `0x61`, `0x65`, `0x66`, `0x6a`, `0x6b` | the Z-plane mode tokens (HQ2 slots 52 and 53, GE7 1161 and 1199) and the Z-plane DMA (GE7 1250) | the host's `gr2_chkzplanes` sends 1 to slot 52 and 2 to slot 53 around its Z rows, and each token writes registers from that word: slot 52 with 1 gives `0x66` = 0, `0x65` = `0x40`, `0x61` = `0xffffffff`, `0x60` = 0 (with 0: `0x65` = 0, and `0x60` and `0x61` swapped), slot 53 gives `0x6b` = the word, both give `0x6a` = `0x44`; 1250 writes `0x6b` = 2 before the rectangle and 0 after (a stale right-edge word on the readback path). Roles **unknown**: `0x6b` fits a plane select for the Z transfer. Values inferred from the model, the host's sends [binary] |
 | `0x5e`, `0x6f` | DRAWCHAR and RECTCOPY (a loop over the row words, branch lines `0x61` and `0x62` only); LINE2I writes `0x20`, `0x40`, `0x21`, `0x22` twice, `0x00`, `0x5f`, `0x08` | unknown: the operand slots of those routines are not known; LINE2I's `0x08` is not modelled (see microcode.md) |
 
+The state tokens of the full image write these mode words by read-modify-write; the bit fields of `0x61` to `0x66` that the logic-op, blend, dither, depth and stencil tokens set, and the colour and coordinate formats, are in [arithmetic.md](../../platforms/express/arithmetic.md#mode-word-fields-items-3-4-5-7).
+
 INIT (PROM image 4.0.5D, GE7 10 to 50; the diagnostic image's own INIT in brackets where it differs), in order of writing:
 
 | Address | Value | Note |

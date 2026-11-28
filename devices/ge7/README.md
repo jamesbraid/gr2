@@ -188,7 +188,7 @@ This is the functional level that the tools support without decoding the instruc
    strips and fans, quads, quad strips and polygons start the routines that gather vertices and run the pipeline. The vertex, colour,
    normal and index tokens carry no first-level GE7 start of their own (their dispatch slot is empty or goes through the attribute
    jump table at `+0x6a000`); they feed the engine that the current primitive was assigned to. Inferred.
-4. **Address-space layout.** Entry addresses grouped by role: 30 (buffer swap), 206 to 1012 (matrix, viewport, clip and
+4. **Address-space layout.** Entry addresses grouped by role: 30 (reset of the RE3 mode words, [arithmetic.md](../../platforms/express/arithmetic.md#set-up-and-the-hand-off-item-10)), 206 to 1012 (matrix, viewport, clip and
    state), 1284 to 2797 (state setters and queries), 3074 (polygons), 4610 to 7940 (triangle and quad ends, generic end), 13406 to 13711
    (point and swap), 14338 to 15620 (lines), 15694 to 16460 (lighting), 24248 to 25322 (pixel copy and clears), 26475 to 27323 (pixel
    reads and writes), 28674 and 30210 (strips and fans), 31242 (texture span), 31835 to 35514 (X server entries), and the console
