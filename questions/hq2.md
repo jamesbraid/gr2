@@ -21,7 +21,7 @@ copy of the finish flag (VC1 page) by reading the n32 `__glExpFinish` callers; s
 Whether the line asserts at count `>=` `fifo_full` or only above it, and whether `fifo_full_timeout`, `fifo_empty_timeout` or the
 low-water bit gate a second condition. Routes tried: PROM and kernel flow control, ide field names, the handler's own compare (a
 software expectation of `>=`; the threshold it writes, count plus one, suits either rule), and the IRIX source library and diagnostic
-program (threshold names and values only). Next: none from software; the model uses `>=`
+program (threshold names and values only). The same section's [FIFO rules](../platforms/express/host-contract.md#the-fifo-rules-a-driver-has-to-obey) add the GR4 schematic's `GRXDLY` and `FIFO.FULL` pins and the GIO delay rules: the chip can stall a write, and what it does at a full FIFO (stall, drop or both after a timeout) is unknown. Next: none from software; the model uses `>=`
 ([host contract section 1](../platforms/express/host-contract.md#what-raises-the-fifo-interrupt-and-how-it-clears)).
 
 ## 4. Which microcode routine sets which finish flag, and what 481 to 484, 496 save
